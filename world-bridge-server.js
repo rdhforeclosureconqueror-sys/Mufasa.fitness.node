@@ -114,7 +114,7 @@ function installFreeRunClub(app, options = {}) {
 function installResidentialWellness(app, options = {}) {
   const userStore=createCanonicalUserStore(options);
   const service=createResidentialWellnessService({userStore});
-  installResidentialWellnessRoutes({app,requireAuth,service});
+  installResidentialWellnessRoutes({app,requireAuth,service,userStore});
   app.use((err,req,res,next)=>{
     if(!String(req.path||"").startsWith("/api/me/residential-wellness")) return next(err);
     if(res.headersSent) return next(err);

@@ -1,4 +1,4 @@
-(() => {
+(async () => {
   "use strict";
   const weeks = [
     {
@@ -68,9 +68,12 @@
   ];
   // The older Eight Limbs course is independent of the Eight Pillars journey.
   // No day advances until the member explicitly starts this course.
-  const limbKey="milele-eight-limbs-start-v1";
   let limbStart=null;
-  try { const saved=localStorage.getItem(limbKey); if(/^\d{4}-\d{2}-\d{2}$/.test(saved||""))limbStart=saved; } catch {}
+  try{
+    const response=await fetch("/api/pan-african/progress",{credentials:"same-origin",cache:"no-store"});
+    if(!response.ok)throw new Error("Membership progress unavailable");
+    limbStart=(await response.json()).progress?.combinedEightLimbsStart||null;
+  }catch(error){document.querySelector("#todayContent").textContent=error.message;return;}
   const today=new Date();
   const localDate=[today.getFullYear(),String(today.getMonth()+1).padStart(2,"0"),String(today.getDate()).padStart(2,"0")].join("-");
   const elapsed=limbStart?Math.max(0,Math.floor((Date.parse(localDate+"T12:00:00")-Date.parse(limbStart+"T12:00:00"))/86400000)):0;
@@ -96,8 +99,15 @@
       `<p class="today-label">WEEK ${index + 1} · ${current.limb.toUpperCase()}</p><h2>${current.limb} + ${current.symbol}</h2><p class="symbol">${current.symbol} · ${current.meaning}</p><p>${current.bridge}</p><p><strong>Weekly reflection:</strong> ${current.focus}</p>${lessonBlock}${storyBlock}<p><a class="button" href="/mindfulness.html?community=pac#pac-community-today">Start today in the Mindfulness Dashboard →</a><a class="button secondary" href="/awareness-journey.html">Take today’s awareness practice →</a></p>`;
   }
   if (!limbStart) {
-    document.querySelector("#todayContent").innerHTML = `<h2>Start your Eight Limbs journey when you are ready</h2><p>Membership does not start the lessons automatically. Your first day begins when you choose to start.</p><button class="button" id="startLimbJourney">Start My Journey · Day One</button><p class="muted">This browser remembers your start date. Cross-device sync is not yet available.</p>`;
-    document.querySelector("#startLimbJourney").addEventListener("click",()=>{try{localStorage.setItem(limbKey,localDate);}catch{}location.reload();});
+    document.querySelector("#todayContent").innerHTML = `<h2>Start your Eight Limbs journey when you are ready</h2><p>Membership does not start the lessons automatically. Your first day begins when you choose to start.</p><button class="button" id="startLimbJourney">Start My Journey · Day One</button><p class="muted">Your start date is saved to your verified member account.</p>`;
+    document.querySelector("#startLimbJourney").addEventListener("click",async()=>{
+      const button=document.querySelector("#startLimbJourney");button.disabled=true;
+      try{
+        const response=await fetch("/api/pan-african/start",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({kind:"combined"})});
+        if(!response.ok)throw new Error("Unable to save your start date");
+        location.reload();
+      }catch(error){button.disabled=false;button.insertAdjacentText("afterend"," "+error.message);}
+    });
   } else renderToday();
   document.querySelector("#weeks").innerHTML = weeks
     .map(

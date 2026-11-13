@@ -7,6 +7,7 @@ const output=path.resolve(process.env.FRONTEND_BUILD_OUTPUT||path.join(root,"dis
 const token="__MUFASA_VITE_GOOGLE_MAPS_BROWSER_API_KEY__";
 const browserKey=String(process.env.VITE_GOOGLE_MAPS_BROWSER_API_KEY||"").trim();
 const {execFileSync}=require("node:child_process");
+const {PAC_PROTECTED_ASSETS}=require("../src/config/pacProtectedAssets");
 
 function safeCommit(value){return /^[a-f0-9]{7,40}$/i.test(String(value||""))?String(value):null;}
 function repositoryCommit(){
@@ -24,6 +25,12 @@ function injectRuntimeConfig(html,cacheToken){
 if(!browserKey)throw new Error("VITE_GOOGLE_MAPS_BROWSER_API_KEY is required for the frontend production build");
 fs.rmSync(output,{recursive:true,force:true});
 fs.cpSync(source,output,{recursive:true});
+// STATIC SECURITY BOUNDARY: these source files must exist only behind authenticated backend routes.
+for(const asset of PAC_PROTECTED_ASSETS){
+ const destination=path.join(output,asset);
+ fs.rmSync(destination,{force:true});
+ if(fs.existsSync(destination))throw new Error("Protected Pan-African asset leaked into static build: "+asset);
+}
 const commit=repositoryCommit();
 const build=process.env.FRONTEND_BUILD_VERSION||commit||"local-unversioned";
 const generatedAt=new Date().toISOString();

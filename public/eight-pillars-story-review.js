@@ -1,13 +1,16 @@
-(() => {
+(async () => {
 "use strict";
 const el = id => document.getElementById(id);
 const week = el("week"), title = el("title"), story = el("story"), status = el("status");
 let stories = [], index = 0, generation = 0, paused = false, playing = false;
 let activeAudio = null, activeUrl = null, aborter = null;
 
-const JOURNEY_KEY="milele-eight-pillars-start-v1";
 let startDate=null, selectedDay=1, dayText="";
-try{const saved=localStorage.getItem(JOURNEY_KEY);if(/^\d{4}-\d{2}-\d{2}$/.test(saved||""))startDate=saved;}catch{}
+try{
+ const response=await fetch("/api/pan-african/progress",{credentials:"same-origin",cache:"no-store"});
+ if(!response.ok)throw new Error("Your membership progress is unavailable.");
+ startDate=(await response.json()).progress?.eightPillarsStart||null;
+}catch(error){status.textContent=error.message;return;}
 function today(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");}
 function journeyDay(){if(!startDate)return 0;return Math.max(1,Math.min(56,Math.floor((Date.parse(today()+"T12:00:00")-Date.parse(startDate+"T12:00:00"))/86400000)+1));}
 function chapters(full){
@@ -26,7 +29,16 @@ function updateJourney(){
  for(let i=1;i<=7;i++){const o=document.createElement("option");o.value=String(i);o.textContent="Day "+i+(i>max?" · locked":"");o.disabled=i>max;el("dayPicker").append(o);}
  selectedDay=Math.min(selectedDay,max);el("dayPicker").value=String(selectedDay);
 }
-el("startJourney").addEventListener("click",()=>{if(startDate)return;startDate=today();try{localStorage.setItem(JOURNEY_KEY,startDate);}catch{}selectedDay=1;show(index);});
+el("startJourney").addEventListener("click",async()=>{
+ if(startDate)return;
+ const button=el("startJourney");button.disabled=true;
+ try{
+  const response=await fetch("/api/pan-african/start",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({kind:"pillars"})});
+  if(!response.ok)throw new Error("Could not save your journey start date.");
+  startDate=(await response.json()).progress?.eightPillarsStart||today();
+  selectedDay=1;show(index);
+ }catch(error){status.textContent=error.message;}finally{button.disabled=false;}
+});
 el("dayPicker").addEventListener("change",()=>{selectedDay=Number(el("dayPicker").value);show(index);});
 
 const cache = new Map(); // Only this page session; permanent audio storage is separate.

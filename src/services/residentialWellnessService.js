@@ -46,6 +46,63 @@ function createResidentialWellnessService({ userStore, clock=()=>Date.now() }) {
     });
     return result;
   }
+  // The public Eight Limbs journey contains 56 daily lessons, seven per limb.
+  // Use server time for unlocks so a changed device clock cannot skip ahead.
+  function decorateYogaJourney(journey){
+    if(!journey?.startedAt)return journey||null;
+    const elapsed=Math.floor((clock()-Date.parse(journey.startedAt))/86400000);
+    return {...structuredClone(journey),completedDays:journey.completedDays||[],availableDay:Math.min(56,Math.max(1,elapsed+1))};
+  }
+  function getYogaJourney(userId){
+    const user=userStore.loadUser(userId);
+    return decorateYogaJourney(user?.eightLimbsYogaJourney);
+  }
+  function startYogaJourney(userId){
+    const now=iso(clock());
+    let journey;
+    userStore.updateUser(userId,user=>{
+      const previous=user.eightLimbsYogaJourney;
+      user.eightLimbsYogaJourney=previous || {schemaVersion:1,startedAt:now,completedLimbs:[],updatedAt:now};
+      journey=decorateYogaJourney(user.eightLimbsYogaJourney);
+      return user;
+    });
+    return journey;
+  }
+  function completeYogaLimb(userId,limb){
+    if(!Number.isInteger(limb)||limb<1||limb>8) throw new Error("Choose a limb from 1 to 8");
+    const now=iso(clock());
+    let journey;
+    userStore.updateUser(userId,user=>{
+      const previous=user.eightLimbsYogaJourney;
+      if(!previous?.startedAt) throw new Error("Start your yoga journey before recording progress");
+      const completed=Array.isArray(previous.completedLimbs)?previous.completedLimbs:[];
+      const next=completed.length+1;
+      if(!completed.includes(limb)&&limb!==next) throw new Error("Complete the previous limb first");
+      user.eightLimbsYogaJourney={...previous,completedLimbs:[...new Set([...completed,limb])].sort((a,b)=>a-b),updatedAt:now};
+      journey=structuredClone(user.eightLimbsYogaJourney);
+      return user;
+    });
+    return journey;
+  }
+  function completeYogaDay(userId,day){
+    if(!Number.isInteger(day)||day<1||day>56)throw new Error("Choose a day from 1 to 56");
+    const now=iso(clock());
+    let journey;
+    userStore.updateUser(userId,user=>{
+      const previous=user.eightLimbsYogaJourney;
+      if(!previous?.startedAt)throw new Error("Start your yoga journey before recording progress");
+      const current=decorateYogaJourney(previous);
+      const completed=current.completedDays;
+      if(!completed.includes(day)){
+        if(day>current.availableDay)throw new Error("This lesson is not unlocked yet");
+        if(day!==completed.length+1)throw new Error("Complete the previous day first");
+      }
+      user.eightLimbsYogaJourney={...previous,completedDays:completed.includes(day)?completed:[...completed,day],updatedAt:now};
+      journey=decorateYogaJourney(user.eightLimbsYogaJourney);
+      return user;
+    });
+    return journey;
+  }
   function diagnostic(userId){
     const profile=get(userId);
     const checks=[
@@ -56,6 +113,6 @@ function createResidentialWellnessService({ userStore, clock=()=>Date.now() }) {
     ];
     return {diagnosticVersion:"residential-wellness-v1",firstFailure:checks.find(x=>x.result==="FAIL")?.id||null,checks};
   }
-  return { get,save,diagnostic,INTERESTS,CAMPAIGNS };
+  return { get,save,diagnostic,getYogaJourney,startYogaJourney,completeYogaLimb,completeYogaDay,INTERESTS,CAMPAIGNS };
 }
 module.exports={createResidentialWellnessService,INTERESTS,CAMPAIGNS};
