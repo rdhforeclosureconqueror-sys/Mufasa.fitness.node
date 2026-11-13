@@ -7,6 +7,10 @@ on:
       - 'public/avatar-upload-contract.js'
       - 'scripts/firebase-member-cloud-preflight.js'
       - 'test/firebase-member-cloud-preflight.test.js'
+      - 'test/firebase-cloud-acceptance-panel.test.js'
+      - 'public/admin-acceptance-lab.html'
+      - 'public/acceptance-progress.js'
+      - 'public/firebase-cloud-acceptance.js'
       - '.github/workflows/firebase-member-cloud-preflight.yml'
   workflow_dispatch:
 permissions:
@@ -23,4 +27,4 @@ jobs:
       - name: Run one-touch design preflight
         run: node scripts/firebase-member-cloud-preflight.js
       - name: Run preflight regression tests
-        run: node --test test/firebase-member-cloud-preflight.test.js
+        run: node --test test/firebase-member-cloud-preflight.test.js test/firebase-cloud-acceptance-panel.test.js

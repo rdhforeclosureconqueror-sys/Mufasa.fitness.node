@@ -1,6 +1,6 @@
 "use strict";
 (function(){
- const entries={business:{label:"Business OS synthetic",total:3},routes:{label:"Browser route checks",total:7},synthetic:{label:"Isolated customer simulation",total:9}};
+ const entries={business:{label:"Business OS synthetic",total:3},routes:{label:"Browser route checks",total:7},synthetic:{label:"Isolated customer simulation",total:9},firebase:{label:"Firebase readiness (read-only)",total:3}};
  const list=document.getElementById("acceptance-progress-list"),failure=document.getElementById("acceptance-first-failure");
  if(!list)return;
  const values={};
@@ -8,7 +8,7 @@
   list.replaceChildren();
   for(const [type,config] of Object.entries(entries)){
    const item=document.createElement("li"),result=values[type];
-   item.textContent=config.label+" · "+(result?(result.passed?"PASS":"FAIL")+" · "+result.count+"/"+result.total+" · "+result.timestamp:"Not run in this session")+" · "+(type==="routes"?"Route reachability only":type==="synthetic"?"Temporary service-level fixtures":"Business OS simulation");
+   item.textContent=config.label+" · "+(result?(result.passed?"PASS":"FAIL")+" · "+result.count+"/"+result.total+" · "+result.timestamp:"Not run in this session")+" · "+(type==="routes"?"Route reachability only":type==="synthetic"?"Temporary service-level fixtures":type==="firebase"?"Asset readiness only; NOT cloud certification":"Business OS simulation");
    item.className=result?(result.passed?"pass":"fail"):"muted";list.append(item);
   }
   const failed=Object.entries(values).find(([,value])=>!value.passed);
