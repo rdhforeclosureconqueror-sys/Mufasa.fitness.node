@@ -6,9 +6,9 @@ async function request(base,url,{method="GET",token,body,cookie,origin,redirect=
  return {status:response.status,headers:response.headers,text:await response.text()};
 }
 test("PAC approved, revoked and unauthorized content requests across real HTTP",async t=>{
- const envKeys=["AUTH_TOKEN_SECRET","PILOT_LOGIN_PASSWORD","LOGIN_SEED_EMAIL","AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS","BACKEND_PUBLIC_URL"];
+ const envKeys=["AUTH_TOKEN_SECRET","PILOT_LOGIN_PASSWORD","LOGIN_SEED_EMAIL","AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS","BACKEND_PUBLIC_URL","ALLOWED_ORIGINS"];
  const old=Object.fromEntries(envKeys.map(key=>[key,process.env[key]]));
- Object.assign(process.env,{AUTH_TOKEN_SECRET:"pac-isolated-secret-32-characters-long",PILOT_LOGIN_PASSWORD:"isolated-admin-password",LOGIN_SEED_EMAIL:"isolated-admin@example.invalid",AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS:"pilot_admin"});
+ Object.assign(process.env,{AUTH_TOKEN_SECRET:"pac-isolated-secret-32-characters-long",PILOT_LOGIN_PASSWORD:"isolated-admin-password",LOGIN_SEED_EMAIL:"isolated-admin@example.invalid",AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS:"pilot_admin",ALLOWED_ORIGINS:"https://mufasafitsite.onrender.com"});
  delete process.env.BACKEND_PUBLIC_URL;
  t.after(()=>{for(const [key,value] of Object.entries(old)){if(value===undefined)delete process.env[key];else process.env[key]=value;}});
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),"milele-pac-auth-"));
