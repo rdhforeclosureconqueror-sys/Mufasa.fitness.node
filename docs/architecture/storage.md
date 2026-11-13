@@ -56,3 +56,28 @@ Stop or drain the single process, copy `data/` and enabled `public/uploads/avata
 7. Use SQLite for a single-node transitional deployment or PostgreSQL for concurrent processes, managed backups, and stronger operations.
 
 No migration or persistence replacement is part of this documentation phase.
+
+## Firebase member-cloud pilot contract (design only; not enabled)
+
+This is a proposed additive integration. Existing Render bearer-token auth, member IDs, JSON records, and avatar upload endpoints remain authoritative until an independently reviewed cutover. The Firebase project `fitnessmvp-9923c` is not yet approved for production writes: Storage test-mode rules expired, Firestore/Auth state is unverified, and billing is disabled.
+
+### Safe rollout gates
+
+1. **Inventory and identity:** confirm existing `requireAuth` middleware and stable member ID. Only the server may derive a member's storage prefix from a validated session. Never accept a client-supplied owner ID or Firebase object path as authority.
+2. **Backend-only adapter:** implement behind `FIREBASE_MEMBER_CLOUD_ENABLED=false` (default). No browser Firebase credentials or Firebase Admin private keys in source control. Use least-privilege runtime credentials and a single configured bucket. Firebase Admin SDK bypasses Storage Security Rules: enforce member authorization, file type/size, and object ownership in the backend even if bucket rules are restrictive.
+3. **Object naming:** use an internal immutable member identifier and server-generated random object ID, e.g. `members/<internal-member-id>/avatars/<object-id>`. Persist only non-sensitive metadata and an immutable object reference. Avoid names, email addresses, or assessment contents in paths.
+4. **First pilot:** synthetic avatars only, with bounded MIME/size, malware/content handling policy, private objects, short-lived authorized retrieval, and explicit upload confirmation. Existing `/api/avatar/upload` contract stays unchanged; do not switch reads or writes on globally.
+5. **Failure handling:** if Firebase fails, return a clear retriable error and leave the existing authoritative record unchanged; no silent success, orphan references, or unsafe fallback that exposes another member's data. Capture first-failure diagnostics without secrets or personal file contents.
+6. **Tests before enabling:** unauthenticated access denied; member A cannot access B's objects; invalid MIME, oversize and traversal inputs rejected; interrupted uploads cleaned up; retries idempotent; deletion and restore checked; mobile and desktop cross-device retrieval tested; existing avatar route regression tests pass.
+7. **Operational gate:** verify actual bucket, Firestore availability, quotas, Google Cloud billing prerequisites, budget alerts, retention, backups and deletion policy. A Firebase project connection alone does not establish storage readiness.
+8. **Release:** stage with synthetic accounts, review PR and CI, fix failures, merge, deploy with flag OFF, verify live unchanged, then separately approve a limited opt-in pilot. Preserve rollback to existing storage until recovery is proven.
+
+### Data placement
+
+- **Existing JSON store (authoritative initially):** identity, credentials, member aggregate, workouts, nutrition, assessments, billing, and permissions.
+- **Cloud Storage (pilot only):** private avatar binary objects; later consider optimized media with quotas and lifecycle rules.
+- **Firestore (future, not required for first avatar pilot):** structured metadata and indexed member memory after separate database and security verification. Never store bulk media in Firestore.
+
+### Release evidence checklist
+
+Record: baseline commit, changed files, automated tests and results, security review, PR link, merge SHA, deployment identifier, live smoke-test results, flag state, rollback plan, and remaining blockers. Do not report production completion based only on a merged design document.
