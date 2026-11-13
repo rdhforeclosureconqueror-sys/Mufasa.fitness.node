@@ -45,6 +45,10 @@ function installResidentialWellnessRoutes({app,requireAuth,service,userStore}){
     res.set("Cache-Control","private, no-store");
     return ok(res,req.requestId,{journey:service.completeYogaLimb(req.auth.userId,Number(req.body?.limb))});
   }));
+  app.post("/api/me/eight-limbs-yoga/complete-day",requireAuth,writeLimit,asyncHandler(async(req,res)=>{
+    res.set("Cache-Control","private, no-store");
+    return ok(res,req.requestId,{journey:service.completeYogaDay(req.auth.userId,Number(req.body?.day))});
+  }));
   app.get("/api/me/residential-wellness/diagnostic",requireAuth,asyncHandler(async(req,res)=>{
     res.set("Cache-Control","private, no-store");
     return ok(res,req.requestId,service.diagnostic(req.auth.userId));
