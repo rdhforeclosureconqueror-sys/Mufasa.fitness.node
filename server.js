@@ -3795,9 +3795,13 @@ function createApp(options = {}) {
     expirePacMaps();
     const ticket=crypto.randomBytes(32).toString("base64url");
     pacNavigationTickets.set(ticket,{userId:req.auth.userId,adminAccess:isPacAdmin(req),expiresAt:Date.now()+pacTicketTtlMs});
-    const backendOrigin=String(env.BACKEND_PUBLIC_URL||"").replace(new RegExp("/+$"),"");
-    if(!backendOrigin.startsWith("https://")&&env.NODE_ENV==="production")return res.status(503).json({error:"BACKEND_ORIGIN_NOT_CONFIGURED"});
-    const origin=backendOrigin||req.protocol+"://"+req.get("host");
+    // This endpoint is hosted on the backend's own Render origin. Avoid
+    // blocking verified users when optional BACKEND_PUBLIC_URL is unset.
+    // Never construct the ticket URL from a user-controlled Host header.
+    const configuredOrigin=String(env.BACKEND_PUBLIC_URL||"").replace(new RegExp("/+$"),"");
+    const origin=env.NODE_ENV==="production"
+      ?(configuredOrigin.startsWith("https://")?configuredOrigin:"https://mufasa-fitness-node.onrender.com")
+      :(configuredOrigin||req.protocol+"://"+req.get("host"));
     return res.status(200).json({enterUrl:origin+"/api/pan-african/enter?ticket="+encodeURIComponent(ticket),expiresInSeconds:60});
   });
   app.get("/api/pan-african/enter",(req,res)=>{

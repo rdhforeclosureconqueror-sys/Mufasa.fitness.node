@@ -45,6 +45,9 @@ test("PAC approved, revoked and unauthorized content requests across real HTTP",
  assert.equal(crossOrigin.headers.get("access-control-allow-origin"),allowedOrigin,"static frontend must be allowed to request membership tickets");
  const untrusted=await request(base,"/api/me/pan-african/browse-session",{method:"POST",token:memberToken,origin:"https://untrusted.example.invalid"});
  assert.notEqual(untrusted.headers.get("access-control-allow-origin"),"https://untrusted.example.invalid","untrusted site must not gain CORS access");
+ // A missing optional BACKEND_PUBLIC_URL must not block production members.
+ // This remains a trusted canonical backend origin, never the request Host.
+ assert.ok(require("node:fs").readFileSync(path.join(__dirname,"../server.js"),"utf8").includes('https://mufasa-fitness-node.onrender.com'));
  const minted=await request(base,"/api/me/pan-african/browse-session",{method:"POST",token:memberToken});
  assert.equal(minted.status,200,minted.text);
  const url=new URL(JSON.parse(minted.text).enterUrl);

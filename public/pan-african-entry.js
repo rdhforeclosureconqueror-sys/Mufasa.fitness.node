@@ -29,7 +29,10 @@ button.addEventListener("click",async()=>{
    method:"POST",headers:{authorization:"Bearer "+token},credentials:"omit"
   });
   const data=await response.json().catch(()=>({}));
-  if(!response.ok)throw Error(response.status===403?"Your Pan-African community membership has not been approved yet.":response.status===401?"Please sign in again.":"Could not open the protected journey.");
+  if(!response.ok){
+   const code=typeof data.error==="string"?data.error:typeof data.error?.code==="string"?data.error.code:"UNKNOWN";
+   throw Error(response.status===403?"Your account does not have permission to enter this community.":response.status===401?"Please sign in again.":"Could not open the protected journey (HTTP "+response.status+" · "+code+").");
+  }
   const entry=new URL(data.enterUrl);
   if(entry.origin!==new URL(backendOrigin).origin||entry.pathname!=="/api/pan-african/enter")throw Error("Unexpected secure journey destination.");
   window.location.assign(entry.href);
