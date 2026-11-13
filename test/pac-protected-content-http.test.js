@@ -1,8 +1,8 @@
 "use strict";
 const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),os=require("node:os"),path=require("node:path"),crypto=require("node:crypto");
 const {createApp}=require("../server");
-async function request(base,url,{method="GET",token,body,cookie,redirect="manual"}={}){
- const response=await fetch(base+url,{method,redirect,headers:{...(token?{authorization:"Bearer "+token}:{}),...(body?{"content-type":"application/json"}:{}),...(cookie?{cookie}:{})},body:body?JSON.stringify(body):undefined});
+async function request(base,url,{method="GET",token,body,cookie,origin,redirect="manual"}={}){
+ const response=await fetch(base+url,{method,redirect,headers:{...(token?{authorization:"Bearer "+token}:{}),...(body?{"content-type":"application/json"}:{}),...(cookie?{cookie}:{}),...(origin?{origin}:{})},body:body?JSON.stringify(body):undefined});
  return {status:response.status,headers:response.headers,text:await response.text()};
 }
 test("PAC approved, revoked and unauthorized content requests across real HTTP",async t=>{
@@ -31,6 +31,12 @@ test("PAC approved, revoked and unauthorized content requests across real HTTP",
  assert.equal((await request(base,"/api/admin/pan-african/members/"+memberId,{method:"PUT",token:memberToken,body:{action:"approve"}})).status,403,"self approval denied");
  const approve=await request(base,"/api/admin/pan-african/members/"+memberId,{method:"PUT",token:adminToken,body:{action:"approve"}});
  assert.equal(approve.status,200,approve.text);
+ const allowedOrigin="https://mufasafitsite.onrender.com";
+ const crossOrigin=await request(base,"/api/me/pan-african/browse-session",{method:"POST",token:memberToken,origin:allowedOrigin});
+ assert.equal(crossOrigin.status,200,crossOrigin.text);
+ assert.equal(crossOrigin.headers.get("access-control-allow-origin"),allowedOrigin,"static frontend must be allowed to request membership tickets");
+ const untrusted=await request(base,"/api/me/pan-african/browse-session",{method:"POST",token:memberToken,origin:"https://untrusted.example.invalid"});
+ assert.notEqual(untrusted.headers.get("access-control-allow-origin"),"https://untrusted.example.invalid","untrusted site must not gain CORS access");
  const minted=await request(base,"/api/me/pan-african/browse-session",{method:"POST",token:memberToken});
  assert.equal(minted.status,200,minted.text);
  const url=new URL(JSON.parse(minted.text).enterUrl);
