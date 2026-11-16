@@ -149,3 +149,10 @@ test("saved meal plan UI renders a navigable week calendar instead of a long dis
   assert.match(client, /previous\.onclick/);
   assert.match(html, /\.meal-calendar-grid/);
 });
+
+test("meal plan drafts enable Read answer and give the voice service plan content", () => {
+  const client = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition-research-chat.js"), "utf8");
+  assert.match(client, /function mealPlanReadAloudText/);
+  assert.match(client, /lastAnswer = mealPlanReadAloudText/);
+  assert.match(client, /if \(listen && canSpeak\) listen\.disabled = false;/);
+});

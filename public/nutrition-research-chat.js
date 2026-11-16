@@ -342,6 +342,12 @@
     if ((draft.days || []).length > 3) { const more = document.createElement("p"); more.textContent = `Plus ${draft.days.length - 3} more days will populate your calendar after you save.`; output.append(more); }
     if ((draft.assumptions || []).length) { const assumptions = document.createElement("p"); assumptions.textContent = "Assumptions to review: " + draft.assumptions.join("; "); output.append(assumptions); }
   }
+  function mealPlanReadAloudText(draft, message) {
+    const targets = draft.dailyTargets || {};
+    const targetLine = [targets.calories ? `${targets.calories} calories per day` : "", targets.proteinGrams ? `${targets.proteinGrams} grams of protein per day` : ""].filter(Boolean).join(" and ");
+    const days = (draft.days || []).map(day => `Day ${day.dayNumber}, ${day.date}. ` + (day.meals || []).map(meal => `${meal.mealType}: ${meal.title}. ${Array.isArray(meal.items) && meal.items.length ? meal.items.join(", ") + "." : ""}`).join(" ")).join(" ");
+    return [draft.title || "Your meal plan", message || "Your meal plan is ready to review.", `It starts ${draft.startDate} and covers ${draft.durationDays} days.${targetLine ? " Your daily target is " + targetLine + "." : ""}`, days, "Review the plan, then tap Review and save this plan to add it to your calendar."].filter(Boolean).join(" ");
+  }
   function renderSavedMealPlan(plan) {
     const root = document.getElementById("mealPlanCalendar"); if (!root) return;
     root.replaceChildren(); if (!plan) { root.textContent = "No saved meal plan yet."; return; }
@@ -387,8 +393,9 @@
     try {
       if (mode === "QUICK" && isMealPlanRequest(text)) {
         await createMealPlan(text, token);
-        lastAnswer = "Meal plan draft ready for review."; lastQuestion = text;
+        lastAnswer = mealPlanReadAloudText(pendingMealPlan, "Your meal plan is ready to review."); lastQuestion = text;
         conversationContext = "User: " + text + "\nAssistant: " + lastAnswer;
+        if (listen && canSpeak) listen.disabled = false;
         if (deepButton) deepButton.hidden = true; if (referencesButton) referencesButton.hidden = true;
         return;
       }
