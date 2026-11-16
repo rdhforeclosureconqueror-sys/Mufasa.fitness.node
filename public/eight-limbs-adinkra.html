@@ -153,6 +153,27 @@
         margin: 18px 0;
         padding: 14px 0;
       }
+      .daily-snapshot {
+        max-width: 620px;
+        margin: 4px auto;
+        padding: 26px 20px;
+        border: 1px solid #d9bd82;
+        border-radius: 24px;
+        background: radial-gradient(circle at 50% 15%, #384328, #171b18 68%);
+        text-align: center;
+      }
+      .snapshot-date { color: var(--muted); margin: 5px 0; }
+      .snapshot-kicker { color: var(--gold); font-size: .8rem; font-weight: 800; letter-spacing: .12em; margin: 20px 0 5px; }
+      .snapshot-meaning { max-width: 53ch; margin: 16px auto; font: 1.18rem/1.6 Georgia, serif; }
+      .snapshot-support, .snapshot-affirmation {
+        margin: 16px 0;
+        padding: 14px;
+        border: 1px solid #74613d;
+        border-radius: 14px;
+        background: rgba(0,0,0,.18);
+      }
+      .snapshot-affirmation p:last-child { font: 1.1rem/1.55 Georgia, serif; margin-bottom: 0; }
+      .snapshot-reflection { margin: 18px auto 6px; max-width: 52ch; }
       .fine {
         font-size: 0.9rem;
       }
@@ -173,20 +194,19 @@
     <main class="wrap">
       <header>
         <span class="brand">Milele Fit · Community Pathway</span
-        ><a href="https://mufasafitsite.onrender.com/community-hub.html">← Community Hub</a> <a href="/eight-pillars-story-review.html">African Wisdom Stories</a>
+        ><a href="https://mufasafitsite.onrender.com/community-hub.html">← Community Hub</a> <a href="/eight-pillars-story-review.html">Adinkra Wisdom Stories</a>
       </header>
       <section class="card hero">
-        <p class="eyebrow">Eight weeks · one shared practice</p>
-        <h1>Eight Limbs + Adinkra</h1>
+        <p class="eyebrow">Eight weeks · one daily practice</p>
+        <h1>Eight Limbs of Yoga</h1>
         <p>
-          Yoga gives us a path for practice. Akan Adinkra symbols give us a
-          visual language for values, memory, resilience and community.
-          Together, this is an eight-week circle for moving, breathing,
-          reflecting and growing with intention.
+          Each day centers one Eight Limbs lesson, then gives you its meaning,
+          a supporting awareness center, an affirmation, and one real-life
+          practice to carry into your day.
         </p>
         <p class="muted">
-          Built for PAC Community at Pan-African Connection and open to every
-          member of Milele Fit. Come as you are; begin with the week you are in.
+          Begin when you are ready. Your daily lesson stays centered on the
+          limb you are practicing—not on a generic chakra card.
         </p>
         <p>
           <a class="button" href="#today">Start this week’s practice</a
@@ -196,18 +216,18 @@
         </p>
       </section>
       <section class="card" id="today">
-        <p class="eyebrow">This week</p>
+        <p class="eyebrow">Today’s lesson</p>
         <div id="todayContent">
           <p class="muted">Loading the current practice…</p>
         </div>
       </section>
       <section class="card">
         <p class="eyebrow">The eight-week map</p>
-        <h2>Practice a limb. Carry a symbol.</h2>
+        <h2>Practice one limb at a time.</h2>
         <p class="muted">
-          Each pairing is a present-day teaching bridge created for this
-          program. It honors both traditions without claiming that classical
-          yoga and Akan Adinkra have the same origin or meaning.
+          Each week builds one part of the Eight Limbs framework. The daily
+          snapshot above turns it into a lesson you can understand, affirm,
+          and practice in real life.
         </p>
         <div class="week-grid" id="weeks" aria-live="polite"></div>
       </section>
