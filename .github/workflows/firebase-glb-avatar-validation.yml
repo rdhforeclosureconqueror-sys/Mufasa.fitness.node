@@ -1,0 +1,20 @@
+name: Firebase GLB avatar format validation
+on:
+  pull_request:
+    paths:
+      - 'lib/firebase-avatar-glb-validation.js'
+      - 'test/firebase-avatar-glb-validation.test.js'
+      - '.github/workflows/firebase-glb-avatar-validation.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  glb-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/firebase-avatar-glb-validation.test.js
