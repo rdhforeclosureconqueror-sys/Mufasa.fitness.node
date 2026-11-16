@@ -289,8 +289,25 @@
   function renderSavedMealPlan(plan) {
     const root = document.getElementById("mealPlanCalendar"); if (!root) return;
     root.replaceChildren(); if (!plan) { root.textContent = "No saved meal plan yet."; return; }
-    const intro = document.createElement("p"); const title = document.createElement("strong"); title.textContent = plan.title; intro.append(title, document.createTextNode(` · ${plan.durationDays} days starting ${plan.startDate}`)); root.append(intro);
-    (plan.days || []).forEach(day => { const detail = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = `Day ${day.dayNumber} · ${day.date}${day.theme ? ` · ${day.theme}` : ""}`; detail.append(summary); const list = document.createElement("ul"); (day.meals || []).forEach(meal => { const row = document.createElement("li"); row.textContent = `${meal.mealType}: ${meal.title} — ${meal.items.join(", ")}${meal.notes ? ` (${meal.notes})` : ""}`; list.append(row); }); detail.append(list); root.append(detail); });
+    const days = plan.days || []; let weekIndex = 0; let selectedIndex = 0;
+    const shell = document.createElement("div"); shell.className = "meal-calendar-shell";
+    const heading = document.createElement("div"); const title = document.createElement("strong"); title.textContent = plan.title; heading.append(title, document.createTextNode(` · ${plan.durationDays} days starting ${plan.startDate}`)); shell.append(heading);
+    const toolbar = document.createElement("div"); toolbar.className = "meal-calendar-toolbar";
+    const previous = document.createElement("button"); previous.type = "button"; previous.className = "btn"; previous.textContent = "← Week";
+    const weekLabel = document.createElement("div"); weekLabel.className = "meal-calendar-week";
+    const next = document.createElement("button"); next.type = "button"; next.className = "btn"; next.textContent = "Week →";
+    toolbar.append(previous, weekLabel, next); shell.append(toolbar);
+    const grid = document.createElement("div"); grid.className = "meal-calendar-grid"; shell.append(grid);
+    const detail = document.createElement("section"); detail.className = "meal-calendar-detail"; shell.append(detail); root.append(shell);
+    const formatDate = date => { const value = new Date(`${date}T12:00:00`); return { weekday: value.toLocaleDateString(undefined, { weekday:"short" }), month: value.toLocaleDateString(undefined, { month:"short" }), day: value.getDate() }; };
+    function paint() {
+      const start = weekIndex * 7, visible = days.slice(start, start + 7); const selected = days[selectedIndex] || visible[0];
+      weekLabel.textContent = `Week ${weekIndex + 1} of ${Math.ceil(days.length / 7)}`; previous.disabled = weekIndex === 0; next.disabled = start + 7 >= days.length;
+      grid.replaceChildren(); visible.forEach((day, offset) => { const date = formatDate(day.date); const tile = document.createElement("button"); tile.type = "button"; tile.className = "meal-calendar-day" + (day.dayNumber === selected.dayNumber ? " active" : ""); tile.setAttribute("aria-pressed", String(day.dayNumber === selected.dayNumber)); const label = document.createElement("small"); label.textContent = `${date.weekday} · ${date.month}`; const number = document.createElement("strong"); number.textContent = String(date.day); const count = document.createElement("small"); count.textContent = `Day ${day.dayNumber}`; tile.append(label, number, count); tile.onclick = () => { selectedIndex = start + offset; paint(); }; grid.append(tile); });
+      detail.replaceChildren(); const dayTitle = document.createElement("h3"); dayTitle.textContent = `Day ${selected.dayNumber} · ${selected.date}`; const theme = document.createElement("p"); theme.className = "muted"; theme.textContent = selected.theme || "Your meal guide"; detail.append(dayTitle, theme);
+      const meals = document.createElement("div"); meals.className = "meal-calendar-meals"; (selected.meals || []).forEach(meal => { const card = document.createElement("div"); card.className = "meal-calendar-meal"; const type = document.createElement("small"); type.textContent = meal.mealType; const name = document.createElement("strong"); name.textContent = meal.title; const items = document.createElement("p"); items.textContent = (meal.items || []).join(" · "); card.append(type, name, items); if (meal.notes) { const note = document.createElement("p"); note.textContent = meal.notes; card.append(note); } meals.append(card); }); detail.append(meals);
+    }
+    previous.onclick = () => { weekIndex -= 1; selectedIndex = weekIndex * 7; paint(); }; next.onclick = () => { weekIndex += 1; selectedIndex = weekIndex * 7; paint(); }; paint();
   }
   async function loadSavedMealPlan() { const token = window.AuthStateRuntime?.getAuthToken?.(); if (!token) return; try { const response = await fetch(apiOrigin() + "/api/me/nutrition/meal-plans/current", { headers: { authorization: "Bearer " + token } }); const json = await response.json(); if (response.ok) renderSavedMealPlan(json.data?.mealPlan || null); } catch (_) {} }
   async function createMealPlan(text, token) {

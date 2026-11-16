@@ -140,3 +140,12 @@ test("meal plan fallback always creates a complete dated calendar when AI output
   assert.equal(fallback.days[20].date, "2026-08-02");
   assert.equal(svc.normalizeMealPlanDraft(fallback).valid, true);
 });
+
+test("saved meal plan UI renders a navigable week calendar instead of a long disclosure list", () => {
+  const client = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition-research-chat.js"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "..", "public", "nutrition.html"), "utf8");
+  assert.match(client, /meal-calendar-grid/);
+  assert.match(client, /Week \$\{weekIndex \+ 1\}/);
+  assert.match(client, /previous\.onclick/);
+  assert.match(html, /\.meal-calendar-grid/);
+});
