@@ -17,6 +17,7 @@
   const WAKE_PATTERN = /(?:^|[,.!?\s])(?:hey\s+)?mufasa\b\s*[,!?.-]*/i;
   const WAKE_WINDOW_MS = 30000;
   const mic = document.getElementById("nutritionResearchMic");
+  const speak = document.getElementById("nutritionResearchSpeak");
   const listen = document.getElementById("nutritionResearchListen");
   const stop = document.getElementById("nutritionResearchStop");
   const voiceStatus = document.getElementById("nutritionResearchVoiceStatus");
@@ -47,6 +48,7 @@
     clearWakeWindow();
     try { recognition?.stop(); } catch (_) {}
     setMicUi(false);
+    if (speak) { speak.setAttribute("aria-pressed", "false"); speak.textContent = "🎙️ Speak my question"; }
   };
   const startWakeListening = () => {
     if (!recognition) return;
@@ -65,6 +67,23 @@
       }
     }
   };
+  const startDirectListening = () => {
+    if (!recognition) return;
+    recording = true;
+    wakeArmed = false;
+    clearWakeWindow();
+    if (speak) { speak.setAttribute("aria-pressed", "true"); speak.textContent = "Listening… tap to stop"; }
+    try {
+      recognition.start();
+      voiceMessage("Speak your nutrition question now.");
+    } catch (error) {
+      if (error?.name !== "InvalidStateError") {
+        recording = false; wakeArmed = true;
+        if (speak) { speak.setAttribute("aria-pressed", "false"); speak.textContent = "🎙️ Speak my question"; }
+        voiceMessage("Unable to start the microphone. Try again or use the iPhone keyboard microphone.");
+      }
+    }
+  };
   const submitSpokenQuestion = spoken => {
     const clean = String(spoken || "").trim();
     if (!clean) {
@@ -80,6 +99,7 @@
   if (mic) {
     if (!SpeechRecognition) {
       mic.disabled = true;
+      if (speak) speak.disabled = true;
       voiceMessage("Speech input isn't supported in this browser. You can still type your question.");
     } else {
       recognition = new SpeechRecognition();
@@ -133,6 +153,10 @@
       mic.addEventListener("click", () => {
         if (recording) stopWakeListening();
         else startWakeListening();
+      });
+      if (speak) speak.addEventListener("click", () => {
+        if (recording) stopWakeListening();
+        else startDirectListening();
       });
     }
   }
