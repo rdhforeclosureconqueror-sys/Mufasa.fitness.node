@@ -110,3 +110,23 @@ test("coach snapshot reads only the member's saved food journey and active plan"
   assert.equal(snapshot.weeklyPlan.proteinGramsTarget, 120);
   assert.ok(snapshot.weeklyPlan.pantry.includes("Spinach"));
 });
+
+test("a reviewed AI meal plan saves to the member profile and returns a day-by-day calendar", () => {
+  const svc = service();
+  const draft = {
+    title: "Three day flexible fuel plan", durationDays: 3, startDate: "2026-07-13",
+    dailyTargets: { calories: 2100, proteinGrams: 140, carbohydrateGrams: 220, fatGrams: 65 }, groceryList: ["oats", "berries", "beans"], assumptions: ["No allergies were provided"], safetyFlags: [],
+    days: [1, 2, 3].map(dayNumber => ({ dayNumber, date: `2026-07-${String(12 + dayNumber).padStart(2, "0")}`, theme: "steady energy", meals: [
+      { mealType: "breakfast", title: "Oats and berries", items: ["oats", "berries"], notes: "Adjust portions to appetite" },
+      { mealType: "lunch", title: "Bean bowl", items: ["beans", "greens"], notes: "Use what is available" },
+      { mealType: "dinner", title: "Simple plate", items: ["protein", "vegetables"], notes: "Keep it flexible" }
+    ] }))
+  };
+  assert.equal(svc.normalizeMealPlanDraft(draft).valid, true);
+  const saved = svc.saveMealPlan("meal-plan-member", draft).mealPlan;
+  assert.equal(saved.status, "active");
+  assert.equal(saved.days.length, 3);
+  assert.equal(svc.currentMealPlan("meal-plan-member").mealPlan.id, saved.id);
+  assert.equal(svc.currentMealPlan("someone-else").mealPlan, null);
+  assert.equal(svc.normalizeMealPlanDraft({ ...draft, days: draft.days.slice(0, 2) }).valid, false);
+});

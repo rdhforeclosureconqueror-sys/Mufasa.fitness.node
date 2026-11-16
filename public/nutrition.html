@@ -193,11 +193,18 @@
           <button class="btn primary" type="button" id="nutritionResearchAsk">Ask Nutrition Intelligence</button>
           <button class="btn" type="button" id="nutritionResearchDeep" hidden>Go deeper into this</button>
           <button class="btn" type="button" id="nutritionResearchReferences" hidden>Show references</button>
+          <button class="btn green" type="button" id="nutritionMealPlanSave" hidden>Review & save this plan</button>
           <button class="btn" type="button" id="nutritionResearchListen" disabled>🔊 Read answer</button>
           <button class="btn" type="button" id="nutritionResearchStop" disabled>Stop reading</button>
           <p id="nutritionResearchVoiceStatus" class="muted" role="status" aria-live="polite"></p>
           <div id="nutritionResearchAnswer" class="muted nutrition-research-answer" role="status" aria-live="polite">Ask a question to begin exploring.</div>
         </div>
+      </section>
+      <section class="card" id="myNutritionPlan" aria-label="My saved nutrition plan">
+        <span class="section-eyebrow">Milele Fit · My meal calendar</span>
+        <h2>My saved nutrition plan</h2>
+        <p class="muted">Ask Nutrition Intelligence for a 7-, 14-, or 21-day meal plan. Review it first, then save it here. This calendar is a flexible guide; log what you actually eat in Today’s entries.</p>
+        <div id="mealPlanCalendar" class="muted" role="status" aria-live="polite">No saved meal plan yet.</div>
       </section>
       <section class="card" id="botanicalWisdom" hidden aria-labelledby="botanicalWisdomTitle">
         <span class="section-eyebrow">Milele Fit · Botanical Wisdom</span>

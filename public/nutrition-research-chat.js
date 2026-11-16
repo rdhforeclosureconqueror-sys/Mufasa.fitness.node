@@ -5,10 +5,12 @@
   const output = document.getElementById("nutritionResearchAnswer");
   const deepButton = document.getElementById("nutritionResearchDeep");
   const referencesButton = document.getElementById("nutritionResearchReferences");
+  const mealPlanSaveButton = document.getElementById("nutritionMealPlanSave");
   if (!button || !question || !output) return;
   let lastQuestion = "";
   let lastAnswer = "";
   let conversationContext = "";
+  let pendingMealPlan = null;
   let recording = false;
   let wakeArmed = true;
   let wakeExpiryTimer = null;
@@ -248,6 +250,30 @@
       }
     }
   }
+  const isMealPlanRequest = value => /\b(?:meal\s*plan|nutrition\s*plan|diet\s*plan|meal\s*calendar|what\s+should\s+i\s+eat)\b/i.test(String(value || ""));
+  const apiOrigin = () => (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
+  function renderMealPlanDraft(draft, message) {
+    output.replaceChildren();
+    const heading = document.createElement("h4"); heading.textContent = draft.title; output.append(heading);
+    const intro = document.createElement("p"); intro.textContent = message; output.append(intro);
+    const goals = draft.dailyTargets || {}; const meta = document.createElement("p");
+    meta.textContent = `Starts ${draft.startDate} · ${draft.durationDays} days${goals.calories ? ` · ${goals.calories} kcal/day` : ""}${goals.proteinGrams ? ` · ${goals.proteinGrams}g protein/day` : ""}.`; output.append(meta);
+    for (const day of (draft.days || []).slice(0, 3)) { const item = document.createElement("p"); item.textContent = `Day ${day.dayNumber} · ${day.date}: ` + day.meals.map(meal => `${meal.mealType}: ${meal.title}`).join(" · "); output.append(item); }
+    if ((draft.days || []).length > 3) { const more = document.createElement("p"); more.textContent = `Plus ${draft.days.length - 3} more days will populate your calendar after you save.`; output.append(more); }
+    if ((draft.assumptions || []).length) { const assumptions = document.createElement("p"); assumptions.textContent = "Assumptions to review: " + draft.assumptions.join("; "); output.append(assumptions); }
+  }
+  function renderSavedMealPlan(plan) {
+    const root = document.getElementById("mealPlanCalendar"); if (!root) return;
+    root.replaceChildren(); if (!plan) { root.textContent = "No saved meal plan yet."; return; }
+    const intro = document.createElement("p"); const title = document.createElement("strong"); title.textContent = plan.title; intro.append(title, document.createTextNode(` · ${plan.durationDays} days starting ${plan.startDate}`)); root.append(intro);
+    (plan.days || []).forEach(day => { const detail = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = `Day ${day.dayNumber} · ${day.date}${day.theme ? ` · ${day.theme}` : ""}`; detail.append(summary); const list = document.createElement("ul"); (day.meals || []).forEach(meal => { const row = document.createElement("li"); row.textContent = `${meal.mealType}: ${meal.title} — ${meal.items.join(", ")}${meal.notes ? ` (${meal.notes})` : ""}`; list.append(row); }); detail.append(list); root.append(detail); });
+  }
+  async function loadSavedMealPlan() { const token = window.AuthStateRuntime?.getAuthToken?.(); if (!token) return; try { const response = await fetch(apiOrigin() + "/api/me/nutrition/meal-plans/current", { headers: { authorization: "Bearer " + token } }); const json = await response.json(); if (response.ok) renderSavedMealPlan(json.data?.mealPlan || null); } catch (_) {} }
+  async function createMealPlan(text, token) {
+    const response = await fetch(apiOrigin() + "/api/me/nutrition/meal-plans/ai-draft", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token }, body: JSON.stringify({ request: text, startDate: document.getElementById("journalDate")?.value || null }) });
+    const json = await response.json().catch(() => ({})); if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Meal-plan creation unavailable");
+    pendingMealPlan = json.data?.draft; if (!pendingMealPlan) throw new Error("Meal-plan draft was empty"); renderMealPlanDraft(pendingMealPlan, json.data?.summary || "Review the plan before saving it to your calendar."); if (mealPlanSaveButton) mealPlanSaveButton.hidden = false;
+  }
   async function ask(mode) {
     const text = mode !== "QUICK" ? lastQuestion : question.value.trim();
     if (!text) { output.textContent = "Enter a question first."; return; }
@@ -262,6 +288,14 @@
     if (referencesButton) referencesButton.disabled = true;
     output.textContent = mode === "DEEP" ? "Digging a little deeper…" : mode === "REFERENCES" ? "Checking the available references…" : "Looking into that…";
     try {
+      if (mode === "QUICK" && isMealPlanRequest(text)) {
+        await createMealPlan(text, token);
+        lastAnswer = "Meal plan draft ready for review."; lastQuestion = text;
+        conversationContext = "User: " + text + "\nAssistant: " + lastAnswer;
+        if (deepButton) deepButton.hidden = true; if (referencesButton) referencesButton.hidden = true;
+        return;
+      }
+      pendingMealPlan = null; if (mealPlanSaveButton) mealPlanSaveButton.hidden = true;
       const origin = (window.RuntimeState?.getBackendOrigin?.() || window.MAAT_BACKEND_ORIGIN || location.origin).replace(/\/$/, "");
       const response = await fetch(origin + "/api/me/nutrition/research", {
         method: "POST",
@@ -290,4 +324,18 @@
   button.addEventListener("click", () => ask("QUICK"));
   if (deepButton) deepButton.addEventListener("click", () => ask("DEEP"));
   if (referencesButton) referencesButton.addEventListener("click", () => ask("REFERENCES"));
+  if (mealPlanSaveButton) mealPlanSaveButton.addEventListener("click", async () => {
+    if (!pendingMealPlan) return;
+    const token = window.AuthStateRuntime?.getAuthToken?.(); if (!token) { output.textContent = "Sign in to save this plan."; return; }
+    mealPlanSaveButton.disabled = true; mealPlanSaveButton.textContent = "Saving plan…";
+    try {
+      const response = await fetch(apiOrigin() + "/api/me/nutrition/meal-plans", { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + token }, body: JSON.stringify(pendingMealPlan) });
+      const json = await response.json().catch(() => ({})); if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Unable to save plan");
+      renderSavedMealPlan(json.data?.mealPlan); pendingMealPlan = null; mealPlanSaveButton.hidden = true;
+      const saved = document.createElement("p"); saved.textContent = "Saved to My meal calendar. Log what you actually eat in Today’s entries."; output.append(saved);
+      document.getElementById("myNutritionPlan")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) { output.textContent = error.message || "Unable to save plan."; }
+    finally { mealPlanSaveButton.disabled = false; mealPlanSaveButton.textContent = "Review & save this plan"; }
+  });
+  window.addEventListener("DOMContentLoaded", loadSavedMealPlan);
 })();

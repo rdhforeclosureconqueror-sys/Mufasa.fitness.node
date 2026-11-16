@@ -1063,6 +1063,11 @@ module.exports = Object.freeze([
     "compatibility": null,
     "publicWrite": null
   },
+  ...[
+    ["GET", "/api/me/nutrition/meal-plans/current"],
+    ["POST", "/api/me/nutrition/meal-plans"],
+    ["POST", "/api/me/nutrition/meal-plans/ai-draft"]
+  ].map(([method, path]) => ({ method, path, authentication:"required", allowedRoles:[], requiredPermissions:[], membership:"required", ownership:"authenticated-user", featureFlag:null, publicOutput:"sensitive-private", rateLimit: path.endsWith("ai-draft") ? "3/minute" : null, compatibility:null, publicWrite: method === "POST" ? "validated-member-nutrition-meal-plan" : null })),
   {
     "method": "POST",
     "path": "/api/me/nutrition/weekly-plans",

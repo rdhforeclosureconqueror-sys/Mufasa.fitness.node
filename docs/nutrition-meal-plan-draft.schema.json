@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://milelefit.example/schemas/nutrition-meal-plan-draft.schema.json",
+  "title": "Milele Fit AI Meal Plan Draft",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["title", "durationDays", "startDate", "dailyTargets", "days", "groceryList", "assumptions", "safetyFlags"],
+  "properties": {
+    "title": { "type": "string", "minLength": 1, "maxLength": 160 },
+    "durationDays": { "type": "integer", "minimum": 1, "maximum": 28 },
+    "startDate": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+    "dailyTargets": {
+      "type": "object", "additionalProperties": false,
+      "required": ["calories", "proteinGrams", "carbohydrateGrams", "fatGrams"],
+      "properties": {
+        "calories": { "type": ["number", "null"], "minimum": 0, "maximum": 15000 },
+        "proteinGrams": { "type": ["number", "null"], "minimum": 0, "maximum": 1000 },
+        "carbohydrateGrams": { "type": ["number", "null"], "minimum": 0, "maximum": 1500 },
+        "fatGrams": { "type": ["number", "null"], "minimum": 0, "maximum": 1000 }
+      }
+    },
+    "days": {
+      "type": "array", "minItems": 1, "maxItems": 28,
+      "items": {
+        "type": "object", "additionalProperties": false,
+        "required": ["dayNumber", "date", "theme", "meals"],
+        "properties": {
+          "dayNumber": { "type": "integer", "minimum": 1, "maximum": 28 },
+          "date": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },
+          "theme": { "type": "string", "maxLength": 120 },
+          "meals": {
+            "type": "array", "minItems": 1, "maxItems": 5,
+            "items": {
+              "type": "object", "additionalProperties": false,
+              "required": ["mealType", "title", "items", "notes"],
+              "properties": {
+                "mealType": { "enum": ["breakfast", "lunch", "dinner", "snack"] },
+                "title": { "type": "string", "maxLength": 160 },
+                "items": { "type": "array", "minItems": 1, "maxItems": 12, "items": { "type": "string", "maxLength": 160 } },
+                "notes": { "type": "string", "maxLength": 400 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "groceryList": { "type": "array", "maxItems": 160, "items": { "type": "string", "maxLength": 160 } },
+    "assumptions": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 240 } },
+    "safetyFlags": { "type": "array", "maxItems": 20, "items": { "type": "string", "maxLength": 240 } }
+  }
+}

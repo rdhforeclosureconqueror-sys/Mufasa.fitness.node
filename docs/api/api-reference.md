@@ -94,6 +94,9 @@ All routes below are `Member+`; they are self-owned and may also return `402`.
 | `POST /api/me/nutrition/missions/:missionId/manual-progress` | `{amount?}` | `{mission,progress}` | 200, 400, 404 | Advance mission manually. |
 | `GET /api/me/nutrition/weekly-plans/:planId/review` | — | `{review:{adherence,missions,summary,...}}` | 200, 404 | Weekly review. |
 | `POST /api/me/nutrition/weekly-plans/ai-draft/validate` | Weekly AI draft matching documented JSON schema | `{valid:true,draft}` or validation error details | 200, 400 | Validate, never implicitly persist, AI plan draft. |
+| `GET /api/me/nutrition/meal-plans/current` | — | `{mealPlan:null|mealPlan}` | 200 | Read the signed-in member’s saved meal calendar. |
+| `POST /api/me/nutrition/meal-plans/ai-draft` | `{request,startDate?}` | `{draft,summary}` | 200, 400, 422, 502 | Produces a review-only structured 1–28 day general-wellness meal-plan draft. |
+| `POST /api/me/nutrition/meal-plans` | A validated meal-plan draft | `{mealPlan}` | 201, 400 | Saves the reviewed plan to the signed-in member profile and activates it. |
 | `GET /api/me/nutrition/education` | Query contextual filters | `{education:[content card]}` | 200 | Read educational content/recommendations. |
 
 ## Workout

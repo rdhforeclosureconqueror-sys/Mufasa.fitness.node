@@ -2,6 +2,7 @@
 
 const { ApiError } = require("../lib/apiResponse");
 const AI_DRAFT_SCHEMA_DOCUMENT = require("../../docs/nutrition-weekly-ai-draft.schema.json");
+const MEAL_PLAN_DRAFT_SCHEMA_DOCUMENT = require("../../docs/nutrition-meal-plan-draft.schema.json");
 
 const MEAL_TYPES = new Set(["breakfast", "lunch", "dinner", "snack", "other"]);
 const SOURCES = new Set(["open_food_facts", "usda_fdc", "custom", "natural_language", "saved_meal"]);
@@ -43,6 +44,11 @@ function parseLocalDate(raw, fallbackDate = new Date()) {
   const value = safeString(raw, 20);
   if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
   return fallbackDate.toISOString().slice(0, 10);
+}
+function addCalendarDays(date, count) {
+  const value = new Date(`${parseLocalDate(date)}T12:00:00.000Z`);
+  value.setUTCDate(value.getUTCDate() + Number(count || 0));
+  return value.toISOString().slice(0, 10);
 }
 function parseLoggedAt(raw) {
   const d = raw ? new Date(raw) : new Date();
@@ -530,6 +536,7 @@ function createNutritionService({ userStore }) {
     store.weeklyGroceryItems = Array.isArray(store.weeklyGroceryItems) ? store.weeklyGroceryItems : [];
     store.dailyMissions = Array.isArray(store.dailyMissions) ? store.dailyMissions : [];
     store.missionProgressEvents = Array.isArray(store.missionProgressEvents) ? store.missionProgressEvents : [];
+    store.mealPlans = Array.isArray(store.mealPlans) ? store.mealPlans : [];
     return store;
   }
   function getGroceryOptions(filters = {}) {
@@ -668,6 +675,65 @@ function createNutritionService({ userStore }) {
 
   function validateAiDraft(input = {}) { const errors = []; if (!safeString(input.title, 160)) errors.push("title is required"); const suggestions = Array.isArray(input.groceryCategorySuggestions) ? input.groceryCategorySuggestions : []; for (const s of suggestions) { if (!CATEGORY_LABELS[s.categoryKey]) errors.push(`invalid category: ${s.categoryKey}`); (s.groceryOptionIds || []).forEach((id) => { if (!STARTER_GROCERY_CATALOG.some((o) => o.id === id)) errors.push(`unknown grocery option: ${id}`); }); } const status = safeString(input.status || "draft", 20); if (status !== "draft") errors.push("AI drafts must remain in draft status"); return { valid: errors.length === 0, errors, schema: AI_DRAFT_SCHEMA }; }
 
+  function normalizeMealPlanDraft(input = {}) {
+    const errors = [];
+    const durationDays = Number(input.durationDays);
+    if (!Number.isInteger(durationDays) || durationDays < 1 || durationDays > 28) errors.push("durationDays must be between 1 and 28");
+    const startDate = safeString(input.startDate, 20);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) errors.push("startDate must use YYYY-MM-DD");
+    const title = safeString(input.title, 160);
+    if (!title) errors.push("title is required");
+    const targetInput = input.dailyTargets && typeof input.dailyTargets === "object" ? input.dailyTargets : {};
+    const optionalTarget = value => value == null || value === "" ? null : positiveNumber(value, null);
+    const dailyTargets = {
+      calories: optionalTarget(targetInput.calories), proteinGrams: optionalTarget(targetInput.proteinGrams),
+      carbohydrateGrams: optionalTarget(targetInput.carbohydrateGrams), fatGrams: optionalTarget(targetInput.fatGrams)
+    };
+    if (dailyTargets.calories != null && dailyTargets.calories > 15000) errors.push("daily calorie target is too large");
+    if (dailyTargets.proteinGrams != null && dailyTargets.proteinGrams > 1000) errors.push("daily protein target is too large");
+    const rawDays = Array.isArray(input.days) ? input.days : [];
+    if (rawDays.length !== durationDays) errors.push("days must contain one entry for every plan day");
+    const seenDays = new Set();
+    const days = rawDays.slice(0, 28).map((raw, index) => {
+      const dayNumber = Number(raw?.dayNumber);
+      const expectedDate = startDate ? addCalendarDays(startDate, index) : null;
+      if (!Number.isInteger(dayNumber) || dayNumber !== index + 1 || seenDays.has(dayNumber)) errors.push(`day ${index + 1} has an invalid dayNumber`);
+      seenDays.add(dayNumber);
+      const date = safeString(raw?.date, 20);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || (expectedDate && date !== expectedDate)) errors.push(`day ${index + 1} must use its calendar date`);
+      const meals = Array.isArray(raw?.meals) ? raw.meals.slice(0, 5).map((meal) => ({
+        mealType: MEAL_TYPES.has(meal?.mealType) && meal.mealType !== "other" ? meal.mealType : "",
+        title: safeString(meal?.title, 160),
+        items: parseArray(meal?.items, 12), notes: safeString(meal?.notes, 400)
+      })) : [];
+      if (!meals.length || meals.some((meal) => !meal.mealType || !meal.title || !meal.items.length)) errors.push(`day ${index + 1} needs complete meals`);
+      return { dayNumber: index + 1, date, theme: safeString(raw?.theme, 120), meals };
+    });
+    return {
+      valid: errors.length === 0, errors,
+      draft: { title, durationDays, startDate, dailyTargets, days, groceryList: parseArray(input.groceryList, 160), assumptions: parseArray(input.assumptions, 20), safetyFlags: parseArray(input.safetyFlags, 20) },
+      schema: MEAL_PLAN_DRAFT_SCHEMA
+    };
+  }
+  function saveMealPlan(userId, input = {}) {
+    const validated = normalizeMealPlanDraft(input);
+    if (!validated.valid) throw new ApiError("VALIDATION_ERROR", `Meal plan needs review: ${validated.errors.join("; ")}`, 400);
+    let mealPlan;
+    userStore.updateUser(userId, (user) => {
+      const store = weeklyStore(user);
+      store.mealPlans.forEach((plan) => { if (plan.status === "active") plan.status = "archived"; });
+      mealPlan = { id: `nmp_${Date.now()}_${cryptoRandom()}`, userId, status: "active", source: "nutrition_intelligence", ...validated.draft, createdAt: nowIso(), updatedAt: nowIso() };
+      store.mealPlans.unshift(mealPlan);
+      store.mealPlans = store.mealPlans.slice(0, 12);
+      return user;
+    });
+    return { userId, mealPlan: clone(mealPlan) };
+  }
+  function currentMealPlan(userId) {
+    const user = userStore.loadUser(userId); const store = weeklyStore(user);
+    return { userId, mealPlan: clone(store.mealPlans.find((plan) => plan.status === "active") || null) };
+  }
+
   function educationSummary(userId, date) {
     const summary = summarize(userId, date);
     const entries = listEntries(userId, date).entries;
@@ -682,10 +748,11 @@ function createNutritionService({ userStore }) {
       "This is general education, not a medical diagnosis or therapeutic diet prescription."
     ] };
   }
-  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, coachSnapshot, getDailyGoals, saveDailyGoals, validateAiDraft, planBundle };
+  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, coachSnapshot, getDailyGoals, saveDailyGoals, validateAiDraft, normalizeMealPlanDraft, saveMealPlan, currentMealPlan, planBundle };
 }
 
 const AI_DRAFT_SCHEMA = AI_DRAFT_SCHEMA_DOCUMENT;
+const MEAL_PLAN_DRAFT_SCHEMA = MEAL_PLAN_DRAFT_SCHEMA_DOCUMENT;
 
 module.exports = {
   createNutritionService,
@@ -696,5 +763,6 @@ module.exports = {
   calculateFromBasis,
   STARTER_GROCERY_CATALOG,
   CATEGORY_DEFINITIONS,
-  AI_DRAFT_SCHEMA
+  AI_DRAFT_SCHEMA,
+  MEAL_PLAN_DRAFT_SCHEMA
 };
