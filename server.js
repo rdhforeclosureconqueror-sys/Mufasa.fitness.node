@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 60523)
-Total output lines: 3948
-
 // server.js
 const express = require("express");
 const cors = require("cors");
@@ -1544,7 +1541,955 @@ function createApp(options = {}) {
       if (process.env[`${prefix}_ENABLED`] !== "true" || !model || !process.env.OPENAI_API_KEY) { aiResults[name] = { performed: false, status: "CONFIGURATION_MISSING", latencyMs: null, checkedAt:new Date().toISOString() }; latestExternalChecks[name]=aiResults[name]; continue; }
       const started = Date.now();
       try { const response = await (options.fetch || global.fetch)(`https://api.openai.com/v1/models/${encodeURIComponent(model)}`, { headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}` } }); aiResults[name] = { performed: true, status: response.ok ? "READY" : response.status === 401 ? "AUTHENTICATION_FAILED" : response.status === 429 ? "RATE_LIMITED" : response.status === 404 ? "MODEL_UNAVAILABLE" : "PROVIDER_UNREACHABLE", latencyMs: Date.now() - started, checkedAt: new Date().toISOString(), model, provider: "openai" }; }
-      catch { aiResults[name] = { performed: true, status: "PROVIDER_UNREACHABLE",…10523 tokens truncated…d))));
+      catch { aiResults[name] = { performed: true, status: "PROVIDER_UNREACHABLE", latencyMs: Date.now() - started, checkedAt: new Date().toISOString(), model, provider: "openai" }; }
+      latestExternalChecks[name]=aiResults[name];
+    }
+    if (!requested) return ok(res, req.requestId, { ...aiResults, stripe: { performed: false, status: "opt_in_required" } });
+    const staticHealth = currentHealth(req).stripe;
+    if (staticHealth.status !== "READY") return ok(res, req.requestId, { stripe: { performed: false, status: "static_configuration_invalid" } }, 422);
+    const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await (options.fetch || global.fetch)(`https://api.stripe.com/v1/prices/${encodeURIComponent(process.env.STRIPE_PRICE_ID)}`, { headers: { authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}` }, signal: controller.signal });
+      return ok(res, req.requestId, { ...aiResults, stripe: { performed: true, status: response.ok ? "reachable" : "provider_error", httpStatus: response.status, priceExists: response.ok, mode: staticHealth.mode, resourcesModified: false } });
+    } catch (error) { return ok(res, req.requestId, { ...aiResults, stripe: { performed: true, status: error?.name === "AbortError" ? "timeout" : "unreachable", priceExists: null, resourcesModified: false } }, 503); }
+    finally { clearTimeout(timer); }
+  }));
+
+  app.get(
+    "/api/admin/launch-health",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      const manifest = frontendManifest();
+      res.set(SHELL_NO_STORE_HEADERS);
+      return ok(res, req.requestId, buildLaunchHealth({
+        env: options.env || process.env,
+        rootDir,
+        dataDir: DATA_DIR, backendBuild: APP_BUILD_VERSION, frontendBuild: manifest.build,
+        frontendCommit: safeCommit(manifest.commit), backendCommit: safeCommit(process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT),
+        assetCacheToken: manifest.assetCacheToken || null, expectedAssetCacheToken:INDEX_CACHE_BUST_TOKEN, implementations: { notifications: notificationService?.health(), leaderboards: leaderboardService?.health(), clientEvidence:clientEvidenceService.latest(), externalChecks:latestExternalChecks }
+      }));
+    }
+  );
+
+  const billingReportGuard = (req, res, next) => {
+    if (!["admin", "super_admin"].includes(req.authz?.role)) {
+      return res.status(403).json({ ok: false, error: { code: "FORBIDDEN" } });
+    }
+    return next();
+  };
+  // Billing preflight reports contain only endpoint status evidence, never credentials.
+  app.post(
+    "/api/admin/diagnostics/billing-preflight",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    billingReportGuard,
+    (req, res) => {
+      const body = req.body;
+      const checks = body?.checks;
+      const valid = body?.type === "billing_read_only_preflight"
+        && Array.isArray(checks) && checks.length === 4
+        && checks.every(check => check && typeof check.id === "string"
+          && /^[a-z-]{1,64}$/.test(check.id)
+          && ["PASS", "FAIL"].includes(check.status)
+          && (check.httpStatus === undefined || (Number.isInteger(check.httpStatus) && check.httpStatus >= 100 && check.httpStatus <= 599)));
+      if (!valid) return res.status(422).json({ ok: false, error: { code: "INVALID_BILLING_PREFLIGHT" } });
+      const sanitized = checks.map(check => ({
+        id: check.id, status: check.status,
+        httpStatus: Number.isInteger(check.httpStatus) ? check.httpStatus : null
+      }));
+      const firstFailure = sanitized.find(check => check.status === "FAIL");
+      const report = diagnosticStore.createReport({
+        source: "billing_preflight",
+        route: "/api/admin/diagnostics/billing-preflight",
+        payload: { type: "billing_read_only_preflight", passed: !firstFailure,
+          firstFailure: firstFailure?.id || null, checks: sanitized }
+      });
+      billingEvidenceStore.append(report);
+      const saved = billingEvidenceStore.recent(1)[0];
+      if (!saved || saved.id !== report.id) return res.status(500).json({ ok: false, error: { code: "BILLING_EVIDENCE_READBACK_FAILED" } });
+      return ok(res, req.requestId, { id: report.id, timestamp: report.timestamp, ...report.payload }, 201);
+    }
+  );
+
+  app.get(
+    "/api/admin/diagnostics/billing-preflight",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    billingReportGuard,
+    (req, res) => {
+      const limit = Math.max(1, Math.min(20, Number(req.query.limit) || 10));
+      const reports = [...billingEvidenceStore.recent(limit), ...diagnosticStore.recent(10000).filter(report => report.source === "billing_preflight")]
+        .filter((report, index, all) => all.findIndex(item => item.id === report.id) === index)
+        .sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp))).slice(0, limit)
+        .map(report => ({ id: report.id, timestamp: report.timestamp, ...report.payload }));
+      return ok(res, req.requestId, { reports }, 200);
+    }
+  );
+
+  app.get(
+    "/api/admin/diagnostics/recent",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+    const limit = Math.max(1, Math.min(100, Number(req.query.limit) || 20));
+    const reports = diagnosticStore.recent(limit);
+    return ok(res, req.requestId, { reports }, 200);
+    })
+  );
+
+  app.get(
+    "/api/ops/write-observability",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_OBSERVABILITY, trackAdminOpsAuthorizationDecision),
+    (_req, res) => {
+      return res.json({
+        ok: true,
+        service: "mufasa-fitness-node",
+        authConfigured: !usingDefaultAuthSecret,
+        legacyFallbackEnabled,
+        trustPolicy,
+        tokenRevocation: tokenDenylist.stats(),
+        actionFallbackEnforcement: currentEnforcementView(),
+        authorization: authorizationResolver.describe(),
+        persistedOverrideRecovery: {
+          found: persistedOverrideState.found,
+          loaded: persistedOverrideState.loaded,
+          version: Number.isInteger(persistedOverrideState.version) ? persistedOverrideState.version : 0,
+          warnings: persistedOverrideState.warnings
+        },
+        strictStartup: {
+          enabled: strictStartupEnabled,
+          passed: strictStartupIssues.length === 0,
+          issues: strictStartupIssues
+        },
+        preflight,
+        adminAudit: auditLog.recentSummary(20),
+        startupWarnings,
+        legacyDependencyCatalog,
+        writes: writeObservability.snapshot()
+      });
+    }
+  );
+
+  app.get(
+    "/api/ops/enforcement-config",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      auditLog.appendEvent({
+        category: "enforcement",
+        action: "enforcement_config_read",
+        status: "ok",
+        actor: summarizeActor(req)
+      });
+      return res.json({
+        ok: true,
+        trustPolicy,
+        tokenRevocation: tokenDenylist.stats(),
+        actionFallbackEnforcement: currentEnforcementView(),
+        authorization: authorizationResolver.describe(),
+        persistedOverrideRecovery: {
+          found: persistedOverrideState.found,
+          loaded: persistedOverrideState.loaded,
+          version: Number.isInteger(persistedOverrideState.version) ? persistedOverrideState.version : 0,
+          warnings: persistedOverrideState.warnings
+        },
+        adminAudit: auditLog.recentSummary(10)
+      });
+    }
+  );
+
+  app.get(
+    "/api/ops/admin-audit",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      const limit = Number.parseInt(String(req.query.limit ?? ""), 10);
+      const before = Number.parseInt(String(req.query.before ?? ""), 10);
+      const page = auditLog.readRecentPage({
+        limit: Number.isFinite(limit) ? limit : 25,
+        before: Number.isFinite(before) ? before : 0
+      });
+      if (page.integrity?.enabled && page.integrity.verified === false) {
+        const alert = controlPlaneAlerts.emit(ALERT_TYPES.AUDIT_INTEGRITY_FAILURE, {
+          severity: "critical",
+          actor: summarizeActor(req),
+          issues: page.integrity.issues
+        });
+        writeObservability.trackControlPlaneAlert(alert.type, { issueCount: page.integrity.issues.length });
+      }
+      return res.json({
+        ok: true,
+        audit: page
+      });
+    }
+  );
+
+  app.get(
+    "/api/ops/admin-audit/verify",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_READ_AUTHZ, trackAdminOpsAuthorizationDecision),
+    (req, res) => {
+      const verification = auditLog.verifyFullChain();
+      if (!verification.verified) {
+        const alert = controlPlaneAlerts.emit(ALERT_TYPES.AUDIT_INTEGRITY_FAILURE, {
+          severity: "critical",
+          actor: summarizeActor(req),
+          issues: verification.issues
+        });
+        writeObservability.trackControlPlaneAlert(alert.type, { issueCount: verification.issueCount });
+      }
+      return res.json({
+        ok: verification.verified,
+        auditIntegrity: verification
+      });
+    }
+  );
+
+  app.put(
+    "/api/ops/enforcement-config",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+      const candidate = req.body?.enabledByAction;
+      const ifVersion = req.body?.ifVersion;
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        throw new ApiError("VALIDATION_ERROR", "enabledByAction object is required", 400);
+      }
+
+      for (const [action, value] of Object.entries(candidate)) {
+        if (!ENFORCEABLE_ACTIONS.includes(action)) {
+          throw new ApiError("VALIDATION_ERROR", `Unknown enforceable action '${action}'`, 400);
+        }
+        if (typeof value !== "boolean") {
+          throw new ApiError("VALIDATION_ERROR", `enabledByAction['${action}'] must be boolean`, 400);
+        }
+      }
+      const proposedOverrides = { ...runtimeEnforcementOverrides, ...candidate };
+      let saveResult;
+      try {
+        saveResult = enforcementOverrideStore.save(proposedOverrides, { ifVersion });
+      } catch (error) {
+        if (error.code === "VERSION_CONFLICT") {
+          const alert = controlPlaneAlerts.emit(ALERT_TYPES.ENFORCEMENT_VERSION_CONFLICT, {
+            severity: "warning",
+            actor: summarizeActor(req),
+            expectedVersion: error.details?.expectedVersion,
+            currentVersion: error.details?.currentVersion
+          });
+          writeObservability.trackControlPlaneAlert(alert.type, {
+            expectedVersion: error.details?.expectedVersion,
+            currentVersion: error.details?.currentVersion
+          });
+          throw new ApiError("VERSION_CONFLICT", error.message, 409, error.details);
+        }
+        if (error.code === "INVALID_IF_VERSION") {
+          throw new ApiError("VALIDATION_ERROR", error.message, 400);
+        }
+        throw error;
+      }
+      Object.assign(runtimeEnforcementOverrides, proposedOverrides);
+      actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
+      writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
+      persistedOverrideState.loaded = true;
+      persistedOverrideState.found = true;
+      persistedOverrideState.overrides = { ...runtimeEnforcementOverrides };
+      persistedOverrideState.version = saveResult.version;
+      persistedOverrideState.warnings = [];
+
+      auditLog.appendEvent({
+        category: "enforcement",
+        action: "enforcement_config_update",
+        status: "ok",
+        actor: summarizeActor(req),
+        details: {
+          updatedActions: Object.keys(candidate),
+          ifVersion: ifVersion ?? null,
+          newVersion: saveResult.version,
+          effectiveEnabledByAction: actionEnforcement.enabledByAction
+        }
+      });
+
+      return ok(res, req.requestId, {
+        actionFallbackEnforcement: currentEnforcementView(),
+        currentVersion: saveResult.version,
+        updatedActions: Object.keys(candidate)
+      }, 200);
+    })
+  );
+
+  app.post(
+    "/api/ops/auth/token-revocations",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+      const { jti, expiresAt, reason } = req.body || {};
+      const normalizedJti = String(jti || "").trim();
+      const exp = Number(expiresAt);
+      if (!normalizedJti) {
+        throw new ApiError("VALIDATION_ERROR", "jti is required", 400);
+      }
+      if (!Number.isFinite(exp)) {
+        throw new ApiError("VALIDATION_ERROR", "expiresAt must be epoch millis", 400);
+      }
+
+      const pruned = tokenDenylist.prune();
+      const entry = tokenDenylist.revoke({
+        jti: normalizedJti,
+        expiresAt: exp,
+        reason: String(reason || "manual_revocation")
+      });
+      auditLog.appendEvent({
+        category: "auth",
+        action: "token_revoked",
+        status: "ok",
+        actor: summarizeActor(req),
+        details: {
+          jti: entry.jti,
+          expiresAt: entry.expiresAt,
+          reason: entry.reason,
+          pruned
+        }
+      });
+
+      return ok(res, req.requestId, {
+        revoked: entry,
+        tokenRevocation: tokenDenylist.stats()
+      }, 201);
+    })
+  );
+
+  app.put(
+    "/api/ops/enforcement-config/break-glass",
+    requirePermission(authorizationResolver, authorizationResolver.PERMISSIONS.OPS_MANAGE_ENFORCEMENT, trackAdminOpsAuthorizationDecision),
+    asyncHandler(async (req, res) => {
+      requireSuperAdmin(req);
+      const candidate = req.body?.enabledByAction;
+      const reason = String(req.body?.reason || req.body?.reasonCode || "").trim();
+      if (!reason) {
+        throw new ApiError("VALIDATION_ERROR", "break-glass reason (reason or reasonCode) is required", 400);
+      }
+      if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
+        throw new ApiError("VALIDATION_ERROR", "enabledByAction object is required", 400);
+      }
+      for (const [action, value] of Object.entries(candidate)) {
+        if (!ENFORCEABLE_ACTIONS.includes(action)) {
+          throw new ApiError("VALIDATION_ERROR", `Unknown enforceable action '${action}'`, 400);
+        }
+        if (typeof value !== "boolean") {
+          throw new ApiError("VALIDATION_ERROR", `enabledByAction['${action}'] must be boolean`, 400);
+        }
+      }
+
+      const proposedOverrides = { ...runtimeEnforcementOverrides, ...candidate };
+      const saveResult = enforcementOverrideStore.save(proposedOverrides, { force: true });
+      Object.assign(runtimeEnforcementOverrides, proposedOverrides);
+      actionEnforcement = buildActionEnforcementState(baseActionEnforcement, runtimeEnforcementOverrides);
+      writeObservability.setEnforcementState(actionEnforcement.enabledByAction);
+      persistedOverrideState.loaded = true;
+      persistedOverrideState.found = true;
+      persistedOverrideState.overrides = { ...runtimeEnforcementOverrides };
+      persistedOverrideState.version = saveResult.version;
+      persistedOverrideState.warnings = [];
+
+      const alert = controlPlaneAlerts.emit(ALERT_TYPES.BREAK_GLASS_USED, {
+        severity: "critical",
+        actor: summarizeActor(req),
+        reason,
+        updatedActions: Object.keys(candidate),
+        newVersion: saveResult.version
+      });
+      writeObservability.trackControlPlaneAlert(alert.type, {
+        updatedActionCount: Object.keys(candidate).length
+      });
+
+      auditLog.appendEvent({
+        category: "enforcement",
+        action: "enforcement_config_break_glass_update",
+        status: "override",
+        actor: summarizeActor(req),
+        annotations: {
+          breakGlass: true,
+          reason
+        },
+        details: {
+          updatedActions: Object.keys(candidate),
+          forced: true,
+          newVersion: saveResult.version,
+          effectiveEnabledByAction: actionEnforcement.enabledByAction
+        }
+      });
+
+      return ok(res, req.requestId, {
+        breakGlass: true,
+        reason,
+        actionFallbackEnforcement: currentEnforcementView(),
+        currentVersion: saveResult.version,
+        updatedActions: Object.keys(candidate)
+      }, 200);
+    })
+  );
+
+  app.post("/api/speak", requireCriticalRouteAuth, speakLimit, async (req, res) => {
+    try {
+      const incomingSpeakBody = req.body || {};
+      console.info("[tts] incoming request", {
+        requestId: req.requestId,
+        userId: req.auth?.userId || null,
+        operation: "synthesize_speech"
+      });
+
+      const {
+        text,
+        voice,
+        format = "mp3",
+        speed,
+        pitch
+      } = incomingSpeakBody;
+      if (!req.is("application/json")) return res.status(415).json({ ok:false, requestId:req.requestId, error:{ code:"UNSUPPORTED_MEDIA_TYPE", message:"application/json is required" } });
+      const allowedSpeakFields = new Set(["text", "voice", "format", "speed", "pitch"]);
+      if (Object.keys(incomingSpeakBody).some(field => !allowedSpeakFields.has(field))) return res.status(400).json({ ok:false, requestId:req.requestId, error:{code:"VALIDATION_ERROR",message:"Unsupported speech request field"} });
+      if (typeof text !== "string" || !text.trim() || text.length > 1000) {
+        return res.status(400).json({ ok: false, error: "text required" });
+      }
+
+      const rawVoiceUpstream =
+        process.env.AIVOICE_URL ||
+        process.env.OPENVOICE_UPSTREAM_URL ||
+        "https://aivoice-wmrv.onrender.com";
+      const normalizedVoiceUpstream = rawVoiceUpstream.replace(/\/+$/, "");
+      const AIVOICE_URL = /\/speak$/i.test(normalizedVoiceUpstream)
+        ? normalizedVoiceUpstream
+        : `${normalizedVoiceUpstream}/speak`;
+      const SKILL_WORLD_TTS_TOKEN = process.env.SKILL_WORLD_TTS_TOKEN || "";
+      const AIVOICE_API_KEY = process.env.AIVOICE_API_KEY || "";
+
+      if (!SKILL_WORLD_TTS_TOKEN) {
+        console.warn("[tts] internal token missing", {
+          requestId: req.requestId,
+          url: AIVOICE_URL
+        });
+        return res.status(500).json({ ok: false, error: "TTS_INTERNAL_TOKEN_MISSING" });
+      }
+
+      // The backend configuration is the canonical coach persona. Arena pages
+      // have no voice selector, so accepting the browser's implicit "alloy"
+      // default made their coach differ from the configured deployment voice.
+      const configuredVoice = String(process.env.COACH_TTS_VOICE || voice || "alloy").trim() || "alloy";
+      const upstreamSpeakBody = { text, voice: configuredVoice, format, speed, pitch };
+      console.info("[tts] upstream request", {
+        requestId: req.requestId,
+        operation: "provider_request"
+      });
+      const r = await fetch(AIVOICE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-internal-token": SKILL_WORLD_TTS_TOKEN,
+          ...(AIVOICE_API_KEY ? { "X-AIVOICE-KEY": AIVOICE_API_KEY } : {})
+        },
+        body: JSON.stringify(upstreamSpeakBody)
+      });
+
+      if (!r.ok) {
+        const msg = await r.text().catch(() => "");
+        console.warn("[tts] upstream validation error", {
+          requestId: req.requestId,
+          status: r.status,
+          operation: "provider_rejected"
+        });
+        if (r.status === 401) {
+          return res.status(502).json({ ok: false, error: "TTS_PROVIDER_AUTH_FAILED" });
+        }
+        return res.status(502).json({ ok:false, requestId:req.requestId, error:{ code:"TTS_PROVIDER_ERROR", message:"Speech provider rejected the request" } });
+      }
+
+      res.setHeader("Content-Type", r.headers.get("content-type") || "audio/mpeg");
+      res.setHeader("Cache-Control", "no-store");
+
+      if (typeof r.body?.pipe === "function") {
+        r.body.pipe(res);
+      } else {
+        const buf = Buffer.from(await r.arrayBuffer());
+        res.send(buf);
+      }
+    } catch (e) {
+      res.status(500).json({ ok: false, error: "proxy_failed", message: redactTtsSecrets(e) });
+    }
+  });
+
+  const configuredSeedEmail = String(process.env.LOGIN_SEED_EMAIL || "").trim().toLowerCase()
+    || String((authorizationConfig.adminEmails || [])[0] || "").trim().toLowerCase()
+    || "rdhforeclosureconquer@gmail.com";
+  console.info("[auth-login] seed email configured", { seedEmail: configuredSeedEmail });
+
+  const AUTH_SEED_USER = Object.freeze({
+    id: "pilot_admin",
+    email: configuredSeedEmail,
+    name: "Rashad Harbour",
+    role: authorizationResolver.resolveRole({
+      userId: "pilot_admin",
+      email: configuredSeedEmail,
+      providerSubject: configuredSeedEmail
+    }).role
+  });
+
+  function authUserContract() {
+    return {
+      id: AUTH_SEED_USER.id,
+      email: AUTH_SEED_USER.email,
+      name: AUTH_SEED_USER.name,
+      role: AUTH_SEED_USER.role
+    };
+  }
+
+  function sanitizeRegisteredName(rawName, fallbackEmail) {
+    const trimmed = String(rawName || "").trim();
+    if (trimmed) return trimmed.slice(0, 120);
+    const emailLeft = String(fallbackEmail || "").split("@")[0] || "Athlete";
+    return emailLeft.slice(0, 120);
+  }
+
+  app.post("/api/auth/login", authAttemptLimit, asyncHandler(async (req, res) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+    const requestId = req.requestId || null;
+    const emailNormalized = email || null;
+    const hasPassword = Boolean(password);
+    const expectedPassword = String(process.env.PILOT_LOGIN_PASSWORD || "");
+    const fixtureEnabled = String(process.env.AUTH_TEST_LOGIN_FIXTURE_ENABLED || "").trim().toLowerCase() === "true";
+    const isTestEnv = String(process.env.NODE_ENV || "").trim().toLowerCase() === "test";
+    const hasFixtureFields = req.body?.testUserId != null || req.body?.testRole != null;
+    const rememberMe = req.body?.rememberMe === true;
+    const loginTtlMs = rememberMe ? authPersistentTtlMs : authSessionTtlMs;
+    console.info("[auth-login] request received", { emailNormalized, hasPassword, requestId });
+
+    const reject = (status, reason, error = "Invalid email or password") => {
+      console.warn("[auth-login] rejected", { reason, emailNormalized, requestId });
+      return res.status(status).json({ ok: false, error });
+    };
+
+    if (!email || !password) {
+      return reject(400, "missing_email_or_password");
+    }
+
+    if (hasFixtureFields && (!isTestEnv || !fixtureEnabled)) {
+      return reject(403, "test_login_fixture_disabled", "TEST_LOGIN_FIXTURE_DISABLED");
+    }
+
+    if (isTestEnv && fixtureEnabled && hasFixtureFields) {
+      const requestedUserId = String(req.body?.testUserId || "").trim();
+      const userId = requestedUserId || AUTH_SEED_USER.id;
+      const role = String(req.body?.testRole || "user").trim().toLowerCase() || "user";
+
+      if (!/^[a-zA-Z0-9_-]{3,128}$/.test(userId)) {
+        return reject(400, "invalid_test_user_id", "Invalid testUserId");
+      }
+
+      const token = authTokenLib.issueUserToken({
+        userId,
+        email: email || AUTH_SEED_USER.email,
+        provider: "password",
+        providerSubject: email || AUTH_SEED_USER.email,
+        providerVerified: true,
+        identityClass: "provider_verified",
+        ttlMs: loginTtlMs
+      });
+      traceIssuance(token, requestId);
+
+      console.info("[auth-login] success", { userId, emailNormalized: email || AUTH_SEED_USER.email, requestId });
+      return res.status(200).json({
+        ok: true,
+        token: token.token,
+        authTrace: publicAuthTrace({ tokenFingerprint: token.fingerprint, issuerReceived: token.claims.iss, audienceReceived: token.claims.aud ?? null, signature: "PASS" }, requestId),
+        jti: token.jti,
+        expiresAt: token.expiresAt,
+        user: {
+          id: userId,
+          email: email || AUTH_SEED_USER.email,
+          name: AUTH_SEED_USER.name,
+          role
+        }
+      });
+    }
+
+    const registeredUser = authCredentialStore.findByEmail(email);
+    if (registeredUser) {
+      if (!authCredentialStore.verify(registeredUser, password)) {
+        return reject(401, "registered_password_mismatch");
+      }
+      const registeredToken = authTokenLib.issueUserToken({
+        userId: registeredUser.id,
+        email: registeredUser.email,
+        provider: "password",
+        providerSubject: registeredUser.email,
+        providerVerified: true,
+        identityClass: "provider_verified",
+        ttlMs: loginTtlMs
+      });
+      traceIssuance(registeredToken, requestId);
+      console.info("[auth-login] success", { userId: registeredUser.id, emailNormalized: registeredUser.email, requestId });
+      return res.status(200).json({
+        ok: true,
+        token: registeredToken.token,
+        authTrace: publicAuthTrace({ tokenFingerprint: registeredToken.fingerprint, issuerReceived: registeredToken.claims.iss, audienceReceived: registeredToken.claims.aud ?? null, signature: "PASS" }, requestId),
+        jti: registeredToken.jti,
+        expiresAt: registeredToken.expiresAt,
+        user: {
+          id: registeredUser.id,
+          email: registeredUser.email,
+          name: registeredUser.name,
+          role: "user",
+          accessTier: membershipService.getMembership(registeredUser.id).hasAccess ? "paid_member" : registeredUser.accessTier
+        }
+      });
+    }
+
+    if (!expectedPassword) {
+      return reject(503, "pilot_login_password_not_configured", "PILOT_LOGIN_PASSWORD is not configured");
+    }
+
+    if (email !== AUTH_SEED_USER.email || password !== expectedPassword) {
+      return reject(401, "seed_credentials_mismatch");
+    }
+
+    const token = authTokenLib.issueUserToken({
+      userId: AUTH_SEED_USER.id,
+      email: AUTH_SEED_USER.email,
+      provider: "password",
+      providerSubject: AUTH_SEED_USER.email,
+      providerVerified: true,
+      identityClass: "provider_verified",
+      ttlMs: loginTtlMs
+    });
+    traceIssuance(token, requestId);
+
+    console.info("[auth-login] success", { userId: AUTH_SEED_USER.id, emailNormalized: AUTH_SEED_USER.email, requestId });
+    return res.status(200).json({
+      ok: true,
+      token: token.token,
+      authTrace: publicAuthTrace({ tokenFingerprint: token.fingerprint, issuerReceived: token.claims.iss, audienceReceived: token.claims.aud ?? null, signature: "PASS" }, requestId),
+      jti: token.jti,
+      expiresAt: token.expiresAt,
+      user: authUserContract()
+    });
+  }));
+
+  app.post("/api/auth/register", authAttemptLimit, asyncHandler(async (req, res) => {
+    const email = String(req.body?.email || "").trim().toLowerCase();
+    const password = String(req.body?.password || "");
+    const name = sanitizeRegisteredName(req.body?.name, email);
+
+    if (!email || !password || !name) {
+      return res.status(400).json({ ok: false, error: "name, email, and password are required" });
+    }
+    if (!email.includes("@")) {
+      return res.status(400).json({ ok: false, error: "Invalid email format" });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ ok: false, error: "Password must be at least 8 characters" });
+    }
+    if (email === AUTH_SEED_USER.email || authCredentialStore.findByEmail(email)) {
+      return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
+    }
+
+    const requestedContext = String(req.body?.entryContext || "").trim().toLowerCase();
+    const accessTier = requestedContext === "run_club" ? "free_run_club" : "free";
+    const attribution = Object.fromEntries(["utm_source","utm_medium","utm_campaign"].map(key=>[key,String(req.body?.[key]||"").trim().slice(0,120)]).filter(([,value])=>/^[a-zA-Z0-9_.-]{1,120}$/.test(value)));
+    const record = authCredentialStore.create({ email, name, password, accessTier });
+    if (!record) return res.status(409).json({ ok: false, error: "Account already exists. Sign in to continue.", code: "ACCOUNT_EXISTS", nextAction: "sign_in" });
+    const userId = record.id;
+    userStore.updateUser(userId, user => Object.assign(user, { identity: { email, name, accessTier }, acquisition: attribution }));
+    // Notify only on newly created accounts, never on ordinary sign-in.
+    // Email delivery failures do not fail registration; the provider call has a short timeout.
+    try {
+      const from = process.env.PRIVATE_SESSION_EMAIL_FROM || process.env.EVENT_EMAIL_FROM;
+      if (process.env.RESEND_API_KEY && from) {
+        const safe = value => String(value ?? "").replace(/[\r\n\x00-\x1f]/g, " ").slice(0, 160);
+        const lines = [
+          "A new Milele Fit account was created.",
+          "Name: " + safe(name),
+          "Email: " + safe(email),
+          "Access tier: " + safe(accessTier),
+          "Entry context: " + safe(requestedContext || "unspecified"),
+          "Campaign source: " + safe(attribution.utm_source || "not supplied"),
+          "Registered at: " + new Date().toISOString(),
+          "Member ID: " + safe(userId)
+        ];
+        const response = await fetch("https://api.resend.com/emails", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + process.env.RESEND_API_KEY,
+            "Content-Type": "application/json",
+            "Idempotency-Key": crypto.createHash("sha256").update("new-member:" + userId).digest("hex")
+          },
+          body: JSON.stringify({
+            from,
+            to: ["rdhforeclosureconqueror@gmail.com"],
+            subject: "Milele Fit — New community account",
+            text: lines.join("\n")
+          }),
+          signal: AbortSignal.timeout(4500)
+        });
+        if (!response.ok) console.warn("[new-member-email] provider returned", response.status);
+      } else {
+        console.info("[new-member-email] not configured");
+      }
+    } catch (error) {
+      console.warn("[new-member-email] delivery failed", error?.message || "unknown");
+    }
+
+
+    const token = authTokenLib.issueUserToken({
+      userId,
+      email,
+      provider: "password",
+      providerSubject: email,
+      providerVerified: true,
+      identityClass: "provider_verified",
+      ttlMs: authSessionTtlMs
+    });
+    traceIssuance(token, req.requestId, "/api/auth/register");
+
+    return res.status(200).json({
+      ok: true,
+      token: token.token,
+      authTrace: publicAuthTrace({ tokenFingerprint: token.fingerprint, issuerReceived: token.claims.iss, audienceReceived: token.claims.aud ?? null, signature: "PASS" }, req.requestId),
+      jti: token.jti,
+      expiresAt: token.expiresAt,
+      user: { id: userId, email, name, role: "user", accessTier }
+    });
+  }));
+
+  app.get("/api/auth/me", requireAuth, asyncHandler(async (req, res) => {
+    console.info("[auth-me]", { requestId: req.requestId, userId: req.auth?.userId || null });
+    const role = req.auth.userId === AUTH_SEED_USER.id
+      ? AUTH_SEED_USER.role
+      : (req.authz?.role || "user");
+    const registeredIdentity = authCredentialStore.findByEmail(req.auth.email);
+    const memberFound = Boolean(req.auth.userId);
+    authTrace({ event: "member_lookup", requestId: req.requestId, tokenFingerprint: authTokenLib.fingerprintToken(req.get("authorization").replace(/^Bearer\s+/i, "")), subjectPresent: memberFound, memberLookup: memberFound ? "PASS" : "FAIL", memberDisabled: false, reason: memberFound ? null : "subject_missing", httpStatus: memberFound ? 200 : 401, serverTimestamp: new Date().toISOString() });
+    const email = req.auth.email || AUTH_SEED_USER.email;
+    const name = String(req.auth?.name || "").trim() || (email.includes("@") ? email.split("@")[0] : AUTH_SEED_USER.name);
+    const roles = Array.from(new Set([role, ...(role === "super_admin" ? ["admin", "operator"] : []), ...(role === "admin" ? ["operator"] : [])]));
+    return res.status(200).json({
+      ok: true,
+      authTrace: publicAuthTrace({ ...req.authTrace, subjectLookup: memberFound ? "PASS" : "FAIL" }, req.requestId),
+      user: {
+        id: req.auth.userId,
+        email,
+        name,
+        role,
+        roles,
+        accessTier: membershipService.getMembership(req.auth.userId).hasAccess
+          ? "paid_member"
+          : (registeredIdentity?.accessTier || (req.auth.userId === AUTH_SEED_USER.id ? "paid_member" : "free"))
+      }
+    });
+  }));
+
+  app.post("/api/auth/logout", requireAuth, asyncHandler(async (req, res) => {
+    if (req.auth?.jti && Number.isFinite(req.auth?.expiresAt)) tokenDenylist.revoke({ jti: req.auth.jti, expiresAt: req.auth.expiresAt, reason: "user_logout" });
+    if (req.auth?.userId) for (const [sessionId, session] of motionLabSessions) if (session.userId === req.auth.userId) motionLabSessions.delete(sessionId);
+    const browserSession = readMotionLabSession(req);
+    if (browserSession) motionLabSessions.delete(browserSession.sessionId);
+    res.clearCookie(motionLabCookieName, motionLabCookieOptions());
+    return res.status(200).json({ ok: true });
+  }));
+
+
+  // ---- Auth bridge (legacy compatibility foundation) ----
+  app.post("/api/auth/bridge", asyncHandler(async (req, res) => {
+    const rawTrustMode = String(req.body?.trustMode || "").trim().toLowerCase();
+    const requestedTrustMode = normalizeAuthBridgeTrustMode(req.body?.trustMode);
+    const requestOrigin = String(req.get("origin") || "");
+    const requestProvider = String(req.body?.provider || "").trim().toLowerCase() || null;
+    const hasGoogleEmail = Boolean(req.body?.googleEmail);
+    const hasIdToken = Boolean(req.body?.googleIdToken);
+    const requestEmail = req.body?.googleEmail || null;
+    if (rawTrustMode && !requestedTrustMode) {
+      console.warn("[auth-bridge] rejected", {
+        origin: requestOrigin || null,
+        trustMode: rawTrustMode,
+        provider: requestProvider,
+        hasGoogleEmail,
+        hasIdToken,
+        email: requestEmail,
+        reason: "invalid_trust_mode"
+      });
+      throw new ApiError("FORBIDDEN", "Unsupported auth bridge trustMode", 403, { reason: "invalid_trust_mode" });
+    }
+    let claims;
+    try {
+      claims = validateAuthBridge(req.body, { requestedTrustMode });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 403) {
+        console.warn("[auth-bridge] rejected", {
+          origin: requestOrigin || null,
+          trustMode: requestedTrustMode,
+          provider: requestProvider,
+          hasGoogleEmail,
+          hasIdToken,
+          email: requestEmail,
+          reason: deriveAuthBridgeRejectionReason(error)
+        });
+      }
+      throw error;
+    }
+    const payloadKeys = Object.keys(req.body || {}).filter((key) => ["googleIdToken", "googleSub", "googleEmail", "userId", "manualUserId", "trustMode", "provider"].includes(key));
+    const effectiveRequestProvider = String(req.body?.provider || claims.provider || "").trim().toLowerCase() || null;
+    const bridgeDiagnostics = {
+      requestReceived: true,
+      payloadKeys,
+      claimPath: claims.googleIdToken
+        ? "googleIdToken"
+        : (claims.googleSub ? "googleSub" : (claims.googleEmail ? "googleEmail" : "manualUserId")),
+      googleIdTokenPresent: Boolean(claims.googleIdToken),
+      verificationAttempted: Boolean(claims.googleIdToken),
+      verificationSucceeded: false,
+      effectiveTrustMode: claims.trustMode,
+      rejectionReason: null,
+      tokenIssued: false
+    };
+    console.info("[auth-bridge] request received", {
+      requestId: req.requestId,
+      origin: requestOrigin || null,
+      trustMode: claims.trustMode,
+      provider: effectiveRequestProvider,
+      payloadKeys: bridgeDiagnostics.payloadKeys,
+      claimPath: bridgeDiagnostics.claimPath,
+      googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
+      hasGoogleEmail: Boolean(claims.googleEmail),
+      hasIdToken: Boolean(claims.googleIdToken),
+      email: claims.googleEmail || null
+    });
+    let resolvedIdentity;
+    try {
+      resolvedIdentity = await resolveAuthBridgeIdentity(claims, {
+        env: process.env,
+        googleIdentityVerifier: options.googleIdentityVerifier
+      });
+    } catch (error) {
+      const rejectionReason = deriveAuthBridgeRejectionReason(error);
+      console.warn("[auth-bridge] identity resolution failed", {
+        origin: requestOrigin || null,
+        trustMode: claims.trustMode,
+        provider: effectiveRequestProvider,
+        hasGoogleEmail: Boolean(claims.googleEmail),
+        hasIdToken: Boolean(claims.googleIdToken),
+        email: claims.googleEmail || null,
+        claimPath: bridgeDiagnostics.claimPath,
+        payloadKeys: bridgeDiagnostics.payloadKeys,
+        googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
+        verificationAttempted: bridgeDiagnostics.verificationAttempted,
+        verificationSuccess: false,
+        effectiveTrustMode: claims.trustMode,
+        tokenIssued: false,
+        rejectionReason
+      });
+      if (error instanceof ApiError) {
+        throw new ApiError(error.code, error.message, error.status, {
+          ...(error.details || {}),
+          diagnostics: {
+            claimPath: bridgeDiagnostics.claimPath,
+            effectiveTrustMode: claims.trustMode,
+            verificationAttempted: bridgeDiagnostics.verificationAttempted,
+            verificationSucceeded: false,
+            rejectionReason
+          }
+        });
+      }
+      throw error;
+    }
+    bridgeDiagnostics.verificationSucceeded = Boolean(resolvedIdentity.providerVerified);
+    bridgeDiagnostics.effectiveTrustMode = resolvedIdentity.providerVerified
+      ? "provider_verified"
+      : claims.trustMode;
+    const effectiveTrustMode = resolvedIdentity.providerVerified
+      ? "provider_verified"
+      : claims.trustMode;
+    console.info("[auth-bridge]", {
+      claimPath: bridgeDiagnostics.claimPath,
+      payloadKeys: bridgeDiagnostics.payloadKeys,
+      googleIdTokenPresent: bridgeDiagnostics.googleIdTokenPresent,
+      verificationAttempted: bridgeDiagnostics.verificationAttempted,
+      verificationSucceeded: bridgeDiagnostics.verificationSucceeded,
+      effectiveTrustMode
+    });
+    if (!resolvedIdentity.providerVerified && !trustPolicy.allowedTrustModes.includes(effectiveTrustMode)) {
+      const rejectionReason = "trust_mode_disabled";
+      console.warn("[auth-bridge] rejected", {
+        origin: requestOrigin || null,
+        trustMode: effectiveTrustMode,
+        provider: effectiveRequestProvider,
+        hasGoogleEmail: Boolean(claims.googleEmail),
+        hasIdToken: Boolean(claims.googleIdToken),
+        email: claims.googleEmail || null,
+        reason: rejectionReason
+      });
+      throw new ApiError(
+        "TRUST_MODE_DISABLED",
+        `Trust mode '${effectiveTrustMode}' is disabled by AUTH_BRIDGE_ALLOWED_TRUST_MODES`,
+        403,
+        {
+          diagnostics: bridgeDiagnostics,
+          reason: rejectionReason,
+          trustMode: effectiveTrustMode,
+          allowedTrustModes: trustPolicy.allowedTrustModes
+        }
+      );
+    }
+    const token = authTokenLib.issueUserToken({
+      userId: resolvedIdentity.userId,
+      email: resolvedIdentity.providerEmail || claims.googleEmail || null,
+      provider: resolvedIdentity.provider,
+      providerSubject: resolvedIdentity.providerSubject,
+      providerVerified: resolvedIdentity.providerVerified,
+      identityClass: resolvedIdentity.identityClass
+    });
+    bridgeDiagnostics.tokenIssued = Boolean(token);
+    console.info("[auth-bridge] token issued", {
+      requestId: req.requestId,
+      claimPath: bridgeDiagnostics.claimPath,
+      effectiveTrustMode,
+      tokenIssued: bridgeDiagnostics.tokenIssued
+    });
+
+    return ok(res, req.requestId, {
+      auth: token,
+      diagnostics: {
+        claimPath: bridgeDiagnostics.claimPath,
+        effectiveTrustMode,
+        verificationAttempted: bridgeDiagnostics.verificationAttempted,
+        verificationSucceeded: bridgeDiagnostics.verificationSucceeded,
+        rejectionReason: null
+      },
+      identity: {
+        userId: resolvedIdentity.userId,
+        provider: resolvedIdentity.provider,
+        providerVerified: resolvedIdentity.providerVerified,
+        identityClass: resolvedIdentity.identityClass,
+        trustNotes: resolvedIdentity.providerVerified
+          ? []
+          : ["Identity is not provider-verified; keep scoped to low-trust pilot usage."]
+      }
+    }, 201);
+  }));
+
+  app.get("/api/me", requireAuth, asyncHandler(async (req, res) => {
+    return ok(res, req.requestId, {
+      userId: req.auth.userId,
+      provider: req.auth.provider,
+      providerSubject: req.auth.providerSubject,
+      issuedAt: req.auth.issuedAt,
+      expiresAt: req.auth.expiresAt,
+      jti: req.auth.jti,
+      role: req.authz?.role || "user",
+      isBootstrapSuperAdmin: Boolean(req.authz?.isBootstrapSuperAdmin),
+      providerVerified: Boolean(req.auth.providerVerified),
+      identityClass: req.auth.identityClass || "manual_unverified"
+    });
+  }));
+
+  app.get("/api/me/greatness/journey", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, steppingService.journey(req.auth.userId))));
+  app.get("/stepping-into-greatness", (_req, res) => res.redirect(308, "/greatness.html"));
+  app.get("/greatness", (_req, res) => res.redirect(308, "/greatness.html"));
+  app.get("/push-up-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));
+  app.get("/pushup-challenge", (_req, res) => res.redirect(308, "/push-up-challenge.html"));
+  app.get("/api/me/challenges/pushup", requireAuth, asyncHandler(async (req, res) =>
+    ok(res, req.requestId, challengeService.getMemberPushupSummary(req.auth.userId))));
 
   // Reusable, server-authoritative challenge engine.
   app.get("/challenges", (_req, res) => res.sendFile(path.join(PUBLIC_DIR, "challenges.html")));
