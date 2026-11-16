@@ -130,3 +130,13 @@ test("a reviewed AI meal plan saves to the member profile and returns a day-by-d
   assert.equal(svc.currentMealPlan("someone-else").mealPlan, null);
   assert.equal(svc.normalizeMealPlanDraft({ ...draft, days: draft.days.slice(0, 2) }).valid, false);
 });
+
+test("meal plan fallback always creates a complete dated calendar when AI output is incomplete", () => {
+  const svc = service();
+  const fallback = svc.createFallbackMealPlanDraft("Create a 21 day high protein meal plan", "2026-07-13", { calories: 2200, proteinGrams: 150 });
+  assert.equal(fallback.durationDays, 21);
+  assert.equal(fallback.days.length, 21);
+  assert.equal(fallback.days[0].date, "2026-07-13");
+  assert.equal(fallback.days[20].date, "2026-08-02");
+  assert.equal(svc.normalizeMealPlanDraft(fallback).valid, true);
+});

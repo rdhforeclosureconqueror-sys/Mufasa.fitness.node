@@ -571,7 +571,7 @@
     const button = $("calculateNutritionTargets");
     if (!button || button.dataset.bound) return;
     button.dataset.bound = "1";
-    button.addEventListener("click", () => {
+    button.addEventListener("click", async () => {
       const number = id => Number($(id).value);
       const weight = number("calcWeight"), target = number("calcTargetWeight"), weeks = number("calcWeeks");
       const height = number("calcHeight"), age = number("calcAge"), coefficient = $("calcSex").value;
@@ -596,7 +596,17 @@
       const carbs = Math.max(0, Math.round((calories - protein * 4 - fat * 9) / 4));
       for (const [id,value] of [["goalCalories",calories],["goalProtein",protein],["goalCarbs",carbs],["goalFat",fat]]) $(id).value = value;
       $("nutritionGoalEditor").open = true;
-      output.textContent = "Estimated maintenance: " + Math.round(maintenance) + " kcal/day. Suggested starting intake: " + calories + " kcal, " + protein + " g protein, " + carbs + " g carbs, " + fat + " g fat. Requested change: " + Math.abs(weeklyChange).toFixed(2) + " lb/week; calorie adjustment capped for a cautious starting estimate. These are not guaranteed results. Review the numbers below, then tap Save my goals. Activity already includes usual workouts.";
+      output.textContent = "Estimated maintenance: " + Math.round(maintenance) + " kcal/day. Suggested starting intake: " + calories + " kcal, " + protein + " g protein, " + carbs + " g carbs, " + fat + " g fat. Saving these as your starting targets…";
+      const next = { calories, proteinGrams:protein, carbohydrateGrams:carbs, fatGrams:fat };
+      try {
+        await api("/api/me/nutrition/daily-goals", { method:"PUT", body:JSON.stringify(next) });
+        localStorage.setItem(nutritionGoalKey(), JSON.stringify(next));
+        $("nutritionGoalStatus").textContent = "Saved to your Milele Fit account. You can adjust these targets any time below.";
+        output.textContent = "Estimated maintenance: " + Math.round(maintenance) + " kcal/day. Saved starting target: " + calories + " kcal, " + protein + " g protein, " + carbs + " g carbs, " + fat + " g fat. Requested change: " + Math.abs(weeklyChange).toFixed(2) + " lb/week; calorie adjustment capped for a cautious starting estimate. These are not guaranteed results. You can adjust the saved numbers below any time.";
+        await loadSummary();
+      } catch (error) {
+        $("nutritionGoalStatus").textContent = "Your estimate is ready below, but it could not be saved to your account. Please tap Save my goals. " + (error.message || "");
+      }
     });
   }
   function initializeNutritionGoals() {

@@ -715,6 +715,32 @@ function createNutritionService({ userStore }) {
       schema: MEAL_PLAN_DRAFT_SCHEMA
     };
   }
+  function createFallbackMealPlanDraft(request, startDate, dailyTargets = {}) {
+    const requestedDays = Number(String(request || "").match(/\b(7|14|21|28)\s*[- ]?day\b/i)?.[1] || 7);
+    const durationDays = [7, 14, 21, 28].includes(requestedDays) ? requestedDays : 7;
+    const target = {
+      calories: positiveNumber(dailyTargets.calories, null), proteinGrams: positiveNumber(dailyTargets.proteinGrams, null),
+      carbohydrateGrams: positiveNumber(dailyTargets.carbohydrateGrams, null), fatGrams: positiveNumber(dailyTargets.fatGrams, null)
+    };
+    const rotations = [
+      ["Fruit, oats, and a protein choice", ["oats or another whole-grain base", "fruit", "protein choice such as eggs, beans, yogurt, tofu, or another preferred option"], "Protein + greens grain bowl", ["protein choice", "leafy greens", "whole-grain or starchy vegetable", "colorful vegetables"], "Vegetable-forward dinner plate", ["protein choice", "two vegetables", "whole-food carbohydrate", "healthy fat"]],
+      ["Eggs or tofu with vegetables", ["eggs or tofu", "vegetables", "whole-grain toast or starchy vegetable"], "Bean and vegetable bowl", ["beans or lentils", "greens", "colorful vegetables", "whole-food carbohydrate"], "Simple protein and roasted vegetables", ["protein choice", "roasted vegetables", "whole-food carbohydrate", "healthy fat"]],
+      ["Yogurt or dairy-free bowl", ["yogurt or dairy-free alternative", "fruit", "nuts or seeds", "whole-grain option"], "Big salad with protein", ["leafy greens", "protein choice", "colorful vegetables", "olive oil or another preferred dressing"], "Stir-fry style dinner", ["protein choice", "mixed vegetables", "brown rice or another whole-grain", "seasoning of choice"]],
+      ["Smoothie plus a whole-food side", ["fruit", "leafy greens", "protein choice", "whole-food side such as oats or toast"], "Leftover power plate", ["protein choice", "vegetables", "whole-food carbohydrate", "healthy fat"], "Soup, stew, or bowl night", ["beans, lentils, fish, poultry, tofu, or another protein choice", "vegetables", "whole-food carbohydrate"]],
+      ["Savory breakfast plate", ["protein choice", "vegetables", "fruit", "whole-grain or starchy vegetable"], "Wrap or bowl with real-food fillings", ["protein choice", "greens", "colorful vegetables", "whole-food carbohydrate"], "Build-your-own plate", ["protein choice", "two vegetables", "whole-food carbohydrate", "healthy fat"]],
+      ["Weekend fruit and protein breakfast", ["fruit", "protein choice", "whole-grain option", "healthy fat"], "Flexible meal-prep bowl", ["protein choice", "vegetables", "whole-food carbohydrate", "seasoning of choice"], "Home-style balanced dinner", ["protein choice", "vegetables", "whole-food carbohydrate", "healthy fat"]],
+      ["Simple reset breakfast", ["protein choice", "fruit", "whole-grain option"], "Use-what-you-have lunch", ["available protein choice", "available vegetables", "available whole-food carbohydrate"], "Prep for the week dinner", ["protein choice", "vegetables", "whole-food carbohydrate", "extra portions for tomorrow"]]
+    ];
+    const days = Array.from({ length: durationDays }, (_, index) => {
+      const rotation = rotations[index % rotations.length];
+      return { dayNumber: index + 1, date: addCalendarDays(startDate, index), theme: index % 7 === 6 ? "Flexible prep and reset" : "Balanced real-food rhythm", meals: [
+        { mealType: "breakfast", title: rotation[0], items: rotation[1], notes: "Choose portions that fit your saved targets, appetite, preferences, and access." },
+        { mealType: "lunch", title: rotation[2], items: rotation[3], notes: "Swap equivalent whole foods when needed." },
+        { mealType: "dinner", title: rotation[4], items: rotation[5], notes: "Keep the plate flexible; log what you actually eat." }
+      ] };
+    });
+    return { title: `${durationDays}-Day Milele Fit real-food plan`, durationDays, startDate: parseLocalDate(startDate), dailyTargets: target, days, groceryList: ["protein choices", "leafy greens", "colorful vegetables", "fruit", "beans or lentils", "whole grains or starchy vegetables", "healthy fats", "herbs and seasonings"], assumptions: ["Food preferences, allergies, medical needs, budget, and cooking access were not provided.", "This is a flexible general-wellness guide; swap foods within the same role as needed."], safetyFlags: ["Review ingredients for allergies, medications, pregnancy, medical conditions, and any clinician-directed nutrition needs before following a meal plan."] };
+  }
   function saveMealPlan(userId, input = {}) {
     const validated = normalizeMealPlanDraft(input);
     if (!validated.valid) throw new ApiError("VALIDATION_ERROR", `Meal plan needs review: ${validated.errors.join("; ")}`, 400);
@@ -748,7 +774,7 @@ function createNutritionService({ userStore }) {
       "This is general education, not a medical diagnosis or therapeutic diet prescription."
     ] };
   }
-  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, coachSnapshot, getDailyGoals, saveDailyGoals, validateAiDraft, normalizeMealPlanDraft, saveMealPlan, currentMealPlan, planBundle };
+  return { listEntries, createEntry, updateEntry, deleteEntry, summarize, recent, createMeal, listMeals, logMeal, naturalLanguageDraft, educationSummary, getGroceryOptions, createWeeklyPlan, currentWeeklyPlan, updateWeeklyPlan, upsertGroceryItem, generateMissions, listMissions, updateMission, manualProgress, weeklyReview, coachSnapshot, getDailyGoals, saveDailyGoals, validateAiDraft, normalizeMealPlanDraft, createFallbackMealPlanDraft, saveMealPlan, currentMealPlan, planBundle };
 }
 
 const AI_DRAFT_SCHEMA = AI_DRAFT_SCHEMA_DOCUMENT;

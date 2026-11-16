@@ -3194,10 +3194,16 @@ function createApp(options = {}) {
       const raw = (data.output || []).flatMap(item => item.content || []).filter(item => item.type === "output_text").map(item => item.text).join("\n").trim();
       const parsed = JSON.parse(raw);
       const validation = nutritionService.normalizeMealPlanDraft(parsed);
-      if (!validation.valid) return res.status(422).json({ ok:false, error:{ message:"The draft needs another pass before it can be saved.", details: validation.errors } });
-      return ok(res, req.requestId, { draft: validation.draft, summary: `Your ${validation.draft.durationDays}-day plan is ready to review. Save it when it matches your real schedule, preferences, and needs.` }, 200);
-    } catch (_) {
-      return res.status(502).json({ ok:false, error:{ message:"The meal-plan assistant could not create a saveable plan. Please try again." } });
+      if (validation.valid) return ok(res, req.requestId, { draft: validation.draft, summary: `Your ${validation.draft.durationDays}-day plan is ready to review. Save it when it matches your real schedule, preferences, and needs.`, generationMode:"ai_structured" }, 200);
+      const targets = Object.fromEntries(Object.entries(journey.dailyGoalProgress || {}).map(([key, value]) => [key, value?.target ?? null]));
+      const fallback = nutritionService.createFallbackMealPlanDraft(request, startDate, targets);
+      return ok(res, req.requestId, { draft: fallback, summary: `Your ${fallback.durationDays}-day flexible real-food plan is ready to review. I completed the calendar structure so it can save reliably; adjust any meal to fit your household and preferences.`, generationMode:"structured_fallback" }, 200);
+    } catch (error) {
+      const journey = nutritionService.coachSnapshot(req.auth.userId, startDate);
+      const targets = Object.fromEntries(Object.entries(journey.dailyGoalProgress || {}).map(([key, value]) => [key, value?.target ?? null]));
+      const fallback = nutritionService.createFallbackMealPlanDraft(request, startDate, targets);
+      console.warn("[nutrition-meal-plan] structured generation fallback", { requestId:req.requestId, reason:String(error?.message || "unknown").slice(0, 120) });
+      return ok(res, req.requestId, { draft: fallback, summary: `Your ${fallback.durationDays}-day flexible real-food plan is ready to review. The calendar was completed with a reliable planning template; adjust it to fit your household and preferences.`, generationMode:"structured_fallback" }, 200);
     } finally { clearTimeout(timeout); }
   }));
   app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, asyncHandler(async (req, res) => {
