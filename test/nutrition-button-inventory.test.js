@@ -69,3 +69,11 @@ test("nutrition follow-up voice remains available after deeper answers",()=>{
  assert.match(script,/recording = false/);
  assert.match(script,/deepButton\.hidden = false/);
 });
+
+test("nutrition direct dictation waits for the wake listener to end before switching modes",()=>{
+ const script=fs.readFileSync(path.join(__dirname,"../public/nutrition-research-chat.js"),"utf8");
+ assert.match(script,/pendingDirectStart/);
+ assert.match(script,/Switching to direct listening/);
+ assert.match(script,/window\.setTimeout\(beginDirectListening, 0\)/);
+ assert.match(script,/reason === "aborted" && \(pendingDirectStart \|\| !recording\)/);
+});

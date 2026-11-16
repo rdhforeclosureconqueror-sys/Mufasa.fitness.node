@@ -12,6 +12,8 @@
   let conversationContext = "";
   let pendingMealPlan = null;
   let recording = false;
+  let listeningMode = "";
+  let pendingDirectStart = false;
   let wakeArmed = true;
   let wakeExpiryTimer = null;
   const WAKE_PATTERN = /(?:^|[,.!?\s])(?:hey\s+)?mufasa\b\s*[,!?.-]*/i;
@@ -44,6 +46,8 @@
   };
   const stopWakeListening = () => {
     recording = false;
+    listeningMode = "";
+    pendingDirectStart = false;
     wakeArmed = true;
     clearWakeWindow();
     try { recognition?.stop(); } catch (_) {}
@@ -53,6 +57,7 @@
   const startWakeListening = () => {
     if (!recognition) return;
     recording = true;
+    listeningMode = "wake";
     wakeArmed = true;
     clearWakeWindow();
     try {
@@ -61,15 +66,16 @@
       voiceMessage("Listening for “Hey Mufasa”…");
     } catch (error) {
       if (error?.name !== "InvalidStateError") {
-        recording = false;
+        recording = false; listeningMode = "";
         setMicUi(false);
         voiceMessage("Unable to start the microphone. Try again.");
       }
     }
   };
-  const startDirectListening = () => {
+  const beginDirectListening = () => {
     if (!recognition) return;
     recording = true;
+    listeningMode = "direct";
     wakeArmed = false;
     clearWakeWindow();
     if (speak) { speak.setAttribute("aria-pressed", "true"); speak.textContent = "Listening… tap to stop"; }
@@ -78,11 +84,29 @@
       voiceMessage("Speak your nutrition question now.");
     } catch (error) {
       if (error?.name !== "InvalidStateError") {
-        recording = false; wakeArmed = true;
+        recording = false; listeningMode = ""; wakeArmed = true;
         if (speak) { speak.setAttribute("aria-pressed", "false"); speak.textContent = "🎙️ Speak my question"; }
         voiceMessage("Unable to start the microphone. Try again or use the iPhone keyboard microphone.");
       }
     }
+  };
+  const startDirectListening = () => {
+    if (!recognition) return;
+    if (recording) {
+      if (listeningMode === "direct") { stopWakeListening(); return; }
+      // Safari only allows one SpeechRecognition session. End the wake-word
+      // session first, then start direct dictation from its onend callback.
+      pendingDirectStart = true;
+      recording = false;
+      listeningMode = "";
+      clearWakeWindow();
+      setMicUi(false);
+      if (speak) { speak.setAttribute("aria-pressed", "true"); speak.textContent = "Switching to direct listening…"; }
+      voiceMessage("Switching to direct listening…");
+      try { recognition.stop(); } catch (_) { pendingDirectStart = false; beginDirectListening(); }
+      return;
+    }
+    beginDirectListening();
   };
   const submitSpokenQuestion = spoken => {
     const clean = String(spoken || "").trim();
@@ -129,6 +153,7 @@
       };
       recognition.onerror = event => {
         const reason = String(event?.error || "unknown");
+        if (reason === "aborted" && (pendingDirectStart || !recording)) return;
         const guidance = reason === "not-allowed" || reason === "service-not-allowed"
           ? "Allow microphone and speech recognition access in Safari settings."
           : reason === "audio-capture"
@@ -145,9 +170,17 @@
         }
       };
       recognition.onend = () => {
+        if (pendingDirectStart) {
+          pendingDirectStart = false;
+          window.setTimeout(beginDirectListening, 0);
+          return;
+        }
         if (!recording) { setMicUi(false); return; }
         window.setTimeout(() => {
-          if (recording) startWakeListening();
+          if (recording) {
+            if (listeningMode === "direct") beginDirectListening();
+            else startWakeListening();
+          }
         }, 250);
       };
       mic.addEventListener("click", () => {
