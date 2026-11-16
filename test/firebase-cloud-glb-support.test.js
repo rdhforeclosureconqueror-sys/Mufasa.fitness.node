@@ -22,3 +22,9 @@ test("spoofed GLB rejected before cloud write",async()=>{
  await assert.rejects(store.upload({actorId:"a",memberId:"a",bytes:Buffer.from("fake glb"),contentType:"model/gltf-binary"}),{code:"INVALID_GLB"});
  assert.equal(data.size,0);
 });
+
+test("reject inherited MIME keys without bucket access",async()=>{
+ const {store,data}=setup();
+ await assert.rejects(store.upload({actorId:"a",memberId:"a",bytes:glb(),contentType:"constructor"}),{code:"INVALID_MIME"});
+ assert.equal(data.size,0);
+});
