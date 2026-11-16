@@ -1,0 +1,22 @@
+name: Existing avatar upload regression
+on:
+  pull_request:
+    paths:
+      - 'test/firebase-avatar-pipeline-regression.test.js'
+      - '.github/workflows/firebase-avatar-pipeline-regression.yml'
+      - 'src/validation/avatarGlbValidator.js'
+      - 'lib/firebase-avatar-glb-validation.js'
+      - 'server.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  avatar-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/firebase-avatar-pipeline-regression.test.js
