@@ -166,6 +166,26 @@
   let playbackId = 0;
   let activeObjectUrl = null;
   const canSpeak = true;
+  // Safari can reject audio that starts after an awaited network request because
+  // the original button tap is no longer considered a user gesture. Prime the
+  // same player synchronously while that gesture is still active.
+  const AUDIO_UNLOCK_DATA = "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+  const primeAudioPlayback = player => {
+    try {
+      player.muted = true;
+      player.src = AUDIO_UNLOCK_DATA;
+      const play = player.play();
+      return Promise.resolve(play).catch(() => {}).then(() => {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+        player.muted = false;
+      });
+    } catch (_) {
+      player.muted = false;
+      return Promise.resolve();
+    }
+  };
   
   const stopAudio = () => {
     playbackId += 1;
@@ -196,6 +216,7 @@
     const token = window.AuthStateRuntime?.getAuthToken?.();
     if (!token) { voiceMessage("Sign in to listen to the AI voice."); return; }
     if (!audioPlayer) audioPlayer = new Audio();
+    const audioPrimed = primeAudioPlayback(audioPlayer);
     if (stop) stop.disabled = false;
     voiceMessage("Connecting to Mufasa AI voice service…");
     try {
@@ -213,6 +234,8 @@
         const type = response.headers.get("content-type") || "";
         if (!type.toLowerCase().startsWith("audio/")) throw new Error("Voice endpoint did not return audio");
         const blob = await response.blob();
+        if (currentId !== playbackId) return;
+        await audioPrimed;
         if (currentId !== playbackId) return;
         activeObjectUrl = URL.createObjectURL(blob);
         audioPlayer.src = activeObjectUrl;
