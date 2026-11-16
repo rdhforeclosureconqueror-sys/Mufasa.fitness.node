@@ -40,6 +40,17 @@ test("voice, references and disclaimer controls exist",()=>{
  assert.match(html,/Educational information only/);
 });
 
+test("member guide explains the journal-aware Nutrition Intelligence workflow",()=>{
+ assert.match(html,/id="nutritionLabGuide"/);
+ assert.match(html,/Ask Nutrition Intelligence/);
+ assert.match(html,/Hey Mufasa/);
+ assert.match(html,/saved journal, today’s scans, and weekly plan/);
+ assert.match(html,/Go deeper/);
+ assert.match(html,/Show references/);
+ assert.match(html,/Read answer/);
+ assert.match(html,/does not diagnose, treat, or replace medical care/);
+});
+
 test("nutrition read aloud uses Mufasa backend voice, not browser speech",()=>{
  const script=fs.readFileSync(path.join(__dirname,"../public/nutrition-research-chat.js"),"utf8");
  assert.match(script,/\/api\/speak/);
