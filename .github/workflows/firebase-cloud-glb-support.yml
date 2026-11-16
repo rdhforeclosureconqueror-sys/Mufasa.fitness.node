@@ -1,0 +1,20 @@
+name: Firebase cloud GLB support
+on:
+  pull_request:
+    paths:
+      - 'lib/firebase-member-cloud-storage.js'
+      - 'test/firebase-cloud-glb-support.test.js'
+      - '.github/workflows/firebase-cloud-glb-support.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  cloud-glb:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/firebase-member-cloud-storage.test.js test/firebase-cloud-glb-support.test.js
