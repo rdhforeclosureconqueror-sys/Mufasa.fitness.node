@@ -1,0 +1,32 @@
+name: Business OS notification attempt ledger
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/postgres-notification-attempt-ledger.js'
+      - 'test/ai-business-os-notification-attempt-ledger.test.js'
+      - 'test/ai-business-os-notification-attempt-ledger-integration.test.js'
+      - '.github/workflows/business-os-notification-attempt-ledger.yml'
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: notification_test
+          POSTGRES_PASSWORD: notification_test_password
+          POSTGRES_DB: notification_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U notification_test -d notification_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      NOTIFICATION_TEST_DATABASE_URL: postgresql://notification_test:notification_test_password@localhost:5432/notification_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --no-save --package-lock=false pg@8
+      - run: node --test test/ai-business-os-notification-attempt-ledger.test.js test/ai-business-os-notification-attempt-ledger-integration.test.js
