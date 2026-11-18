@@ -22,7 +22,7 @@ test("real Postgres notification persistence and concurrent CAS", {skip:!url?"NO
   assert.equal(results.filter(x=>x.status==="fulfilled").length,1);
   assert.equal(results.filter(x=>x.status==="rejected"&&x.reason.message==="notification_state_conflict").length,1);
   assert.equal((await repo.get(org,key)).record.status,"DELIVERED");
-  assert.equal((await repo.get(org,key)).version,2);
+  assert.equal(BigInt((await repo.get(org,key)).version),2n);
   await assert.rejects(()=>repo.transition({organizationId:"another-"+org,key,expectedStatus:"DELIVERED",expectedVersion:2,nextStatus:"ACKNOWLEDGED"}),/notification_state_conflict/);
  }finally{await pool.end();}
 });
