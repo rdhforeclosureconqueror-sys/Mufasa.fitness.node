@@ -1,0 +1,16 @@
+name: Business OS notification claims
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/postgres-notification-claims.js'
+      - 'test/ai-business-os-postgres-claims.test.js'
+      - '.github/workflows/business-os-postgres-claims.yml'
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-postgres-claims.test.js
