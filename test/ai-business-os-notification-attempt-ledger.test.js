@@ -17,3 +17,8 @@ test("finish only transitions matching STARTED attempt and scoped token",async()
  assert.match(sql,/outcome='STARTED'/);
  await assert.rejects(()=>ledger.finish({organizationId:"org",key:"key",attemptId:"a1",claimToken:"token",outcome:"RETRY"}),/notification_attempt_outcome_invalid/);
 });
+
+test("ledger refuses missing claim tokens before database access",async()=>{
+ const ledger=createPostgresNotificationAttemptLedger({pool:{query:()=>{throw new Error("unexpected_database_access");}}});
+ await assert.rejects(()=>ledger.start({organizationId:"org",key:"k",attemptId:"a",claimToken:""}),/notification_attempt_token_required/);
+});
