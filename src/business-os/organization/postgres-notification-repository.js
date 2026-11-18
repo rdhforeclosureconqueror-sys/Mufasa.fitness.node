@@ -30,7 +30,7 @@ function createPostgresNotificationRepository({pool}={}){
  async function transition({organizationId,key,expectedStatus,expectedVersion,nextStatus,patch={}}){
   validate(organizationId,key);
   const allowed={PENDING:["DELIVERED","SUPERSEDED"],DELIVERED:["ACKNOWLEDGED","SUPERSEDED"]};
-  if(!allowed[expectedStatus]?.includes(nextStatus)||!Number.isSafeInteger(expectedVersion)||expectedVersion<1||!patch||typeof patch!=="object"||Array.isArray(patch))throw new Error("notification_transition_invalid");
+  if(!allowed[expectedStatus]?.includes(nextStatus)||!((typeof expectedVersion==="number"&&Number.isSafeInteger(expectedVersion)&&expectedVersion>=1)||(typeof expectedVersion==="string"&&/^[1-9][0-9]*$/.test(expectedVersion)&&BigInt(expectedVersion)<=9223372036854775807n))||!patch||typeof patch!=="object"||Array.isArray(patch))throw new Error("notification_transition_invalid");
   if(["organizationId","idempotencyKey","status","approvalGranted","authorizationRequested","workId","workVersion","recipientRole"].some(k=>Object.hasOwn(patch,k)))throw new Error("notification_patch_forbidden");
   const r=await pool.query(`UPDATE business_os_notifications SET record=jsonb_set(record || $5::jsonb,'{status}',to_jsonb($6::text)),version=version+1,updated_at=NOW() WHERE organization_id=$1 AND idempotency_key=$2 AND record->>'status'=$3 AND version=$4 RETURNING record,version`,[organizationId,key,expectedStatus,expectedVersion,JSON.stringify(patch),nextStatus]);
   if(r.rowCount!==1)throw new Error("notification_state_conflict");
