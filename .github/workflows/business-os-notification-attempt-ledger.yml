@@ -1,0 +1,16 @@
+name: Business OS notification attempt ledger
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/postgres-notification-attempt-ledger.js'
+      - 'test/ai-business-os-notification-attempt-ledger.test.js'
+      - '.github/workflows/business-os-notification-attempt-ledger.yml'
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-notification-attempt-ledger.test.js
