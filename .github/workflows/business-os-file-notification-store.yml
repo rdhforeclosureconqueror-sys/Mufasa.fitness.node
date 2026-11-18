@@ -1,0 +1,16 @@
+name: Business OS file notification store
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/file-notification-store.js'
+      - 'test/ai-business-os-file-notification-store.test.js'
+      - '.github/workflows/business-os-file-notification-store.yml'
+jobs:
+  persistence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-file-notification-store.test.js test/ai-business-os-notification-lifecycle.test.js test/ai-business-os-verified-notification-gateway.test.js
