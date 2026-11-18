@@ -1,0 +1,16 @@
+name: Business OS reconciliation writer
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/postgres-notification-reconciliation-writer.js'
+      - 'test/ai-business-os-notification-reconciliation-writer.test.js'
+      - '.github/workflows/business-os-notification-reconciliation-writer.yml'
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-notification-reconciliation-writer.test.js
