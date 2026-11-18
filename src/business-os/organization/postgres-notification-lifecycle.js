@@ -15,20 +15,20 @@ function createPostgresNotificationLifecycle({coordinator,repository,verifyDeliv
   const entry=await repository.get(organizationId,key);
   if(!entry||!await current(entry.record))throw new Error("notification_stale_or_missing");
   if(await verifyDelivery({record:entry.record,proof})!==true)throw new Error("notification_delivery_unverified");
-  return repository.transition({organizationId,key,expectedStatus:"PENDING",expectedVersion:Number(entry.version),nextStatus:"DELIVERED",patch:{attempts:(entry.record.attempts||0)+1,lastAttemptAt:clock().toISOString()}});
+  return repository.transition({organizationId,key,expectedStatus:"PENDING",expectedVersion:entry.version,nextStatus:"DELIVERED",patch:{attempts:(entry.record.attempts||0)+1,lastAttemptAt:clock().toISOString()}});
  }
  async function acknowledge(organizationId,key,{identity}={}){
   const entry=await repository.get(organizationId,key);
   const actor=entry&&await verifyActor({record:entry.record,identity});
   if(!entry||!await current(entry.record)||!actor?.actorId||actor.organizationId!==organizationId||actor.roleId!==entry.record.recipientRole)throw new Error("notification_acknowledgment_denied");
-  return repository.transition({organizationId,key,expectedStatus:"DELIVERED",expectedVersion:Number(entry.version),nextStatus:"ACKNOWLEDGED",patch:{acknowledgedAt:clock().toISOString()}});
+  return repository.transition({organizationId,key,expectedStatus:"DELIVERED",expectedVersion:entry.version,nextStatus:"ACKNOWLEDGED",patch:{acknowledgedAt:clock().toISOString()}});
  }
  async function reconcile(organizationId){
   const changed=[];
   for(const entry of await repository.list(organizationId)){
    const r=entry.record;
    if(["PENDING","DELIVERED"].includes(r.status)&&!await current(r)){
-    try{changed.push(await repository.transition({organizationId,key:r.idempotencyKey,expectedStatus:r.status,expectedVersion:Number(entry.version),nextStatus:"SUPERSEDED"}));}
+    try{changed.push(await repository.transition({organizationId,key:r.idempotencyKey,expectedStatus:r.status,expectedVersion:entry.version,nextStatus:"SUPERSEDED"}));}
     catch(e){if(e.message!=="notification_state_conflict")throw e;}
    }
   }
