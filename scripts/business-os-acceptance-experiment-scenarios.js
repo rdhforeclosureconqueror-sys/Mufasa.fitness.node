@@ -9,7 +9,7 @@ const scenarios = [
     expected: "PASS",
     run() {
       const f = createExperimentFixture();
-      assert.throws(() => f.manager.approve(f.approvalInput, {}), /approval_authority_denied|human_approval_verification_failed/);
+      assert.throws(() => f.manager.approve(f.approvalInput, {}), /authenticated_human_required/);
       assert.equal(f.manager.getRun("nonexistent"), null);
       return {authority: "REJECTED_UNAUTHENTICATED", liveEnabled: false};
     }
