@@ -1,0 +1,17 @@
+name: Business OS transactional notification repository
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/postgres-notification-repository.js'
+      - 'test/ai-business-os-postgres-notification-repository.test.js'
+      - '.github/workflows/business-os-postgres-notification.yml'
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --check src/business-os/organization/postgres-notification-repository.js
+      - run: node --test test/ai-business-os-postgres-notification-repository.test.js
