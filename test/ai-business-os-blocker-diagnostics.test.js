@@ -23,3 +23,11 @@ test("diagnostics preserve execution state without fabricating authorization",()
  assert.equal(item.reason,"AWAITING_EXECUTION");
  assert.equal(item.approvalGranted,false);
 });
+
+test("failure diagnostics link to canonical coordinator failure event",()=>{
+ const coordinator=fixture([{id:"qa",state:"FAILED",dependencyWorkRefs:[]}]);
+ coordinator.events=()=>[{type:"WORK_FAILED",subject:"qa",idempotencyKey:"WORK_FAILED:qa:1",payload:{reason:"test_error"}}];
+ const item=inspectOrganizationalBlockers(coordinator).items[0];
+ assert.equal(item.reason,"EXECUTION_FAILED");
+ assert.equal(item.failureEventRef,"WORK_FAILED:qa:1");
+});
