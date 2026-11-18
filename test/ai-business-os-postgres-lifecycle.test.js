@@ -5,8 +5,8 @@ function fixture(){
  const records=new Map(),work={organizationId:"org",version:1,state:"ASSIGNED"};
  const repository={
   async get(org,key){return records.get(org+":"+key)||null;},
-  async insertIfAbsent(r){const k=r.organizationId+":"+r.idempotencyKey;if(records.has(k))return {inserted:false,entry:records.get(k)};const entry={record:r,version:1};records.set(k,entry);return {inserted:true,entry};},
-  async transition({organizationId,key,expectedStatus,expectedVersion,nextStatus,patch={}}){const k=organizationId+":"+key,e=records.get(k);if(!e||e.version!==expectedVersion||e.record.status!==expectedStatus)throw new Error("notification_state_conflict");const next={record:{...e.record,...patch,status:nextStatus},version:e.version+1};records.set(k,next);return next;},
+  async insertIfAbsent(r){const k=r.organizationId+":"+r.idempotencyKey;if(records.has(k))return {inserted:false,entry:records.get(k)};const entry={record:r,version:"1"};records.set(k,entry);return {inserted:true,entry};},
+  async transition({organizationId,key,expectedStatus,expectedVersion,nextStatus,patch={}}){const k=organizationId+":"+key,e=records.get(k);if(!e||e.version!==expectedVersion||e.record.status!==expectedStatus)throw new Error("notification_state_conflict");const next={record:{...e.record,...patch,status:nextStatus},version:String(BigInt(e.version)+1n)};records.set(k,next);return next;},
   async list(org){return [...records.entries()].filter(([k])=>k.startsWith(org+":")).map(([,v])=>v);}
  };
  const lifecycle=createPostgresNotificationLifecycle({repository,coordinator:{getWork:()=>work},verifyDelivery:async({proof})=>proof==="signed-provider-proof",verifyActor:async({identity})=>identity==="trusted-identity"?{actorId:"user-1",organizationId:"org",roleId:"MANAGER"}:null,clock:()=>new Date("2026-11-18T00:00:00Z")});
