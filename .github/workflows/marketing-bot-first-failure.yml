@@ -1,0 +1,18 @@
+name: Marketing Bot first failure
+on:
+  pull_request:
+    paths:
+      - 'scripts/marketing-bot-first-failure.js'
+      - 'test/marketing-bot-first-failure.test.js'
+      - '.github/workflows/marketing-bot-first-failure.yml'
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/marketing-bot-first-failure.test.js
+      - name: Print diagnostic (blocked roles expected)
+        run: node scripts/marketing-bot-first-failure.js || test "$?" -eq 1
