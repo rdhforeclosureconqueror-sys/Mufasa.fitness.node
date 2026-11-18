@@ -1,0 +1,16 @@
+name: Business OS blocker diagnostics
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/blocker-diagnostics.js'
+      - 'test/ai-business-os-blocker-diagnostics.test.js'
+      - '.github/workflows/business-os-blocker-diagnostics.yml'
+jobs:
+  diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-blocker-diagnostics.test.js test/ai-business-os-phase6-organization.test.js
