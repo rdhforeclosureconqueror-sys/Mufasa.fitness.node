@@ -17,7 +17,7 @@ function diagnoseOrganizationalWork(coordinator) {
   else if(w.state==="CANCELLED"){reason="WORK_CANCELLED";}
   const history=events.filter(e=>e.subject===w.id);
   const failure=[...history].reverse().find(e=>e.type==="WORK_FAILED");
-  return Object.freeze({workId:w.id,missionType:w.missionType,state:w.state,reason,ownerRole,dependencyWorkRefs:Object.freeze(dependencies),latestEventType:history.at(-1)?.type||null,latestEventAt:history.at(-1)?.at||null,failureReason:w.state==="FAILED"?(failure?.payload?.reason||"UNKNOWN"):null,requiresAttention:!terminal.has(w.state)&&w.state!=="RUNNING",notificationSent:false,approvalAuthorized:false});
+  return Object.freeze({workId:w.id,missionType:w.missionType,state:w.state,reason,ownerRole,dependencyWorkRefs:Object.freeze(dependencies),latestEventType:history.at(-1)?.type||null,latestEventAt:history.at(-1)?.at||null,failureReason:w.state==="FAILED"?(failure?.payload?.reason||"UNKNOWN"):null,requiresAttention:w.state==="FAILED"||(!terminal.has(w.state)&&w.state!=="RUNNING"),notificationSent:false,approvalAuthorized:false});
  }));
 }
 module.exports={diagnoseOrganizationalWork};
