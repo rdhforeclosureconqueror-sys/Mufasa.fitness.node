@@ -3227,13 +3227,14 @@ function createApp(options = {}) {
         headers:{ authorization:"Bearer " + env.OPENAI_API_KEY, "content-type":"application/json" },
         body:JSON.stringify(payload)
       });
-      if (!upstream.ok) throw new Error("Provider unavailable");
+      if (!upstream.ok) { const failure = new Error("Provider unavailable"); failure.upstreamStatus = upstream.status; throw failure; }
       const data = await upstream.json();
       const answer = (data.output || []).flatMap(item => item.content || [])
         .filter(item => item.type === "output_text").map(item => item.text).join("\n").trim();
       if (!answer) throw new Error("Empty response");
       return ok(res, req.requestId, { answer, engine:"natural-systems-v1" }, 200);
-    } catch (_) {
+    } catch (error) {
+      console.warn("[nutrition-research] upstream failure", { requestId:req.requestId, category: error?.name === "AbortError" ? "timeout" : error?.upstreamStatus ? "upstream_http" : error instanceof SyntaxError ? "invalid_response" : error?.message === "Empty response" ? "empty_response" : "request_failure", upstreamStatus: Number.isInteger(error?.upstreamStatus) ? error.upstreamStatus : null });
       return res.status(502).json({ ok:false, error:{ message:"The research assistant could not respond. Please try again." } });
     } finally { clearTimeout(timeout); }
   }));

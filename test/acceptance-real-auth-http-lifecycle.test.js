@@ -34,7 +34,9 @@ test("real application HTTP registration, bearer auth, admin CRM read, and isola
  assert.equal(directory.status,200,JSON.stringify(directory.payload));assert.equal(directory.payload.data.members[0].userId,id);
  const overview=await call(base,"/api/admin/clients/"+id+"/overview",{token:admin.payload.token});
  assert.equal(overview.status,200,JSON.stringify(overview.payload));assert.equal(overview.payload.data.summary.email,email);
- const event=await call(base,"/api/admin/community/events",{method:"POST",token:admin.payload.token,body:{title:"Isolated Community Yoga",location:"Test Park",type:"yoga",capacity:3,startAt:"2026-11-14T15:00:00Z",endAt:"2026-11-14T16:00:00Z"}});
+ const eventStart = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+ const eventEnd = new Date(eventStart.getTime() + 60 * 60 * 1000);
+ const event=await call(base,"/api/admin/community/events",{method:"POST",token:admin.payload.token,body:{title:"Isolated Community Yoga",location:"Test Park",type:"yoga",capacity:3,startAt:eventStart.toISOString(),endAt:eventEnd.toISOString()}});
  assert.equal(event.status,201,JSON.stringify(event.payload));
  const eventId=event.payload.data.event.eventId;
  const published=await call(base,"/api/admin/community/events/"+eventId,{method:"PATCH",token:admin.payload.token,body:{status:"confirmed"}});
