@@ -796,6 +796,20 @@
       "createdAt": "2026-10-16T02:34:08.116Z",
       "source": "readiness:update",
       "taskId": "acceptance-lab-phase3"
+    },
+    {
+      "id": "launch-development-wellness-attribution-boundary",
+      "board": "launch",
+      "canonical": false,
+      "title": "WELLNESS-1 NFC attribution check-in boundary",
+      "category": "QUALITY",
+      "description": "Validate event and campaign context across NFC to guest check-in; human mobile acceptance pending",
+      "priority": "HIGH",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-18T15:59:04.402Z",
+      "source": "readiness:update",
+      "taskId": "wellness-attribution-boundary"
     }
   ]
 }

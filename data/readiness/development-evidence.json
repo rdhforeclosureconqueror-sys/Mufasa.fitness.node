@@ -6039,6 +6039,37 @@
       "prNumber": 1037,
       "commitSha": null,
       "timestamp": "2026-10-16T02:34:08.276Z"
+    },
+    {
+      "operationId": "0126e8b0-adbc-4355-be10-ca18f2aa1c97",
+      "board": "launch",
+      "cardId": "launch-development-wellness-attribution-boundary",
+      "sourceType": "card_creation",
+      "taskId": "wellness-attribution-boundary",
+      "files": [],
+      "automated": null,
+      "evidence": "Validate event and campaign context across NFC to guest check-in; human mobile acceptance pending",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-18T15:59:04.402Z"
+    },
+    {
+      "operationId": "f0036b64-cabd-4349-a657-805592be49a9",
+      "board": "launch",
+      "cardId": "launch-development-wellness-attribution-boundary",
+      "sourceType": "implementation",
+      "taskId": "wellness-attribution-boundary",
+      "files": [
+        "public/wellness-campaign-links.js",
+        "public/event-checkin.js",
+        "test/wellness-campaign-checkin-boundary.test.js",
+        ".github/workflows/wellness-campaign-attribution.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Machine-only implementation evidence; CI status must be checked independently. Human production NFC and check-in acceptance pending. Rollback: revert reviewed squash commit and redeploy.",
+      "prNumber": 1038,
+      "commitSha": null,
+      "timestamp": "2026-11-18T15:59:04.599Z"
     }
   ]
 }
