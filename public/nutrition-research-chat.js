@@ -410,7 +410,14 @@
         })
       });
       const json = await response.json().catch(() => ({}));
-      if (!response.ok || json.ok === false) throw new Error(json.error?.message || "Research unavailable");
+      if (!response.ok || json.ok === false) {
+        const detail = json.error || {};
+        const message = detail.code === "NUTRITION_AI_CAPACITY"
+          ? "Mufasa is temporarily unavailable due to an AI provider usage limit. Your question is saved in the box above; try again later."
+          : (detail.message || "Research unavailable");
+        const reference = typeof detail.requestId === "string" && /^[a-f0-9-]{36}$/i.test(detail.requestId) ? " Reference: " + detail.requestId : "";
+        throw new Error(message + reference);
+      }
       lastAnswer = json.data?.answer || "No answer returned.";
       conversationContext = "User: " + text + "\nAssistant: " + lastAnswer;
       if (mode !== "QUICK") question.value = "";
