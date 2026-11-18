@@ -21,8 +21,8 @@ test("valid NFC event context routes guest check-in to event endpoint with valid
 test("duplicate eventId cannot choose an attacker-controlled event",async()=>{
  const v=run("?eventId=event-123&eventId=event-456",false);
  await v.before.onsubmit({preventDefault(){}});
- assert.equal(v.requests.at(-1).url,"/api/event-checkin");
- assert.equal(JSON.parse(v.requests.at(-1).options.body).attributionConsent,false);
+ assert.equal(v.requests.length,0);
+ assert.equal(v.before.hidden,true);
 });
 test("invalid or duplicate campaign fields are excluded before check-in submission",async()=>{
  const v=run("?eventId=event-123&utm_source=nfc&utm_source=spoof&utm_campaign=%3Cscript%3E",true);
@@ -35,4 +35,16 @@ test("no consent is preserved even when campaign tags exist",async()=>{
  const v=run("?eventId=event-123&utm_source=nfc&utm_campaign=yoga_oct",false);
  await v.before.onsubmit({preventDefault(){}});
  assert.equal(JSON.parse(v.requests.at(-1).options.body).attributionConsent,false);
+});
+
+test("malformed eventId fails closed instead of using active-event fallback",async()=>{
+ const v=run("?eventId=%3Cscript%3E&utm_source=nfc",true);
+ await v.before.onsubmit({preventDefault(){}});
+ assert.equal(v.requests.length,0);
+ assert.equal(v.before.hidden,true);
+});
+test("absent eventId still permits general active-event check-in",async()=>{
+ const v=run("?utm_source=nfc",false);
+ await v.before.onsubmit({preventDefault(){}});
+ assert.equal(v.requests.at(-1).url,"/api/event-checkin");
 });
