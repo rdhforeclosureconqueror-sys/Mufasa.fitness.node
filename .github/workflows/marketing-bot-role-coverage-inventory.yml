@@ -1,0 +1,18 @@
+name: Marketing Bot role coverage inventory
+on:
+  pull_request:
+    paths:
+      - 'scripts/marketing-bot-role-coverage-inventory.js'
+      - 'test/marketing-bot-role-coverage-inventory.test.js'
+      - '.github/workflows/marketing-bot-role-coverage-inventory.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/marketing-bot-role-coverage-inventory.test.js
+      - name: Run role inventory (missing coverage expected)
+        run: node scripts/marketing-bot-role-coverage-inventory.js || test "$?" -eq 1
