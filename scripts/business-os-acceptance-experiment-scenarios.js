@@ -19,10 +19,10 @@ const scenarios = [
     expected: "PASS",
     run() {
       const f = createExperimentFixture();
-      const {run, request} = f.start();
+      const {run, request} = f.start({budget: 3});
       assert.equal(f.manager.start(request).replayed, true);
       assert.throws(() => f.manager.start({...request, budget: 4}), /run_idempotency_conflict/);
-      assert.throws(() => f.manager.start({...request, idempotencyKey: "other", budget: 6}), /experiment_budget_exceeded/);
+      assert.throws(() => f.manager.start({...request, idempotencyKey: "other", budget: 3}), /experiment_cumulative_budget_exceeded/);
       return {runRef: run.id, replayProtected: true, budgetProtected: true, liveEnabled: false};
     }
   }
