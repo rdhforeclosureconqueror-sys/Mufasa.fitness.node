@@ -1,0 +1,16 @@
+name: Business OS notification outbox
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/notification-outbox.js'
+      - 'test/ai-business-os-notification-outbox.test.js'
+      - '.github/workflows/business-os-notification-outbox.yml'
+jobs:
+  outbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-notification-outbox.test.js test/ai-business-os-blocker-diagnostics.test.js
