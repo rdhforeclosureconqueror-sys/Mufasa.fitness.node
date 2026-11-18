@@ -18,5 +18,5 @@ test("reports precise dependency blocker and next eligible role without authoriz
 test("failed work preserves first-failure reason",()=>{
  const report=diagnoseOrganizationalWork({listWork:()=>[{id:"f",missionType:"ASSESS_ACCEPTANCE",state:"FAILED"}],events:()=>[{subject:"f",type:"WORK_FAILED",at:"2035-01-01T00:00:00Z",payload:{reason:"qa_evidence_missing"}}]});
  assert.equal(report[0].failureReason,"qa_evidence_missing");
- assert.equal(report[0].requiresAttention,false);
+ assert.equal(report[0].requiresAttention,true);
 });
