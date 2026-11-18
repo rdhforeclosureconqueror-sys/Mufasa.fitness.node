@@ -1,0 +1,16 @@
+name: Experiment E6 QA role contract
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/roles.js'
+      - 'test/ai-business-os-experiment-e6-qa-role-contract.test.js'
+      - '.github/workflows/experiment-e6-qa-role.yml'
+jobs:
+  role-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-experiment-e6-qa-role-contract.test.js test/ai-business-os-phase6-organization.test.js test/ai-business-os-experiment-manager-qa-handoff.test.js
