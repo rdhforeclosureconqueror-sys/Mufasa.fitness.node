@@ -9,7 +9,7 @@ test("real Postgres notification persistence and concurrent CAS", {skip:!url?"NO
   await pool.query(schemaSQL);
   const repo=createPostgresNotificationRepository({pool});
   const suffix=require("node:crypto").randomUUID(),org="notification-integration-"+suffix,key="notification-"+suffix;
-  t.after(async()=>{await pool.query("DELETE FROM "+table+" WHERE organization_id=$1",[org]);});
+  
   const record={organizationId:org,idempotencyKey:key,workId:"work",workVersion:1,recipientRole:"MANAGER",status:"PENDING",deliveryStatus:"NOT_SENT",approvalGranted:false,authorizationRequested:false};
   const inserts=await Promise.all([repo.insertIfAbsent(record),repo.insertIfAbsent(record)]);
   assert.equal(inserts.filter(x=>x.inserted).length,1);
@@ -24,5 +24,5 @@ test("real Postgres notification persistence and concurrent CAS", {skip:!url?"NO
   assert.equal((await repo.get(org,key)).record.status,"DELIVERED");
   assert.equal(BigInt((await repo.get(org,key)).version),2n);
   await assert.rejects(()=>repo.transition({organizationId:"another-"+org,key,expectedStatus:"DELIVERED",expectedVersion:2,nextStatus:"ACKNOWLEDGED"}),/notification_state_conflict/);
- }finally{await pool.end();}
+ }finally{await pool.query("DELETE FROM "+table+" WHERE organization_id LIKE $1",["notification-integration-%"]).catch(()=>{});await pool.end();}
 });
