@@ -22,7 +22,7 @@ const scenarios = [
       const {run, request} = f.start();
       assert.equal(f.manager.start(request).replayed, true);
       assert.throws(() => f.manager.start({...request, budget: 4}), /run_idempotency_conflict/);
-      assert.throws(() => f.manager.start({...request, idempotencyKey: "other"}), /experiment_cumulative_budget_exceeded/);
+      assert.throws(() => f.manager.start({...request, idempotencyKey: "other", budget: 6}), /experiment_cumulative_budget_exceeded/);
       return {runRef: run.id, replayProtected: true, budgetProtected: true, liveEnabled: false};
     }
   }
