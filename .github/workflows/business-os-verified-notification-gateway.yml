@@ -1,0 +1,16 @@
+name: Business OS verified notification gateway
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/verified-notification-gateway.js'
+      - 'test/ai-business-os-verified-notification-gateway.test.js'
+      - '.github/workflows/business-os-verified-notification-gateway.yml'
+jobs:
+  gateway:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/ai-business-os-verified-notification-gateway.test.js test/ai-business-os-notification-lifecycle.test.js
