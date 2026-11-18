@@ -5,6 +5,8 @@ on:
       - feature/wellness-attribution-boundary-tests-20261016
     paths:
       - '.github/workflows/wellness-attribution-readiness.yml'
+      - 'public/event-checkin.js'
+      - 'test/wellness-campaign-checkin-boundary.test.js'
 permissions:
   contents: write
 jobs:
@@ -18,6 +20,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Verify attribution implementation before recording PASS
+        run: |
+          node --check public/event-checkin.js
+          node --check public/wellness-campaign-links.js
+          node --test test/wellness-campaign-links.test.js test/wellness-campaign-checkin-boundary.test.js
       - name: Record canonical machine evidence
         run: |
           npm run readiness:update -- --board launch --action create --card launch-development-wellness-attribution-boundary --title "WELLNESS-1 NFC attribution check-in boundary" --category QUALITY --description "Validate event and campaign context across NFC to guest check-in; human mobile acceptance pending" --priority HIGH --humanRequired true --task wellness-attribution-boundary
