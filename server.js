@@ -3199,7 +3199,10 @@ function createApp(options = {}) {
     res.set("Cache-Control", "private, no-store");
     const request = typeof req.body?.request === "string" ? req.body.request.trim() : "";
     if (!request || request.length > 4000) return res.status(400).json({ ok:false, error:{ message:"Describe the meal plan you want in 4,000 characters or fewer." } });
-    if (!env.OPENAI_API_KEY) return res.status(503).json({ ok:false, error:{ message:"Meal-plan creation is temporarily unavailable." } });\n    let quotaPassed = false;\n    enforceMemberAiQuota("meal_plan_draft")(req, res, () => { quotaPassed = true; });\n    if (!quotaPassed) return;
+    if (!env.OPENAI_API_KEY) return res.status(503).json({ ok:false, error:{ message:"Meal-plan creation is temporarily unavailable." } });
+    let quotaPassed = false;
+    enforceMemberAiQuota("meal_plan_draft")(req, res, () => { quotaPassed = true; });
+    if (!quotaPassed) return;
     const startDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body?.startDate || "")) ? req.body.startDate : new Date().toISOString().slice(0, 10);
     const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 40000);
     try {
@@ -3235,7 +3238,10 @@ function createApp(options = {}) {
     if (typeof question !== "string" || !question.trim() || question.length > 4000)
       return res.status(400).json({ ok:false, error:{ message:"Enter a question up to 4000 characters." } });
     if (!env.OPENAI_API_KEY)
-      return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });\n    let quotaPassed = false;\n    enforceMemberAiQuota("nutrition_research")(req, res, () => { quotaPassed = true; });\n    if (!quotaPassed) return;
+      return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });
+    let quotaPassed = false;
+    enforceMemberAiQuota("nutrition_research")(req, res, () => { quotaPassed = true; });
+    if (!quotaPassed) return;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     try {
