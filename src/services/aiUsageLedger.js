@@ -1,6 +1,8 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const BOOT_ID = crypto.randomUUID();
 
 // Atomic, fail-closed file ledger. Must reside on a persistent shared volume;
 // multi-instance deployments require a transactional database instead.
@@ -13,7 +15,7 @@ function createAiUsageLedger({ filePath, now = () => new Date() }) {
     function acquire() {
       try {
         fd = fs.openSync(lockPath, "wx", 0o600);
-        fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, createdAt: Date.now() }));
+        fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, bootId: BOOT_ID, createdAt: Date.now() }));
         return true;
       } catch (error) {
         if (error.code !== "EEXIST") throw error;
@@ -24,8 +26,12 @@ function createAiUsageLedger({ filePath, now = () => new Date() }) {
         catch { return false; }
         if (!Number.isSafeInteger(owner.pid) || owner.pid <= 0 || !Number.isFinite(owner.createdAt)) return false;
         if (Date.now() - owner.createdAt < 1000) return false;
-        try { process.kill(owner.pid, 0); return false; }
-        catch (e) { if (e.code !== "ESRCH") return false; }
+        // A reused PID after a restart is not proof that the original writer lives.
+        // The owner identity includes a per-process boot token.
+        if (owner.pid !== process.pid || owner.bootId === BOOT_ID) {
+          try { process.kill(owner.pid, 0); return false; }
+          catch (e) { if (e.code !== "ESRCH") return false; }
+        }
         // Avoid deleting a lock replaced during inspection.
         let before, after;
         try {
@@ -36,7 +42,7 @@ function createAiUsageLedger({ filePath, now = () => new Date() }) {
         } catch { return false; }
         try {
           fd = fs.openSync(lockPath, "wx", 0o600);
-          fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, createdAt: Date.now() }));
+          fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, bootId: BOOT_ID, createdAt: Date.now() }));
           return true;
         } catch (e) { if (e.code === "EEXIST") return false; throw e; }
       }
