@@ -32,3 +32,14 @@ test("ledger fails closed when another writer holds lock", () => {
     assert.deepEqual(createAiUsageLedger({filePath}).record({userId:"member",feature:"nutrition_research"}), {allowed:false,busy:true});
   } finally { fs.rmSync(dir, {recursive:true,force:true}); }
 });
+
+test("recovers lock from a terminated local owner", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ai-dead-lock-"));
+  try {
+    const filePath = path.join(dir, "usage.json");
+    fs.writeFileSync(filePath + ".lock", JSON.stringify({pid:2147483647,createdAt:Date.now()-10000}));
+    const result = createAiUsageLedger({filePath}).record({userId:"member",feature:"nutrition_research"});
+    assert.equal(result.allowed, true);
+    assert.equal(fs.existsSync(filePath + ".lock"), false);
+  } finally { fs.rmSync(dir, {recursive:true,force:true}); }
+});
