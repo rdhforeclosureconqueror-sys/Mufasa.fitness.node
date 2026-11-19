@@ -10,11 +10,14 @@ function createNotificationAttemptDispatchBridge({ledger,guard,lifecycle}={}){
   try{outcome=await guard.dispatch({organizationId,key,token,record})}
   catch(error){outcome={status:"UNKNOWN",reason:"dispatch_exception"}}
   if(outcome?.status!=="VERIFIED"){
-   await ledger.finish({organizationId,key,attemptId,claimToken:token,outcome:"UNKNOWN",reason:outcome?.reason||"unverified_delivery"});
+   try{await ledger.finish({organizationId,key,attemptId,claimToken:token,outcome:"UNKNOWN",reason:outcome?.reason||"unverified_delivery"})}
+   catch(error){return Object.freeze({status:"RECONCILIATION_REQUIRED",reason:"unknown_attempt_persistence_failed",attemptId})}
    return Object.freeze({status:"UNKNOWN",reason:outcome?.reason||"unverified_delivery"});
   }
-  // Record provider verification before transitioning lifecycle; failures must not retry send.
-  await ledger.finish({organizationId,key,attemptId,claimToken:token,outcome:"VERIFIED",providerReference:typeof outcome.receipt==="string"?outcome.receipt:JSON.stringify(outcome.receipt)});
+  // Persist verified receipt before lifecycle transition. Failed writes must not trigger another send.
+  try{
+   await ledger.finish({organizationId,key,attemptId,claimToken:token,outcome:"VERIFIED",providerReference:typeof outcome.receipt==="string"?outcome.receipt:JSON.stringify(outcome.receipt)});
+  }catch(error){return Object.freeze({status:"RECONCILIATION_REQUIRED",reason:"verified_attempt_persistence_failed",attemptId})}
   try{
    await lifecycle.markDelivered(organizationId,key,{proof:outcome.receipt});
    return Object.freeze({status:"DELIVERED",attemptId});
