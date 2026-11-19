@@ -3195,11 +3195,11 @@ function createApp(options = {}) {
   }
   const nutritionResearchLimiter = createRateLimiter({ name: "nutrition-research", windowMs: 60000, max: 8 });
   const mealPlanAiLimiter = createRateLimiter({ name: "nutrition-meal-plan-ai", windowMs: 60000, max: 3 });
-  app.post("/api/me/nutrition/meal-plans/ai-draft", requireAuth, requireMembershipEntitlement, mealPlanAiLimiter, enforceMemberAiQuota("meal_plan_draft"), asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/meal-plans/ai-draft", requireAuth, requireMembershipEntitlement, mealPlanAiLimiter, asyncHandler(async (req, res) => {
     res.set("Cache-Control", "private, no-store");
     const request = typeof req.body?.request === "string" ? req.body.request.trim() : "";
     if (!request || request.length > 4000) return res.status(400).json({ ok:false, error:{ message:"Describe the meal plan you want in 4,000 characters or fewer." } });
-    if (!env.OPENAI_API_KEY) return res.status(503).json({ ok:false, error:{ message:"Meal-plan creation is temporarily unavailable." } });
+    if (!env.OPENAI_API_KEY) return res.status(503).json({ ok:false, error:{ message:"Meal-plan creation is temporarily unavailable." } });\n    let quotaPassed = false;\n    enforceMemberAiQuota("meal_plan_draft")(req, res, () => { quotaPassed = true; });\n    if (!quotaPassed) return;
     const startDate = /^\d{4}-\d{2}-\d{2}$/.test(String(req.body?.startDate || "")) ? req.body.startDate : new Date().toISOString().slice(0, 10);
     const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 40000);
     try {
@@ -3229,13 +3229,13 @@ function createApp(options = {}) {
       return ok(res, req.requestId, { draft: fallback, summary: `Your ${fallback.durationDays}-day flexible real-food plan is ready to review. The calendar was completed with a reliable planning template; adjust it to fit your household and preferences.`, generationMode:"structured_fallback" }, 200);
     } finally { clearTimeout(timeout); }
   }));
-  app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, enforceMemberAiQuota("nutrition_research"), asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, asyncHandler(async (req, res) => {
     res.set("Cache-Control", "private, no-store");
     const question = req.body?.question;
     if (typeof question !== "string" || !question.trim() || question.length > 4000)
       return res.status(400).json({ ok:false, error:{ message:"Enter a question up to 4000 characters." } });
     if (!env.OPENAI_API_KEY)
-      return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });
+      return res.status(503).json({ ok:false, error:{ message:"Nutrition research is temporarily unavailable." } });\n    let quotaPassed = false;\n    enforceMemberAiQuota("nutrition_research")(req, res, () => { quotaPassed = true; });\n    if (!quotaPassed) return;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 25000);
     try {
