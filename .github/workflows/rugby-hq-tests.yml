@@ -5,14 +5,14 @@ on:
     paths:
       - 'public/rugby-player.html'
       - 'public/rugby-attack-intelligence.js'
-      - 'public/rugby-player.html'
-      - 'public/rugby-attack-intelligence.js'
       - 'src/rugby/**'
       - 'src/routes/rugbyProfileRoutes.js'
       - 'test/rugby-*.test.js'
       - '.github/workflows/rugby-hq-tests.yml'
   pull_request:
     paths:
+      - 'public/rugby-player.html'
+      - 'public/rugby-attack-intelligence.js'
       - 'src/rugby/**'
       - 'src/routes/rugbyProfileRoutes.js'
       - 'test/rugby-*.test.js'
