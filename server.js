@@ -9,6 +9,7 @@ const os = require("os");
 const { requestContext, asyncHandler } = require("./src/middleware/requestContext");
 const { createTrailResponseDiagnostics, logTrailResponseException } = require("./src/middleware/trailResponseDiagnostics");
 const { createRateLimiter } = require("./src/middleware/rateLimit");
+const { createAiUsageLedger } = require("./src/services/aiUsageLedger");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
@@ -3170,9 +3171,31 @@ function createApp(options = {}) {
   }));
 
 
+  const aiUsageLedger = createAiUsageLedger({ filePath: path.join(OPS_DIR, "member-ai-usage.json") });
+  function enforceMemberAiQuota(feature) {
+    return (req, res, next) => {
+      try {
+        const membership = membershipService.getMembership(req.auth.userId);
+        const paid = membership.status === "active";
+        // Never trust a user-supplied role. Existing authenticated operator policy.
+        const exempt = hasOperatorBillingBypass(req) || paid;
+        const result = aiUsageLedger.record({ userId: req.auth.userId, feature, exempt });
+        if (!result.allowed) return res.status(result.busy ? 503 : 429).json({
+          ok: false, code: result.busy ? "ai_quota_busy" : "ai_quota_exceeded",
+          error: { message: result.busy ? "AI usage is temporarily busy. Please retry." : "Your free AI allowance is 3 questions per UTC day and 10 per UTC week." },
+          usage: result.busy ? undefined : { daily: result.daily, weekly: result.weekly, dailyLimit: 3, weeklyLimit: 10 }
+        });
+        req.aiUsage = result;
+        return next();
+      } catch (error) {
+        console.warn("[ai-usage] ledger unavailable", { requestId: req.requestId, category: "storage_failure" });
+        return res.status(503).json({ ok: false, code: "ai_usage_unavailable", error: { message: "AI usage is temporarily unavailable. Please retry." } });
+      }
+    };
+  }
   const nutritionResearchLimiter = createRateLimiter({ name: "nutrition-research", windowMs: 60000, max: 8 });
   const mealPlanAiLimiter = createRateLimiter({ name: "nutrition-meal-plan-ai", windowMs: 60000, max: 3 });
-  app.post("/api/me/nutrition/meal-plans/ai-draft", requireAuth, requireMembershipEntitlement, mealPlanAiLimiter, asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/meal-plans/ai-draft", requireAuth, requireMembershipEntitlement, mealPlanAiLimiter, enforceMemberAiQuota("meal_plan_draft"), asyncHandler(async (req, res) => {
     res.set("Cache-Control", "private, no-store");
     const request = typeof req.body?.request === "string" ? req.body.request.trim() : "";
     if (!request || request.length > 4000) return res.status(400).json({ ok:false, error:{ message:"Describe the meal plan you want in 4,000 characters or fewer." } });
@@ -3206,7 +3229,7 @@ function createApp(options = {}) {
       return ok(res, req.requestId, { draft: fallback, summary: `Your ${fallback.durationDays}-day flexible real-food plan is ready to review. The calendar was completed with a reliable planning template; adjust it to fit your household and preferences.`, generationMode:"structured_fallback" }, 200);
     } finally { clearTimeout(timeout); }
   }));
-  app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, asyncHandler(async (req, res) => {
+  app.post("/api/me/nutrition/research", requireAuth, requireMembershipEntitlement, nutritionResearchLimiter, enforceMemberAiQuota("nutrition_research"), asyncHandler(async (req, res) => {
     res.set("Cache-Control", "private, no-store");
     const question = req.body?.question;
     if (typeof question !== "string" || !question.trim() || question.length > 4000)
