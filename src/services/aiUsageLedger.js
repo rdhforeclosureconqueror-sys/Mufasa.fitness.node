@@ -10,11 +10,38 @@ function createAiUsageLedger({ filePath, now = () => new Date() }) {
     if (exempt) return { allowed: true, exempt: true };
     fs.mkdirSync(path.dirname(filePath), { recursive: true });
     let fd;
-    try { fd = fs.openSync(lockPath, "wx", 0o600); }
-    catch (error) {
-      if (error.code === "EEXIST") return { allowed: false, busy: true };
-      throw error;
+    function acquire() {
+      try {
+        fd = fs.openSync(lockPath, "wx", 0o600);
+        fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, createdAt: Date.now() }));
+        return true;
+      } catch (error) {
+        if (error.code !== "EEXIST") throw error;
+        // Single-instance Render service: recover only provably dead local owners.
+        // Ambiguous or malformed locks remain fail-closed.
+        let owner;
+        try { owner = JSON.parse(fs.readFileSync(lockPath, "utf8")); }
+        catch { return false; }
+        if (!Number.isSafeInteger(owner.pid) || owner.pid <= 0 || !Number.isFinite(owner.createdAt)) return false;
+        if (Date.now() - owner.createdAt < 1000) return false;
+        try { process.kill(owner.pid, 0); return false; }
+        catch (e) { if (e.code !== "ESRCH") return false; }
+        // Avoid deleting a lock replaced during inspection.
+        let before, after;
+        try {
+          before = fs.statSync(lockPath);
+          after = fs.statSync(lockPath);
+          if (before.ino !== after.ino || before.mtimeMs !== after.mtimeMs) return false;
+          fs.unlinkSync(lockPath);
+        } catch { return false; }
+        try {
+          fd = fs.openSync(lockPath, "wx", 0o600);
+          fs.writeFileSync(fd, JSON.stringify({ pid: process.pid, createdAt: Date.now() }));
+          return true;
+        } catch (e) { if (e.code === "EEXIST") return false; throw e; }
+      }
     }
+    if (!acquire()) return { allowed: false, busy: true };
     try {
       const date = now();
       const day = date.toISOString().slice(0, 10);
