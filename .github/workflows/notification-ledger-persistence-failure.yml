@@ -1,0 +1,16 @@
+name: Notification persistence failure
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/notification-attempt-dispatch-bridge.js'
+      - 'test/notification-ledger-persistence-failure.test.js'
+      - '.github/workflows/notification-ledger-persistence-failure.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/notification-attempt-dispatch-bridge.test.js test/notification-ledger-persistence-failure.test.js
