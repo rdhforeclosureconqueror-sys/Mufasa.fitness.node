@@ -109,3 +109,9 @@ test('coach screenshot formation preserves scrum cluster and Ruck 2 pod grouping
  assert.ok(ruck2.positions[1][0]<ruck2.positions[8][0]);
  assert.ok(ruck2.positions[8][0]<ruck2.positions[4][0]);
 });
+
+test('defensive line follows ruck anchor rather than static pitch columns',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ for(const token of ["const priorRuck=","const ruckAnchor=","const lineX=","const fast=ruck&&ruck.time<=3","defenders[n].setAttribute('cx'","defenders[n].setAttribute('cy'"])assert.ok(js.includes(token),token);
+ assert.ok(!js.includes("let x=bank===0?290:335"));
+});
