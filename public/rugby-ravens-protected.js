@@ -26,7 +26,7 @@ root.innerHTML=`<style>
 <rect width="390" height="260" rx="10" fill="#174a33"/><g stroke="#accbb2" stroke-dasharray="6 7" opacity=".5"><path d="M80 12V248M160 12V248M240 12V248M320 12V248M10 85H380M10 175H380"/></g>
 <path d="M18 21H367" stroke="#ffe3a2" stroke-width="4"/><path d="M355 13L370 21L355 29" stroke="#ffe3a2" stroke-width="4" fill="none"/>
 <text x="18" y="44" fill="#ffe3a2" font-size="14" font-weight="800">ATTACK →</text>
-<g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
+<rect data-gap x="260" y="70" width="55" height="110" fill="#e9d58c" fill-opacity=".16" stroke="#f5d77e" stroke-dasharray="5 5" visibility="hidden"/><g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
 <text x="12" y="251" font-size="11" fill="#fff">Gold: attackers 1–15 · White: ball</text></svg>
 <div data-playback-clock role="status" aria-live="polite" style="padding:8px 10px;margin-top:8px;border:1px solid #bba36a;border-radius:9px">Ruck clock ready</div>
 <div class="pitch-controls" aria-label="RAVENS pitch playback and decisions">
@@ -222,7 +222,7 @@ $('[data-reset-defense]').addEventListener('click',()=>{crashes=0;recovery=0;dec
 let chainFast=0,chainSeconds=0,chainCompressed=0,chainOutcome='No gap assessed';
 function chainRender(){
  const side=$('[data-chain-side]').value,discipline=$('[data-chain-defense]').value==='disciplined';
- const reset=Math.max(0,Math.floor(chainSeconds/4))+(discipline?chainFast:0);
+ const reset=discipline?chainFast:0;
  const net=Math.max(0,chainCompressed-reset);
  const channel=side==='same'?'near-ruck seam':'outside channel';
  const chance=net>=2?'Gap available':net===1?'Potential mismatch':'Defense organized';
@@ -242,7 +242,7 @@ function chainStep(fast){
  if(fast&&!ruck.lost){
   chainFast++;
   if($('[data-chain-defense]').value==='fold')chainCompressed=Math.min(5,chainCompressed+1);
-  chainOutcome='Support secures the tackle; #9 releases the ball. Backline must preserve width and depth';
+  chainOutcome='Hypothetical fast release: support secures the tackle; #9 releases the ball. Backline must preserve width and depth';
  }else{
   chainFast=0;chainCompressed=Math.max(0,chainCompressed-1);
   chainOutcome=ruck.lost?'Turnover risk: insufficient effective support':'Slow release lets the defensive line fold and reset';
@@ -253,11 +253,12 @@ $('[data-chain-fast]').addEventListener('click',()=>chainStep(true));
 $('[data-chain-slow]').addEventListener('click',()=>chainStep(false));
 $('[data-chain-attack]').addEventListener('click',()=>{
  const disciplined=$('[data-chain-defense]').value==='disciplined';
- const net=Math.max(0,chainCompressed-Math.floor(chainSeconds/4)-(disciplined?chainFast:0));
+ const net=Math.max(0,chainCompressed-(disciplined?chainFast:0));
+ $('[data-gap]').setAttribute('visibility',chainFast>=2&&net>=2?'visible':'hidden');$('[data-gap]').setAttribute('x',$('[data-chain-side]').value==='same'?'220':'300');
  chainOutcome=chainFast>=2&&net>=2?'Modeled gap: the backline can attack '+($('[data-chain-side]').value==='same'?'the near-ruck seam':'outside space')+'. Possible line break if the carrier beats the remaining cover':'No reliable gap: carry, recycle, or change the point of attack';
  chainRender();
 });
-$('[data-chain-reset]').addEventListener('click',()=>{chainFast=0;chainSeconds=0;chainCompressed=0;chainOutcome='Chain reset';chainRender();});
+$('[data-chain-reset]').addEventListener('click',()=>{chainFast=0;chainSeconds=0;chainCompressed=0;chainOutcome='Chain reset';$('[data-gap]').setAttribute('visibility','hidden');chainRender();});
 $('[data-chain-side]').addEventListener('change',chainRender);
 $('[data-chain-defense]').addEventListener('change',chainRender);
 load('wedge');
