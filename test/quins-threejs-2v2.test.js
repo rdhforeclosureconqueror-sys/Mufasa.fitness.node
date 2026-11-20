@@ -18,15 +18,15 @@ test('five-yard decision freezes and finish is user-triggered',()=>{
 test('model clearly distinguishes illustrative results',()=>assert.match(html,/Outcomes are simplified teaching hypotheses/));
 
 test('inside draw compresses both defenders and uses an outside counterstep',()=>{
- assert.match(html,/d1:\[-1,z-1\.5\],d2:\[0,z\+1\.5\]/);
+ assert.match(html,/d1:\[-1,z-1\.4\],d2:\[0,z\+1\.4\]/);
  assert.match(html,/phase='counterstep'/);
  assert.match(html,/phase==='counterstep'&&clock>1\.1/);
 });
 test('pass is explicitly backward and has visible flight before receiver possession',()=>{
- assert.match(html,/Math\.min\(receiver\.x,carrier\.x-1\.2\)/);
+ assert.match(html,/passEnd=\[receiver\.x,receiver\.z\]/);
  assert.match(html,/ball\.position\.set\(passStart\[0\]\+/);
  assert.match(html,/received=true/);
- assert.match(html,/if\(support==='inside'\)/);
+ assert.match(html,/const insideCovered=support==='inside'&&draw==='inside'/);
 });
 
 test('support lanes are consistent with camera-independent pitch coordinates',()=>{
@@ -38,4 +38,15 @@ test('kick starts at the decision and resolves by contested ball recovery',()=>{
  assert.match(html,/kickOrigin=\[actors\.a1\.position\.x,actors\.a1\.position\.z\]/);
  assert.match(html,/const candidates=Object\.entries\(actors\)/);
  assert.match(html,/candidates\[0\]\.d<1\.8/);
+});
+
+test('receiver remains at pass endpoint until the ball arrives',()=>{
+ assert.match(html,/targets\.a2=\[receiver\.x,receiver\.z\]/);
+ assert.match(html,/if\(!passCaught\)/);
+ assert.match(html,/passCaught=true;received=true/);
+ assert.match(html,/targets\.a2=\[runner\.x\+10,runner\.z\]/);
+});
+test('inside support plus outside draw is a viable modeled release',()=>{
+ assert.match(html,/support==='inside'&&draw==='outside'/);
+ assert.match(html,/targets\.d1=\[-1,draw==='inside'\?-6:3\]/);
 });
