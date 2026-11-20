@@ -1,0 +1,9 @@
+const test=require('node:test'),assert=require('node:assert/strict');const R=require('../public/rugby-arena-rules.js');
+for(const [mode,a,d] of [['2v1',2,1],['2v2',2,2],['3v2',3,2]])test(mode+' deterministic scenario and five-point review',()=>{const s=R.create(mode,7);assert.equal(s.players.filter(p=>p.team==='attack').length,a);assert.equal(s.players.filter(p=>p.team==='defense').length,d);assert.equal(R.review(s).length,5);assert.deepEqual(R.step(s,[{type:'move',player:'a0',dx:0.1,dy:0}]),R.step(s,[{type:'move',player:'a0',dx:0.1,dy:0}]));assert.equal(s.tick,0);});
+test('pass releases ball and records event',()=>{const s=R.step(R.create(),[{type:'pass',player:'a0',target:'a1'}]);assert.equal(s.ball.owner,null);assert.equal(s.events[0].type,'pass');});
+test('kick inside outside middle uses consistent vocabulary',()=>{for(const direction of ['inside','outside','middle']){const s=R.step(R.create(),[{type:'kick',player:'a0',direction}]);assert.equal(s.events[0].direction,direction);}});
+test('reject impossible actions and invalid mode',()=>{assert.throws(()=>R.create('4v4'));assert.throws(()=>R.step(R.create(),[{type:'pass',player:'d0',target:'a1'}]));assert.throws(()=>R.step(R.create(),[{type:'move',player:'a0',dx:Infinity,dy:0}]));});
+test('replay initial state remains independent',()=>{const start=R.create('3v2',9);R.step(start,[{type:'dummy',player:'a0'}]);assert.deepEqual(R.create('3v2',9),start);});
+
+test('kick does not immediately return to kicker',()=>{let s=R.step(R.create(),[{type:'kick',player:'a0',direction:'middle'}]);assert.equal(s.ball.owner,null);for(let i=0;i<7;i++){s=R.step(s);assert.equal(s.ball.owner,null);}assert.equal(s.events.filter(e=>e.type==='recovery').length,0);});
+test('pass cannot be instantly recovered by passer',()=>{let s=R.step(R.create(),[{type:'pass',player:'a0',target:'a1'}]);assert.equal(s.ball.owner,null);assert.equal(s.events.filter(e=>e.type==='recovery').length,0);});
