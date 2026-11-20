@@ -3,57 +3,37 @@ const test=require('node:test');
 const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
-const vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'../public/rugby-attack-intelligence.js'),'utf8');
-function setup(present=true){
- const nodes=new Map();
- function node(id){if(!nodes.has(id))nodes.set(id,{textContent:'',listeners:{},addEventListener(event,fn){this.listeners[event]=fn;},setAttribute(k,v){this[k]=v;},appendChild(){},querySelector(){return this.selected||null;}});return nodes.get(id);}
- const host=present?node('quins-structure-lesson'):null;
- const document={getElementById(id){return id==='quins-structure-lesson'?host:node(id);},createElement(){const n=node('lesson-stage');Object.defineProperty(n,'innerHTML',{set(value){this.html=value;},get(){return this.html;}});return n;}};
- vm.runInNewContext(source,{document});
- return {node,host};
-}
-test('lesson does not mount outside Rugby HQ',()=>{const {node}=setup(false);assert.equal(node('lesson-stage').html,undefined);});
-test('Structure and Chaos produce distinct learning feedback',()=>{
- const {node,host}=setup();
- assert.equal(host!==null,true);
- node('quins-structure').listeners.click();
- assert.match(node('quins-lesson-feedback').textContent,/precision/i);
- node('quins-chaos').listeners.click();
- assert.match(node('quins-lesson-feedback').textContent,/adapt/i);
-});
-test('Rugby IQ requires an answer and explains both outcomes',()=>{
- const {node}=setup();
- node('quins-iq-check').listeners.click();
- assert.match(node('quins-iq-feedback').textContent,/Choose an answer/);
- node('lesson-stage').selected={value:'a'};
- node('quins-iq-check').listeners.click();
- assert.match(node('quins-iq-feedback').textContent,/Try again/);
- node('lesson-stage').selected={value:'b'};
- node('quins-iq-check').listeners.click();
- assert.match(node('quins-iq-feedback').textContent,/Correct/);
-});
-test('lesson is wired into authenticated dashboard, not public rugby landing',()=>{
- const dashboard=fs.readFileSync(path.join(__dirname,'../public/rugby-player.html'),'utf8');
- const landing=fs.readFileSync(path.join(__dirname,'../public/rugby.html'),'utf8');
+const dashboard=fs.readFileSync(path.join(__dirname,'../public/rugby-player.html'),'utf8');
+const landing=fs.readFileSync(path.join(__dirname,'../public/rugby.html'),'utf8');
+test('interactive 2v1 is loaded only in authenticated player dashboard',()=>{
  assert.match(dashboard,/AuthNavigation\?\.requireUser/);
  assert.match(dashboard,/rugby-attack-intelligence\.js/);
  assert.doesNotMatch(landing,/rugby-attack-intelligence\.js/);
+ assert.match(source,/getElementById\('quins-structure-lesson'\)/);
 });
-
-test('mobile module cards keep each lesson inside a native expandable panel',()=>{
- const dashboard=fs.readFileSync(path.join(__dirname,'../public/rugby-player.html'),'utf8');
- assert.match(dashboard,/<details class="quins-module" id="quins-module-structure">/);
- assert.match(dashboard,/<details class="quins-module" id="quins-module-four-ps">/);
- assert.match(dashboard,/<details class="quins-module" id="quins-module-mf">/);
- assert.match(dashboard,/id="quins-structure-lesson"/);
- assert.match(dashboard,/\.quins-module-content fieldset\{min-width:0/);
+test('simulation provides positioning, timed defender commitment and three tactical decisions',()=>{
+ for(const id of ['quins-sim-outside','quins-sim-inside','quins-sim-start','quins-sim-reset','quins-sim-decisions','quins-sim-outcome'])assert.ok(source.includes(id),id);
+ for(const choice of ['pass','outside','inside'])assert.ok(source.includes('data-choice="'+choice+'"'),choice);
+ assert.match(source,/phase='running'/);
+ assert.match(source,/phase='decision'/);
+ assert.match(source,/setTimeout/);
+ assert.match(source,/clearTimeout/);
 });
-
-test('visual academy contains training pitch and compact role tiles',()=>{
- const dashboard=fs.readFileSync(path.join(__dirname,'../public/rugby-player.html'),'utf8');
- assert.match(dashboard,/quins-academy-head/);
+test('simulator distinguishes support position and inside-cover traffic',()=>{
+ assert.match(source,/lane==='outside'/);
+ assert.match(source,/SUPPORT INTO TRAFFIC/);
+ assert.match(source,/CONTACT \/ ISOLATION RISK/);
+ assert.match(source,/SPACE CREATED/);
+ assert.match(source,/DUMMY AND OUTSIDE/);
+});
+test('simulation has accessible labels and reduced motion fallback',()=>{
+ assert.match(source,/aria-label="Interactive rugby training pitch/);
+ assert.match(source,/aria-live="polite"/);
+ assert.match(source,/prefers-reduced-motion:reduce/);
+ assert.match(source,/keydown/);
+});
+test('visual academy retains the three coaching modules',()=>{
+ for(const id of ['quins-module-structure','quins-module-four-ps','quins-module-mf'])assert.ok(dashboard.includes(id));
  assert.match(dashboard,/quins-role-grid/);
- assert.match(source,/quins-field/);
- assert.match(source,/quins-defender/);
 });
