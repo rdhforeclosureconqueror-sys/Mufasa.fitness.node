@@ -34,17 +34,47 @@ function init(cfg){
  expand.onclick=open;
  mk('✕ Close',close);mk('⚙ Controls',()=>{panel.style.display=panel.style.display==='none'?'block':'none';refreshPanel();});mk('↻ Angle',()=>{angle=(angle+1)%3;pose();});mk('＋ Zoom',()=>{zoom=Math.min(2.6,zoom+.25);pose();});mk('－ Zoom',()=>{zoom=Math.max(.7,zoom-.25);pose();});mk('⟲ Reset view',()=>{zoom=1;turn=0;tilt=0;angle=0;pose();});
  let startX=0,startY=0;stage.addEventListener('pointerdown',e=>{if(e.target.closest('button')||panel.contains(e.target))return;startX=e.clientX;startY=e.clientY;stage.setPointerCapture(e.pointerId);});stage.addEventListener('pointerup',e=>{if(!expanded||panel.contains(e.target))return;turn=Math.max(-1.2,Math.min(1.2,turn+(e.clientX-startX)*.006));tilt=Math.max(-.5,Math.min(.5,tilt+(e.clientY-startY)*.003));pose();});
- function refreshPanel(){
-  panel.replaceChildren();const heading=document.createElement('strong');heading.textContent='Scenario controls · '+cfg.title;panel.appendChild(heading);
-  const note=document.createElement('p');note.textContent='Use the original rugby controls. Play closes this panel and starts after a two-second countdown.';panel.appendChild(note);
-  const scope=svg.closest(cfg.controlRoot);if(!scope){note.textContent='Scenario controls unavailable for this drill.';return;}
-  const belongs=el=>!cfg.excludeRoot||!el.closest(cfg.excludeRoot);
-  const buttons=[...scope.querySelectorAll('button')].filter(b=>belongs(b)&&!portal.contains(b)&&!controls.contains(b)&&!b.disabled&&b.getClientRects().length>0);
-  const selects=[...scope.querySelectorAll('select')].filter(el=>belongs(el)&&!portal.contains(el)&&el.getClientRects().length>0);
-  for(const select of selects.slice(0,4)){const label=document.createElement('label');label.textContent=select.getAttribute('aria-label')||'Play option';label.style.cssText='display:block;margin:10px 0';const copy=select.cloneNode(true);copy.value=select.value;copy.style.cssText='display:block;max-width:100%;padding:8px';copy.onchange=()=>{select.value=copy.value;select.dispatchEvent(new Event('change',{bubbles:true}));};label.appendChild(copy);panel.appendChild(label);}
-  for(const b of buttons.slice(0,35)){const label=(b.textContent||'').trim();if(!label||/camera angle|view:|debug/i.test(label))continue;const proxy=document.createElement('button');proxy.type='button';proxy.textContent=label;proxy.style.cssText='display:inline-block;margin:5px;padding:10px;background:#e4c783;color:#10251a;border-radius:8px;font-weight:bold';proxy.onclick=()=>{if(/play|start|replay/i.test(label)){panel.style.display='none';count.style.display='flex';count.textContent='2';pending=setTimeout(()=>{count.textContent='1';pending=setTimeout(()=>{count.style.display='none';pending=null;b.click();},1000);},1000);}else{b.click();refreshPanel();}};panel.appendChild(proxy);}
+ function countdownPlay(button){
+  if(pending){clearTimeout(pending);pending=null;}
+  panel.style.display='none';count.style.display='flex';count.textContent='2';
+  pending=setTimeout(()=>{count.textContent='1';pending=setTimeout(()=>{count.style.display='none';pending=null;button.click();},1000);},1000);
  }
- mk('▶ Play / Replay',()=>{panel.style.display='block';refreshPanel();});
+ function sourceButtons(){
+  const scope=svg.closest(cfg.controlRoot);if(!scope)return [];
+  return [...scope.querySelectorAll('button')].filter(b=>!portal.contains(b)&&!controls.contains(b)&&!b.disabled&&b.getClientRects().length>0&&(!cfg.excludeRoot||!b.closest(cfg.excludeRoot)));
+ }
+ function refreshPanel(){
+  panel.replaceChildren();
+  const heading=document.createElement('h2');heading.textContent='MISSION CONTROL';heading.style.cssText='margin:0;color:#f3d68c;letter-spacing:.12em;font-size:18px';panel.appendChild(heading);
+  const sub=document.createElement('p');sub.textContent=cfg.title+' · Choose one option in each step, then launch.';sub.style.cssText='color:#cbd8cf;font-size:14px;line-height:1.5';panel.appendChild(sub);
+  const buttons=sourceButtons(),scope=svg.closest(cfg.controlRoot);
+  if(!scope){sub.textContent='Controls unavailable for this drill.';return;}
+  const groups=cfg.title.startsWith('2v1')?[
+   {name:'01 · SUPPORT LANE',hint:'Where will your teammate run?',match:/place support (inside|outside)/i},
+   {name:'02 · DEFENSIVE DRAW',hint:'Which direction will you commit the defender?',match:/draw defenders (inside|outside)/i},
+   {name:'03 · FINISHING ACTION',hint:'Choose the move to execute.',match:/draw & pass|dummy & go outside|dummy & cut inside|kick & chase/i}
+  ]:[{name:'SCENARIO ACTIONS',hint:'Select the controls for this drill.',match:/./}];
+  const used=new Set();
+  for(const group of groups){
+   const section=document.createElement('section');section.style.cssText='margin:12px 0;padding:13px;border:1px solid #668978;border-radius:14px;background:linear-gradient(135deg,#1e4132,#10291f)';
+   const title=document.createElement('h3');title.textContent=group.name;title.style.cssText='margin:0;color:#f3d68c;font-size:15px;letter-spacing:.07em';section.appendChild(title);
+   const hint=document.createElement('p');hint.textContent=group.hint;hint.style.cssText='margin:5px 0 12px;font-size:13px;color:#c5d6ca';section.appendChild(hint);
+   const options=document.createElement('div');options.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px';
+   for(const b of buttons){const label=(b.textContent||'').trim();if(used.has(b)||!group.match.test(label)||/camera angle|view:|debug|play scenario|replay|change plan/i.test(label))continue;used.add(b);
+    const proxy=document.createElement('button');proxy.type='button';proxy.textContent=label;proxy.style.cssText='min-height:48px;padding:9px 7px;border-radius:10px;border:1px solid #ad9460;background:#345b44;color:#fff2cb;font-size:14px;font-weight:750;white-space:normal;text-align:center';
+    const active=()=>b.getAttribute('aria-pressed')==='true'||b.classList.contains('active')||b.classList.contains('selected');
+    if(active()){proxy.style.background='#e4c783';proxy.style.color='#11271c';proxy.textContent='✓ '+label;}
+    proxy.onclick=()=>{b.click();refreshPanel();};options.appendChild(proxy);
+   }
+   if(options.childElementCount){section.appendChild(options);panel.appendChild(section);}
+  }
+  const selectors=[...scope.querySelectorAll('select')].filter(el=>el.getClientRects().length>0);
+  if(!cfg.title.startsWith('2v1'))for(const select of selectors.slice(0,2)){const copy=select.cloneNode(true);copy.value=select.value;copy.style.cssText='width:100%;margin:8px 0;padding:10px';copy.onchange=()=>{select.value=copy.value;select.dispatchEvent(new Event('change',{bubbles:true}));};panel.appendChild(copy);}
+  const launch=document.createElement('button');launch.type='button';launch.textContent='▶ EXECUTE SCENARIO · 2s COUNTDOWN';launch.style.cssText='width:100%;margin-top:12px;padding:15px 8px;border:1px solid #f4df9b;border-radius:12px;background:#e4c783;color:#11271c;font-weight:900;letter-spacing:.02em';
+  launch.onclick=()=>{const play=buttons.find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play)countdownPlay(play);else{sub.textContent='Choose your scenario on the main page before launching.';}};
+  panel.appendChild(launch);
+ }
+ mk('▶ Play / Replay',()=>{const b=sourceButtons().find(x=>/play scenario|start drill|^play$|replay/i.test((x.textContent||'').trim()));if(b)countdownPlay(b);else{panel.style.display='block';refreshPanel();}});
  mk('Change scenario',()=>{panel.style.display='block';refreshPanel();});
  document.addEventListener('keydown',e=>{if(expanded&&e.key==='Escape')close();});
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
