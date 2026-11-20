@@ -53,7 +53,10 @@
     <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. The decision freezes five yards from contact. Then the carrier approaches three yards, steps inside, steps outside, and releases before contact. Use Finish move directly under the pitch; you will never need to scroll to advance.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
 `;
   host.appendChild(root);
-  root.querySelector('.quins-sim-pitch').appendChild(root.querySelector('#quins-sim-ball'));
+  const pitch=root.querySelector('.quins-sim-pitch');
+  const ball=get('quins-sim-ball');
+  // Ball inherits the player's SVG transform while carried; never teleport it ahead.
+  function attachBall(player,x,y){player.appendChild(ball);ball.setAttribute('cx',String(x));ball.setAttribute('cy',String(y));}
   const get = id => root.querySelector('#' + id);
   const support = get('quins-sim-support');
   const carrier = get('quins-sim-carrier');
@@ -70,12 +73,13 @@
   let sequenceTimers = [];
   let ballFrame=null;
   let ballOwner='carrier';
+  let autoReplay=false;
   let carrierPosition={x:100,y:111};
   let supportPosition={x:55,y:65};
-  function carryBall(){ballOwner='carrier';ballAt(carrierPosition.x+13,carrierPosition.y-7);}
-  function receiveBall(){ballOwner='support';ballAt(supportPosition.x+13,supportPosition.y-7);}
-  function positionCarrier(x,y){carrierPosition={x:100+x,y:111+y};move(carrier,x,y);if(ballOwner==='carrier')carryBall();}
-  function positionSupport(x,y){supportPosition={x:55+x,y:65+y};move(support,x,y);if(ballOwner==='support')receiveBall();}
+  function carryBall(){ballOwner='carrier';attachBall(carrier,113,104);}
+  function receiveBall(){ballOwner='support';attachBall(support,68,58);}
+  function positionCarrier(x,y){carrierPosition={x:100+x,y:111+y};move(carrier,x,y);}
+  function positionSupport(x,y){supportPosition={x:55+x,y:65+y};move(support,x,y);}
   function stopBall(){if(ballFrame!==null){cancelAnimationFrame(ballFrame);ballFrame=null;}}
   function animateBall(from,to,duration,onArrive){stopBall();ballAt(from.x,from.y);const started=performance.now();const tick=(now)=>{if(phase!=='result')return;const t=Math.min(1,(now-started)/duration);const eased=t*t*(3-2*t);ballAt(from.x+(to.x-from.x)*eased,from.y+(to.y-from.y)*eased);if(t<1){ballFrame=requestAnimationFrame(tick);}else{ballFrame=null;if(onArrive)onArrive();}};ballFrame=requestAnimationFrame(tick);}
 
@@ -89,7 +93,7 @@
   function move(el,x,y){ el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function cancel(){stopBall();clearSequence();if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
-    cancel();lane=null;plannedChoice=null;defenseLane=null;phase='setup';resultSnapshot=null;
+    cancel();autoReplay=false;lane=null;plannedChoice=null;defenseLane=null;phase='setup';resultSnapshot=null;
     ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);positionSupport(0,0);carryBall();get("quins-sim-ball").style.opacity="1";get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
@@ -113,13 +117,14 @@
     positionCarrier(67,0);move(defender,0,0);move(cover,0,0);
     pending=setTimeout(function(){
       pending=null;if(phase!=='running')return;
-      phase='decision';playButton.hidden=true;continueButton.hidden=false;
+      phase='decision';playButton.hidden=true;continueButton.hidden=autoReplay;
+      if(autoReplay){autoReplay=false;choose(plannedChoice);return;}
       status.textContent='FIVE-YARD DECISION · Planned: '+plannedChoice+'. Press Finish move to watch the three-yard approach, footwork and pass.';
     },1050);
   }
   function choose(choice){
     if(phase!=='decision')return;
-    phase='result';continueButton.hidden=true;watchButton.hidden=false;
+    phase='result';continueButton.hidden=true;watchButton.hidden=true;
     const outside=lane==='outside';
     let message='';
     // Coaching model: defender reactions follow the carrier's threat, not user-controlled defensive placement.
@@ -131,10 +136,10 @@
       // step x212 (2yd), counterstep x227 (1yd), release before defender x242.
       const inside=defenseLane==='inside'?18:-18;
       const supportY=outside?65:159;
-      const release={x:238,y:104-inside};
-      const catchPoint={x:185,y:supportY};
+      // Support stays behind the ball until the single backwards pass.
       const guide=get('quins-sim-pass');
       guide.setAttribute('opacity','0');
+      carryBall();
       narration('5 YARDS · Decision made. Carrier advances to three yards. Support trails behind.');
       positionCarrier(97,0);positionSupport(60,outside?0:94);
       later(()=>{
@@ -153,12 +158,14 @@
       later(()=>{
         if(phase!=='result')return;
         narration('1 YARD · RELEASE: white ball travels backwards into the running support BEFORE defenders converge.');
-        guide.setAttribute('d','M'+release.x+' '+release.y+'L'+catchPoint.x+' '+catchPoint.y);
-        guide.setAttribute('opacity','.65');
-        ballOwner='flight';positionSupport(130,outside?0:94);
+        ballOwner='flight';
+        // Reparent only at release, preserving the on-screen hand position.
         const releaseFromHands={x:carrierPosition.x+13,y:carrierPosition.y-7};
+        pitch.appendChild(ball);ballAt(releaseFromHands.x,releaseFromHands.y);
+        positionSupport(130,outside?0:94);
         const catchAtHands={x:supportPosition.x+13,y:supportPosition.y-7};
         guide.setAttribute('d','M'+releaseFromHands.x+' '+releaseFromHands.y+'L'+catchAtHands.x+' '+catchAtHands.y);
+        guide.setAttribute('opacity','.65');
         animateBall(releaseFromHands,catchAtHands,1150,()=>{
           if(phase!=='result')return;
           guide.setAttribute('opacity','0');
@@ -169,7 +176,7 @@
           later(()=>{
             if(phase!=='result')return;
             positionSupport(committed?208:145,outside?0:94);
-            outcome.hidden=false;outcome.textContent=message;
+            outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
             narration('PLAY COMPLETE · '+(committed?'Both defenders converged on the carrier while support received in space.':'Cover stayed available and can close on the support runner.'));
           },650);
         });
@@ -192,7 +199,7 @@
       get('quins-sim-traffic').setAttribute('opacity',fooled?'.25':'1');
       message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
     }else return;
-    if(choice!=='pass'){outcome.hidden=false;outcome.textContent=message;}resultSnapshot=choice;
+    if(choice!=='pass'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
     if(choice!=='pass')status.textContent='Outcome shown. Watch again or change the plan using the controls directly above.';
   }
   root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,0);summary();get('quins-sim-plan-status').textContent='Draw '+defenseLane+'. Choose your action and press Play.';}));
@@ -204,7 +211,7 @@
   get('quins-sim-edit').addEventListener('click',()=>{reset();get('quins-sim-plan').scrollIntoView({behavior:'smooth',block:'nearest'});});
   watchButton.addEventListener('click',()=>{
     if(phase!=='result')return;
-    cancel();phase='setup';
+    cancel();phase='setup';autoReplay=true;
     ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);positionSupport(0,lane==='outside'?0:94);carryBall();get('quins-sim-ball').style.opacity='1';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');
     outcome.hidden=true;watchButton.hidden=true;playButton.hidden=false;
