@@ -12,3 +12,10 @@ test('Three.js toggle preserves SVG layout and computed node visibility',()=>{
  assert.doesNotMatch(view,/svg\.style\.visibility=enabled\?'hidden':''/);
  assert.match(view,/getComputedStyle\(el\)\.visibility/);
 });
+
+test('expanded viewer preserves original engines and provides mobile coaching controls',()=>{
+ for(const phrase of ['Expand pitch','Scenario controls','Change scenario','Zoom','Reset view','clearTimeout(pending)','count.textContent=\'2\'','count.textContent=\'1\''])assert.ok(view.includes(phrase),phrase);
+ assert.match(view,/select\.dispatchEvent\(new Event\('change'/);
+ assert.match(view,/b\.click\(\)/);
+ assert.doesNotMatch(view,/\/api\/quins\/ravens\/play/);
+});
