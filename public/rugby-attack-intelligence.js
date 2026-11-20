@@ -234,7 +234,7 @@
         positionCarrier(102,drawY*.75);
         ballOwner='flight';
         const from={x:carrierPosition.x+13,y:carrierPosition.y-7};
-        const to={x:315,y:kickDirection==='left'?51:kickDirection==='right'?169:110};
+        const to={x:315,y:kickDirection==='left'?169:kickDirection==='right'?51:110};
         pitch.appendChild(ball);ballAt(from.x,from.y);
         guide.setAttribute('d','M'+from.x+' '+from.y+'Q'+(from.x+42)+' '+(from.y-34)+' '+to.x+' '+to.y);
         guide.setAttribute('opacity','.75');
