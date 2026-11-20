@@ -29,7 +29,7 @@ const actors={a1:actor(0xe4be66,'A1'),a2:actor(0xe4be66,'A2'),d1:actor(0xc64a50,
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.33,10,8),new THREE.MeshStandardMaterial({color:0xfff7df}));scene.add(ball);
 const starts={a1:[-13,-4],a2:[-15,7],d1:[2,-4],d2:[2,7]};
 const scenarios={inside:{d1:[2,-4],d2:[2,7],cue:'Draw defenders inside to create a potential outside release.'},outside:{d1:[2,-2],d2:[2,11],cue:'Draw defenders outside; assess the inside seam.'}};
-let phase='setup',support=null,draw=null,plan=null,clock=0,paused=false,lastPlan=null,targets={},startPositions={},ballOwner='a1',passStart=null,passEnd=null,received=false,kickTarget=null,kickWinner=null;
+let phase='setup',support=null,draw=null,plan=null,clock=0,paused=false,lastPlan=null,targets={},startPositions={},ballOwner='a1',passStart=null,passEnd=null,received=false,kickTarget=null,kickWinner=null,kickOrigin=null;
 function setCamera(){const poses=[[0,39,35],[-34,24,24],[0,54,.1]];camera.position.set(...poses[cameraIndex]);camera.lookAt(0,0,0)}
 setCamera();
 function setPositions(){
@@ -80,7 +80,7 @@ function release(){
  phase='release';clock=0;
  if(plan==='kick'){
   // Kick from the pre-contact decision point, not after a post-contact counterstep.
-  kickTarget=[13,support==='outside'?-10:8];
+  kickTarget=[13,support==='outside'?-10:8];kickOrigin=[actors.a1.position.x,actors.a1.position.z];
   targets.a1=[12,actors.a1.position.z];targets.a2=[13,kickTarget[1]];
   targets.d1=[13,kickTarget[1]-3];targets.d2=[13,kickTarget[1]+3];
   $('status').textContent='KICK CHASE · All four players pursue the loose ball.';
@@ -147,7 +147,7 @@ function frame(now){
    }
   }else if(phase==='release'&&plan==='kick'){
    const flight=Math.min(1,clock/1.4),landing=kickTarget;
-   if(clock<1.4){ball.position.set(actors.a1.position.x+(landing[0]-actors.a1.position.x)*flight,0.4+Math.sin(Math.PI*flight)*4,actors.a1.position.z+(landing[1]-actors.a1.position.z)*flight);}
+   if(clock<1.4){ball.position.set(kickOrigin[0]+(landing[0]-kickOrigin[0])*flight,0.4+Math.sin(Math.PI*flight)*4,kickOrigin[1]+(landing[1]-kickOrigin[1])*flight);}
    else if(!kickWinner){
     ball.position.set(landing[0],.35,landing[1]);
     const candidates=Object.entries(actors).map(([name,actor])=>({name,d:Math.hypot(actor.position.x-landing[0],actor.position.z-landing[1])})).sort((a,b)=>a.d-b.d);
