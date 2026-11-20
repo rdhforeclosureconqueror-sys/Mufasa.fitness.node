@@ -50,7 +50,7 @@
       <button type="button" id="quins-sim-inside">Place support inside</button>
 
     </div>
-    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose where the covering defender waits and your intended action. The simulation pauses approximately three yards before contact. Use Finish move directly under the pitch; you will never need to scroll to advance.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Cover inside</button><button type="button" data-defense="outside">Cover outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Cover: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose a support lane, cover position, and intended decision.</p></div>
+    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. The simulation pauses approximately three yards before contact. Use Finish move directly under the pitch; you will never need to scroll to advance.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
 `;
   host.appendChild(root);
   const get = id => root.querySelector('#' + id);
@@ -68,18 +68,18 @@
   let pending = null;
   let resultSnapshot = null;
   const initial = {carrier:[0,0],support:[0,0],defender:[0,0],cover:[0,0]};
-  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'not set')+' · 2. Cover: '+(defenseLane||'not set')+' · 3. Action: '+(plannedChoice||'not set');playButton.disabled=!(lane&&defenseLane&&plannedChoice)||phase!=='setup';root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
+  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'not set')+' · 2. Draw: '+(defenseLane||'not set')+' · 3. Action: '+(plannedChoice||'not set');playButton.disabled=!(lane&&defenseLane&&plannedChoice)||phase!=='setup';root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
   function move(el,x,y){ el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function cancel(){if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
     cancel();lane=null;plannedChoice=null;defenseLane=null;phase='setup';resultSnapshot=null;
-    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,0);get('quins-sim-plan-status').textContent='Choose a support lane, cover position, and intended decision.';
+    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,0);get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
     playButton.hidden=false;playButton.disabled=true;continueButton.hidden=true;watchButton.hidden=true;
     get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
     outcome.hidden=true;outcome.textContent='';
-    status.textContent='Choose your support, cover and move below. Playback stays beside the pitch.';summary();
+    status.textContent='Choose your support, draw and move below. Playback stays beside the pitch.';summary();
   }
   function place(which){
     if(phase!=='setup')return;
@@ -93,7 +93,7 @@
     phase='running';playButton.disabled=true;
     get('quins-sim-outside').disabled=true;get('quins-sim-inside').disabled=true;
     status.textContent='Play running: carrier advances, first defender commits. Watch the cover defender.';
-    move(carrier,88,0);move(defender,0,0);
+    move(carrier,88,0);move(defender,-8,0);move(cover,-12,0);
     pending=setTimeout(function(){
       pending=null;if(phase!=='running')return;
       phase='decision';playButton.hidden=true;continueButton.hidden=false;
@@ -103,32 +103,44 @@
   function choose(choice){
     if(phase!=='decision')return;
     phase='result';continueButton.hidden=true;watchButton.hidden=false;
-    const outside=lane==='outside';const coverInside=defenseLane==='inside';
+    const outside=lane==='outside';
     let message='';
+    // Coaching model: defender reactions follow the carrier's threat, not user-controlled defensive placement.
+    // Illustrative heuristics, not a predictive match engine. Early ball release / poor lane alignment leave cover free.
+    const aligned = (choice==='pass' && ((outside && defenseLane==='inside') || (!outside && defenseLane==='outside')));
+    const committed = aligned;
     if(choice==='pass'){
-      get('quins-sim-pass').setAttribute('opacity','1');move(carrier,108,coverInside?18:-18);move(defender,-15,coverInside?10:-10);
-      if(outside){
-        move(support,135,0);
-        message=coverInside?'SPACE CREATED · Step toward the inside shoulder to fix the defender, shift back outside, pass to trailing support, then carry your running line through the defender. Outside support breaks free toward the try line.':'COVER OUTSIDE · The primary defender is fixed, but the second defender protects the outside channel. The pass is not automatically a try: scan the second defender and choose another space.';
+      move(carrier,117,defenseLane==='inside'?14:-14);
+      move(defender,-20,defenseLane==='inside'?13:-13);
+      get('quins-sim-pass').setAttribute('opacity','1');
+      if(committed){
+        move(cover,-48,defenseLane==='inside'?-25:16);
+        move(support,155,outside?0:94);
+        message='DEFENDERS COMMIT · Carrier attacks the seam between both defenders, fixes their shoulders, then steps away and passes behind the collision line. Both defenders narrow toward the ball; support receives in the vacated channel. Space created, not a guaranteed try.';
       }else{
-        move(support,115,94);move(cover,-38,coverInside?-12:30);
-        message=coverInside?'SUPPORT INTO TRAFFIC · You feint outside and pass back inside. Both defenders converge on the narrower gap. The runner may break through, but has less room and more contact risk.':'INSIDE GAP · Cover has shifted outside. An inside pass can be effective if support is behind and the gap remains open.';
+        move(cover,-14,outside?-47:12);
+        move(support,112,outside?0:94);
+        message='COVER STAYS AVAILABLE · The carrier did not sufficiently threaten the gap to draw both defenders. The cover tracks the support runner and can make the tackle. Reset and try a different draw line or support lane.';
       }
     }else if(choice==='outside'){
-      move(carrier,135,-52);
-      message='DUMMY AND OUTSIDE · The carrier sells the pass and attacks the outside shoulder. In this picture, the outside channel has space. Keep the ball available and track support; a defender could still recover.';
+      const fooled=outside && defenseLane==='inside';
+      move(carrier,135,-52);move(defender,-22,fooled?18:-10);move(cover,fooled?-38:-10,fooled?15:-40);
+      message=fooled?'DUMMY CREATES SPACE · The carrier threatens the inside seam, the defense narrows, and the carrier attacks the outside shoulder. Support trails for continuity; cover may still recover.':'DUMMY READ · The defense holds width and tracks the ball. The dummy alone does not create space; the carrier meets outside cover. Try drawing defenders inward first.';
     }else if(choice==='kick'){
-      move(carrier,115,0);move(support,105,lane==='outside'?0:94);get('quins-sim-pass').setAttribute('d','M220 110Q265 45 330 42');get('quins-sim-pass').setAttribute('opacity','1');
-      message='KICK & CHASE · A kick into space may beat a rushing line, but only with a realistic chase, onside runners, and a recoverable ball. The covering defender may gather it first. Assess kick depth, support and field position.';
+      move(carrier,115,0);move(support,105,lane==='outside'?0:94);
+      get('quins-sim-pass').setAttribute('d','M220 110Q265 45 330 42');get('quins-sim-pass').setAttribute('opacity','1');
+      move(cover,15,-40);
+      message='KICK & CHASE · The ball goes beyond the first defender; cover turns and tracks it. A successful chase depends on kick weight, onside timing, support, and recovery. This is an illustrative option, not an automatic try.';
     }else if(choice==='inside'){
-      move(carrier,135,35);move(cover,-33,coverInside?-10:20);
-      get('quins-sim-traffic').setAttribute('opacity','1');
-      message='CONTACT / ISOLATION RISK · The dummy draws attention, but cutting inside takes the carrier toward covering traffic and away from outside support. A tackle and slow recycle are likely in this illustrated scenario. Scan cover and support before choosing this line.';
+      const fooled=!outside && defenseLane==='outside';
+      move(carrier,135,35);move(defender,-20,fooled?-18:12);move(cover,fooled?-10:-33,fooled?-30:-10);
+      get('quins-sim-traffic').setAttribute('opacity',fooled?'.25':'1');
+      message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
     }else return;
     outcome.hidden=false;outcome.textContent=message;resultSnapshot=choice;
     status.textContent='Outcome shown. Watch again or change the plan using the controls directly above.';
   }
-  root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,defenseLane==='inside'?0:-80);summary();get('quins-sim-plan-status').textContent='Cover '+defenseLane+'. Choose your action and press Play.';}));
+  root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,0);summary();get('quins-sim-plan-status').textContent='Draw '+defenseLane+'. Choose your action and press Play.';}));
   root.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;plannedChoice=b.dataset.plan;summary();get('quins-sim-plan-status').textContent='Planned action: '+b.textContent+'. Use Change plan to revise before replaying.';}));
   get('quins-sim-outside').addEventListener('click',()=>place('outside'));
   get('quins-sim-inside').addEventListener('click',()=>place('inside'));
@@ -138,7 +150,7 @@
   watchButton.addEventListener('click',()=>{
     if(phase!=='result')return;
     cancel();phase='setup';
-    move(carrier,0,0);move(defender,0,0);move(cover,0,defenseLane==='inside'?0:-80);move(support,0,lane==='outside'?0:94);
+    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,lane==='outside'?0:94);
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');
     outcome.hidden=true;watchButton.hidden=true;playButton.hidden=false;
     get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
