@@ -15,7 +15,7 @@ test('five-yard decision freezes and finish is user-triggered',()=>{
  assert.ok(html.includes("if(phase!=='decision')return"));
  assert.ok(html.includes("$('finish').onclick=finish"));
 });
-test('model clearly distinguishes illustrative results',()=>assert.match(html,/simplified scenario, not a guaranteed outcome/));
+test('model clearly distinguishes illustrative results',()=>assert.match(html,/Outcomes are simplified teaching hypotheses/));
 
 test('inside draw compresses both defenders and uses an outside counterstep',()=>{
  assert.match(html,/d1:\[-1,z-1\.5\],d2:\[0,z\+1\.5\]/);
