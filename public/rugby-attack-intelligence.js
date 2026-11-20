@@ -145,14 +145,14 @@
       positionCarrier(82,inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
-        narration('4 YARDS · The inside threat forces defender 2 to STEP UP into the channel, leaving space behind.');
-        move(defender,0,inside*.45);move(cover,committed?-26:-9,committed?-13:0);
+        narration('4 YARDS · Both defenders STEP UP FLAT, side by side, to meet the inside threat.');
+        move(defender,0,inside*.45);move(cover,committed?-19:-9,committed?-27:0);
       },800);
       later(()=>{
         if(phase!=='result')return;
-        narration('3 YARDS · COUNTERSTEP outside. The carrier fixes defenders without running into contact.');
+        narration('3 YARDS · COUNTERSTEP outside. D tracks the outside shoulder; defender 2 holds the inside hip. Both stay visible.');
         positionCarrier(97,-inside);
-        if(committed){move(defender,0,inside*.65);move(cover,-47,-20);}
+        if(committed){move(defender,-8,-18);move(cover,-26,-9);}
         else{move(cover,0,outside?-15:5);}
       },1650);
       later(()=>{
@@ -172,13 +172,13 @@
           guide.setAttribute('opacity','0');
           receiveBall();get('quins-sim-ball').style.opacity='1';
           narration('CATCH · Support receives the ball in stride and accelerates away from contact.');
-          if(committed){move(defender,-20,inside*.6);move(cover,-66,-23);}
+          if(committed){move(defender,-18,-17);move(cover,-37,-12);}
           else{move(cover,-27,outside?-42:10);}
           later(()=>{
             if(phase!=='result')return;
             positionSupport(committed?208:145,outside?0:94);
             outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
-            narration('PLAY COMPLETE · '+(committed?'Both defenders stepped up toward the carrier, leaving support space outside.':'Cover stayed available and can close on the support runner.'));
+            narration('PLAY COMPLETE · '+(committed?'Defenders held distinct outside-shoulder and inside-hip positions while support broke into space.':'Cover stayed available and can close on the support runner.'));
           },650);
         });
       },2550);
