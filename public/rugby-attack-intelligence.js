@@ -252,7 +252,7 @@
             if(phase!=='result')return;
             guide.setAttribute('opacity','0');
             narration('ARRIVAL · Players chase to the ball landing zone.');positionSupport(to.x-65,to.y-65);positionCarrier(to.x-145,to.y-100);move(defender,to.x-265,to.y-110);
-            later(()=>{if(phase!=='result')return;const favorable=kickDirection!=='middle'&&lane===(kickDirection==='inside'?'inside':'outside')&&defenseLane!==(kickDirection==='inside'?'inside':'outside');outcome.hidden=false;outcome.textContent=(favorable?'SUPPORT FIRST TO CONTEST · ':'DEFENDER CONTESTS · ')+message;watchButton.hidden=false;rubricSet(3,lane===kickDirection?'achieved':'risk',lane===kickDirection?'Support reaches target lane; onside status not modeled.':'Support lane differs from kick target.');rubricSet(4,favorable?'achieved':'risk',favorable?'Support first to contest; possession unresolved.':'Defender contests landing; possession unresolved.');summary();narration('CHASE COMPLETE · Recovery remains contested.');},850);
+            later(()=>{if(phase!=='result')return;const favorable=kickDirection!=='middle'&&lane===(kickDirection==='inside'?'inside':'outside')&&defenseLane!==(kickDirection==='inside'?'inside':'outside');outcome.hidden=false;outcome.textContent=(favorable?'SUPPORT FIRST TO CONTEST · ':'DEFENDER CONTESTS · ')+message;watchButton.hidden=false;rubricSet(3,lane===kickDirection?'achieved':'risk',lane===kickDirection?'Support reaches target lane; onside status not modeled.':'Support lane differs from kick target.');rubricSet(4,'pending',favorable?'Support arrives first at the contest; possession is not resolved in this training model.':'Defender contests the landing; possession is not resolved in this training model.');summary();narration('CHASE COMPLETE · Recovery remains contested.');},850);
           },850);
         });
       },1600);
@@ -261,7 +261,7 @@
       narration('DUMMY PASS · DRAW OUTSIDE, THEN FINISH INSIDE.');const fooled=!outside && defenseLane==='outside';
       move(carrier,135,35);move(defender,-20,fooled?-18:12);move(cover,fooled?-10:-33,fooled?-30:-10);
       get('quins-sim-traffic').setAttribute('opacity',fooled?'.25':'1');
-      rubricSet(0,fooled?'achieved':'risk',fooled?'Defender shifts outside.':'Defender stays narrow.');rubricSet(1,fooled?'achieved':'risk',fooled?'Inside gap opens.':'Inside traffic remains.');rubricSet(2,'achieved','Carrier retains ball through dummy.');rubricSet(3,lane==='inside'?'achieved':'risk',lane==='inside'?'Support inside.':'Support outside.');rubricSet(4,fooled?'achieved':'risk',fooled?'Inside carry progresses; no guaranteed try.':'Tackle and slow recycle likely.');message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
+      rubricSet(0,fooled?'achieved':'risk',fooled?'Defender shifts outside.':'Defender stays narrow.');rubricSet(1,fooled?'achieved':'risk',fooled?'Inside gap opens.':'Inside traffic remains.');rubricSet(2,'achieved','Carrier retains ball through dummy.');rubricSet(3,lane==='inside'?'achieved':'risk',lane==='inside'?'Support inside.':'Support outside.');rubricSet(4,fooled?'achieved':'risk',fooled?'Inside carry advances; try not established.':'Inside carry faces likely tackle and slow recycle.');message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
     }else return;
     if(choice==='inside'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
     if(choice==='inside')status.textContent='FINISHING MOVE · '+message;
@@ -277,7 +277,7 @@
   get('quins-sim-edit').addEventListener('click',()=>{reset();get('quins-sim-plan').scrollIntoView({behavior:'smooth',block:'nearest'});});
   function replaySelected(){
     if(phase!=='result')return false;
-    cancel();phase='setup';autoReplay=true;
+    cancel();phase='setup';autoReplay=true;rubricEvents={};renderRubric();
     ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);positionSupport(0,lane==='outside'?0:94);carryBall();get('quins-sim-ball').style.opacity='1';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');
     outcome.hidden=true;watchButton.hidden=true;playButton.hidden=false;
