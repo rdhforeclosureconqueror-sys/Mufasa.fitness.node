@@ -10,6 +10,10 @@ root.innerHTML=`<style>
 .quins-ravens-live [data-p]{transition:transform 750ms ease}
 .quins-ravens-live [data-ball]{transition:transform 750ms ease}
 .quins-ravens-live button:disabled{opacity:.45}
+.quins-ravens-live [data-defense] circle{transition:cx 650ms ease,cy 650ms ease}
+.quins-ravens-live .decision{padding:12px;border:1px solid #bba36a;border-radius:12px;margin:10px 0}
+.quins-ravens-live .decision button[aria-pressed="true"]{outline:3px solid white}
+.quins-ravens-live [data-report]{background:#294334;border-radius:9px;padding:12px;line-height:1.5}
 @media(prefers-reduced-motion:reduce){.quins-ravens-live [data-p],.quins-ravens-live [data-ball]{transition:none}}
 </style><h3>QUIN NATION · RAVENS MF · COACH PLAYBOOK</h3>
 <p>Actual coach-supplied sequence. Positions are <strong>illustrative until the original PDF geometry is matched</strong>. Attack moves LEFT → RIGHT. The white oval marks the ball.</p>
@@ -20,20 +24,56 @@ root.innerHTML=`<style>
 <rect width="390" height="260" rx="10" fill="#174a33"/><g stroke="#accbb2" stroke-dasharray="6 7" opacity=".5"><path d="M80 12V248M160 12V248M240 12V248M320 12V248M10 85H380M10 175H380"/></g>
 <path d="M18 21H367" stroke="#ffe3a2" stroke-width="4"/><path d="M355 13L370 21L355 29" stroke="#ffe3a2" stroke-width="4" fill="none"/>
 <text x="18" y="44" fill="#ffe3a2" font-size="14" font-weight="800">ATTACK →</text>
-<g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
+<g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
 <text x="12" y="251" font-size="11" fill="#fff">Gold: attackers 1–15 · White: ball</text></svg>
+<div class="decision"><label><input type="checkbox" data-defense-toggle> With Defense</label>
+<label> Defense response <select data-strategy><option value="fold">Fold toward repeated carries</option><option value="hold">Hold width / disciplined line</option><option value="rush">Rush ball carrier</option></select></label>
+<div><button data-crash>Simulate crash</button><button data-wide>Move ball wide</button><button data-reset-defense>Reset defensive experiment</button></div>
+<div data-report role="status" aria-live="polite">Turn on defense to experiment. Each crash can draw defenders, but the result depends on defensive strategy and recovery.</div></div>
 <div><button data-prev>Previous</button><button data-next>Next phase</button><button data-play>▶ Play</button><button data-pause>Pause</button><button data-replay>Watch again</button></div>
 <div data-explain role="status" aria-live="polite"></div><p style="font-size:.83rem">Restricted Quin training. FLASH is a coach-sourced option; unspecified carrier movement is not invented.</p>
 </div>`;
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0;
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[];
+const defenseGroup=$('[data-defense]'),defenders=[];
+for(let n=0;n<15;n++){
+ const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','9');c.setAttribute('fill','#d87571');c.setAttribute('stroke','#fff0e0');c.setAttribute('stroke-width','1.5');defenseGroup.appendChild(c);defenders.push(c);
+}
+function defenseReport(){
+ const enabled=$('[data-defense-toggle]').checked,strategy=$('[data-strategy]').value;
+ defenseGroup.setAttribute('visibility',enabled?'visible':'hidden');
+ const stage=data?.stages[index],carrier=stage?.ballCarrier?stage.positions[stage.ballCarrier]:[230,139];
+ const maxFold=strategy==='fold'?Math.min(4,crashes):strategy==='rush'?Math.min(2,crashes):0;
+ for(let n=0;n<15;n++){
+  // A baseline of two defensive banks, moving in response to phase and chosen strategy.
+  const row=n%8,bank=Math.floor(n/8);
+  let x=bank===0?290:335,y=52+row*23;
+  if(strategy==='fold'&&n>=8-maxFold&&n<8){x=carrier[0]+34;y=carrier[1]+(n-6)*12;}
+  if(strategy==='rush'&&n<2){x=Math.min(360,carrier[0]+22+n*9);y=carrier[1]+(n?14:-14);}
+  defenders[n].setAttribute('cx',Math.max(18,Math.min(374,x)));
+  defenders[n].setAttribute('cy',Math.max(53,Math.min(235,y)));
+ }
+ const remaining=8-maxFold;
+ $('[data-report]').textContent=!enabled?'Without Defense: study the coach sequence. Switch on defense to test your decisions.':
+ 'Defensive experiment: '+crashes+' crash(es). '+(strategy==='fold'?maxFold+' modeled defenders have folded toward the repeated carry; '+remaining+' remain in the original outside bank.':strategy==='hold'?'Defenders hold their width despite the crashes; no automatic overload.':'Two defenders pressure the carrier; the rest retain their shape.')+
+ (decisions.length?' Last decision: '+decisions.at(-1)+'.':'')+
+ ' These are simplified responses, not guaranteed real-match outcomes.';
+}
+function chooseDecision(action){
+ if(!data||!$('[data-defense-toggle]').checked)return;
+ pause();
+ if(action==='crash')crashes++;
+ if(action==='wide')crashes=Math.max(0,crashes-1);
+ decisions.push(action==='crash'?'crash and secure ball':'move wide / defense begins recovery');
+ defenseReport();
+}
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
 function render(){if(!data)return;const p=data.stages[index];for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 const ball=p.ballCarrier?p.positions[p.ballCarrier]:null;$('[data-ball]').setAttribute('opacity',ball?'1':'0');if(ball)$('[data-ball]').setAttribute('transform','translate('+(ball[0]+14)+' '+(ball[1]-7)+')');
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
-$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
+defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
 async function load(branch){pause();const id=++requestId;data=null;index=0;$('[data-content]').hidden=true;$('[data-gate]').textContent='Checking Quin team authorization…';
 const result=await window.MaatApiClient.request('/api/quins/ravens/play?branch='+encodeURIComponent(branch));
 if(id!==requestId)return;
@@ -45,6 +85,11 @@ $('[data-next]').addEventListener('click',()=>{pause();index=Math.min(data.stage
 $('[data-play]').addEventListener('click',()=>{pause();if(!data)return;if(index===data.stages.length-1)index=0;render();timer=setInterval(()=>{if(index===data.stages.length-1){pause();return;}index++;render();},2100);});
 $('[data-pause]').addEventListener('click',pause);
 $('[data-replay]').addEventListener('click',()=>{pause();index=0;render();});
-$('[data-branch]').addEventListener('change',e=>load(e.target.value));
+$('[data-branch]').addEventListener('change',e=>{crashes=0;decisions=[];load(e.target.value);});
+$('[data-defense-toggle]').addEventListener('change',defenseReport);
+$('[data-strategy]').addEventListener('change',()=>{crashes=0;decisions=[];defenseReport();});
+$('[data-crash]').addEventListener('click',()=>chooseDecision('crash'));
+$('[data-wide]').addEventListener('click',()=>chooseDecision('wide'));
+$('[data-reset-defense]').addEventListener('click',()=>{crashes=0;decisions=[];defenseReport();});
 load('wedge');
 })();

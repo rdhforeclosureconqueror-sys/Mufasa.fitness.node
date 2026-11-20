@@ -20,3 +20,23 @@ test('public script has no private coach play details',()=>{
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
  assert.ok(js.includes('/api/quins/ravens/play'));assert.ok(!js.includes('#12 UNDERS CRASH'));assert.ok(!js.includes('DECOY JETS'));
 });
+
+test('scrum positions follow rugby front row locks and back row instead of a grid',()=>{
+ const p=getPlay().stages[0].positions;
+ assert.equal(p[1][0],p[2][0]);assert.equal(p[2][0],p[3][0]);
+ assert.ok(p[4][0]<p[1][0]);assert.ok(p[6][0]<p[4][0]);
+ assert.ok(p[9][0]>p[1][0]);assert.ok(p[10][0]>p[9][0]);
+});
+test('no jersey circles overlap after phase placement',()=>{
+ for(const stage of getPlay().stages){
+  const ps=Object.values(stage.positions);
+  for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
+   assert.ok(Math.hypot(ps[i][0]-ps[j][0],ps[i][1]-ps[j][1])>=20,
+    stage.id+' collision '+i+' / '+j);
+  }
+ }
+});
+test('same RAVENS UI offers attack-only and responsive-defense experiments',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ for(const term of ['data-defense-toggle','data-strategy','data-crash','data-wide','data-reset-defense','defenseReport','With Defense'])assert.ok(js.includes(term),term);
+});
