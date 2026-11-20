@@ -52,7 +52,7 @@ function init(cfg){
   const p=point(ballEl);if(p)ball.position.set(p.x,1.35,p.z);
   renderer.render(scene,camera);raf=requestAnimationFrame(frame);
  }
- toggle.onclick=()=>{enabled=!enabled;canvas.style.display=enabled?'block':'none';svg.style.visibility=enabled?'hidden':'';toggle.textContent=enabled?'View: Original nodes':'View: Three.js';toggle.setAttribute('aria-pressed',String(enabled));cameraButton.hidden=!enabled;if(enabled)frame();else cancelAnimationFrame(raf);};
+ toggle.onclick=()=>{enabled=!enabled;canvas.style.display=enabled?'block':'none';svg.style.opacity=enabled?'0':'';svg.style.pointerEvents=enabled?'none':'';toggle.textContent=enabled?'View: Original nodes':'View: Three.js';toggle.setAttribute('aria-pressed',String(enabled));cameraButton.hidden=!enabled;if(enabled)frame();else cancelAnimationFrame(raf);};
  cameraButton.onclick=()=>{angle=(angle+1)%3;pose();};
 }
 let attempts=0;const check=()=>{drills.forEach(init);if(++attempts<30&&drills.some(d=>!document.querySelector(d.svg)))setTimeout(check,500)};check();
