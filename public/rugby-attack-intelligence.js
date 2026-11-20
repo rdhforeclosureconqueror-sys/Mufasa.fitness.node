@@ -18,7 +18,7 @@
       .quins-sim-status{min-height:52px;padding:12px;border:1px solid #54715a;border-radius:11px;background:#213b2b}
       .quins-sim-hint{font-size:.78rem;color:#c5d1c6}
       .quins-sim-outcome{padding:13px;border-left:4px solid #d9bd7b;background:#263d2f;border-radius:8px}
-      .quins-sim-outcome[hidden],.quins-sim-decisions[hidden]{display:none}
+      .quins-sim-outcome[hidden],.quins-sim-decisions[hidden],.quins-sim-toolbar button[hidden]{display:none}.quins-sim-toolbar{position:relative;grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}.quins-sim-toolbar button{min-height:50px}
       .quins-sim-player{transition:transform 900ms ease-in-out}.quins-sim-controls button[aria-pressed="true"]{outline:3px solid #fff1b9;outline-offset:2px}.quins-sim-stage{font-weight:800;color:#f4d88c}.quins-sim-plan-summary{padding:12px;background:#263d2f;border-radius:10px;margin:10px 0}
       @media(prefers-reduced-motion:reduce){.quins-sim-player{transition:none}}
     </style>
@@ -36,24 +36,22 @@
       <g id="quins-sim-cover" class="quins-sim-player"><circle cx="291" cy="145" r="16" fill="#db7773"/><text x="291" y="149" fill="#fff" text-anchor="middle" font-size="12" font-weight="800">2</text></g>
       <text x="14" y="211" fill="#e9f1e9" font-size="10">ATTACK →</text><text x="252" y="211" fill="#e9f1e9" font-size="10">COVER DEFENSE</text>
     </svg>
+    <div class="quins-sim-controls quins-sim-toolbar" aria-label="Playback controls">
+      <button type="button" id="quins-sim-start" disabled>▶ Play scenario</button>
+      <button type="button" id="quins-sim-continue" hidden>▶ Finish move</button>
+      <button type="button" id="quins-sim-watch" hidden>↺ Watch again</button>
+      <button type="button" id="quins-sim-edit">✎ Change plan</button>
+    </div>
+    <p class="quins-sim-status" id="quins-sim-status" role="status" aria-live="polite">Choose your setup below, then play here.</p>
+    <div id="quins-sim-outcome" class="quins-sim-outcome" role="status" aria-live="polite" hidden></div>
     <p class="quins-sim-hint">C = carrier · S = support · D = primary defender · 2 = covering defender. S can be placed outside (space) or inside (traffic). This is a simplified training scenario.</p>
     <div class="quins-sim-controls" id="quins-sim-setup">
       <button type="button" id="quins-sim-outside">Place support outside</button>
       <button type="button" id="quins-sim-inside">Place support inside</button>
-      <button type="button" id="quins-sim-start" disabled>Start run →</button>
-      <button type="button" id="quins-sim-reset">Reset</button>
+
     </div>
-    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose where the covering defender waits and your intended action. The simulation pauses approximately three yards before contact to confirm or change your decision.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Cover inside</button><button type="button" data-defense="outside">Cover outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Cover: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose a support lane, cover position, and intended decision.</p></div><p class="quins-sim-status" id="quins-sim-status" role="status" aria-live="polite">Step 1: Choose where to position your support runner.</p>
-    <div id="quins-sim-decisions" class="quins-sim-decisions" hidden>
-      <h3>Three yards out · Read and commit</h3>
-      <p>Your preselected action is ready. Review the picture before triggering the next move. Nothing advances until you press Continue.</p>
-      <div class="quins-sim-controls">
-        <button type="button" id="quins-sim-continue">Continue planned move →</button>
-        <button type="button" id="quins-sim-replay">Restart setup</button>
-      </div>
-    </div>
-    <div class="quins-sim-controls" id="quins-sim-review" hidden><button type="button" id="quins-sim-watch">Watch outcome again</button><button type="button" id="quins-sim-new">Try another setup</button></div>
-    <div id="quins-sim-outcome" class="quins-sim-outcome" role="status" aria-live="polite" hidden></div>`;
+    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose where the covering defender waits and your intended action. The simulation pauses approximately three yards before contact. Use Finish move directly under the pitch; you will never need to scroll to advance.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Cover inside</button><button type="button" data-defense="outside">Cover outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Cover: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose a support lane, cover position, and intended decision.</p></div>
+`;
   host.appendChild(root);
   const get = id => root.querySelector('#' + id);
   const support = get('quins-sim-support');
@@ -61,7 +59,7 @@
   const defender = get('quins-sim-defender');
   const cover = get('quins-sim-cover');
   const status = get('quins-sim-status');
-  const decision = get('quins-sim-decisions');
+  const playButton=get('quins-sim-start');const continueButton=get('quins-sim-continue');const watchButton=get('quins-sim-watch');
   const outcome = get('quins-sim-outcome');
   let lane = null;
   let plannedChoice = null;
@@ -70,7 +68,7 @@
   let pending = null;
   let resultSnapshot = null;
   const initial = {carrier:[0,0],support:[0,0],defender:[0,0],cover:[0,0]};
-  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'not set')+' · 2. Cover: '+(defenseLane||'not set')+' · 3. Action: '+(plannedChoice||'not set');get('quins-sim-start').disabled=!(lane&&defenseLane&&plannedChoice);root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
+  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'not set')+' · 2. Cover: '+(defenseLane||'not set')+' · 3. Action: '+(plannedChoice||'not set');playButton.disabled=!(lane&&defenseLane&&plannedChoice)||phase!=='setup';root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
   function move(el,x,y){ el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function cancel(){if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
@@ -78,10 +76,10 @@
     move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,0);get('quins-sim-plan-status').textContent='Choose a support lane, cover position, and intended decision.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
-    get('quins-sim-review').hidden=true;get('quins-sim-start').disabled=true;
+    playButton.hidden=false;playButton.disabled=true;continueButton.hidden=true;watchButton.hidden=true;
     get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
-    decision.hidden=true;outcome.hidden=true;outcome.textContent='';
-    status.textContent='Step 1: Choose where to position your support runner.';summary();
+    outcome.hidden=true;outcome.textContent='';
+    status.textContent='Choose your support, cover and move below. Playback stays beside the pitch.';summary();
   }
   function place(which){
     if(phase!=='setup')return;
@@ -92,19 +90,19 @@
   }
   function play(){
     if(phase!=='setup'||!lane||!defenseLane||!plannedChoice)return;
-    phase='running';get('quins-sim-start').disabled=true;
+    phase='running';playButton.disabled=true;
     get('quins-sim-outside').disabled=true;get('quins-sim-inside').disabled=true;
     status.textContent='Play running: carrier advances, first defender commits. Watch the cover defender.';
     move(carrier,88,0);move(defender,0,0);
     pending=setTimeout(function(){
       pending=null;if(phase!=='running')return;
-      phase='decision';decision.hidden=false;
+      phase='decision';playButton.hidden=true;continueButton.hidden=false;
       status.textContent='EARLY READ · About three yards before the defender. Planned: '+plannedChoice+'. The pitch is frozen until you press Continue planned move.';
     },1050);
   }
   function choose(choice){
     if(phase!=='decision')return;
-    phase='result';decision.hidden=true;get('quins-sim-review').hidden=false;
+    phase='result';continueButton.hidden=true;watchButton.hidden=false;
     const outside=lane==='outside';const coverInside=defenseLane==='inside';
     let message='';
     if(choice==='pass'){
@@ -128,18 +126,24 @@
       message='CONTACT / ISOLATION RISK · The dummy draws attention, but cutting inside takes the carrier toward covering traffic and away from outside support. A tackle and slow recycle are likely in this illustrated scenario. Scan cover and support before choosing this line.';
     }else return;
     outcome.hidden=false;outcome.textContent=message;resultSnapshot=choice;
-    status.textContent='Outcome shown. Reset and test another support position or decision.';
+    status.textContent='Outcome shown. Watch again or change the plan using the controls directly above.';
   }
   root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,defenseLane==='inside'?0:-80);summary();get('quins-sim-plan-status').textContent='Cover '+defenseLane+'. Choose your action and press Play.';}));
-  root.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;plannedChoice=b.dataset.plan;summary();get('quins-sim-plan-status').textContent='Planned action: '+b.textContent+'. You may change it at the early decision pause.';}));
+  root.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;plannedChoice=b.dataset.plan;summary();get('quins-sim-plan-status').textContent='Planned action: '+b.textContent+'. Use Change plan to revise before replaying.';}));
   get('quins-sim-outside').addEventListener('click',()=>place('outside'));
   get('quins-sim-inside').addEventListener('click',()=>place('inside'));
   get('quins-sim-start').addEventListener('click',play);
-  get('quins-sim-reset').addEventListener('click',reset);
-  get('quins-sim-replay').addEventListener('click',reset);
-  get('quins-sim-continue').addEventListener('click',()=>choose(plannedChoice));
-  get('quins-sim-new').addEventListener('click',reset);
-  get('quins-sim-watch').addEventListener('click',()=>{if(phase!=='result'||!resultSnapshot)return;phase='decision';get('quins-sim-review').hidden=true;outcome.hidden=true;move(carrier,88,0);move(support,0,lane==='outside'?0:94);move(defender,0,0);move(cover,0,defenseLane==='inside'?0:-80);get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');get('quins-sim-review').hidden=true;decision.hidden=false;status.textContent='Replay paused at three yards. Press Continue planned move when ready.';});
+  continueButton.addEventListener('click',()=>choose(plannedChoice));
+  get('quins-sim-edit').addEventListener('click',()=>{reset();get('quins-sim-plan').scrollIntoView({behavior:'smooth',block:'nearest'});});
+  watchButton.addEventListener('click',()=>{
+    if(phase!=='result')return;
+    cancel();phase='setup';
+    move(carrier,0,0);move(defender,0,0);move(cover,0,defenseLane==='inside'?0:-80);move(support,0,lane==='outside'?0:94);
+    get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');
+    outcome.hidden=true;watchButton.hidden=true;playButton.hidden=false;
+    get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
+    summary();play();
+  });
   support.addEventListener('click',()=>place(lane==='outside'?'inside':'outside'));
   support.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();place(lane==='outside'?'inside':'outside');}});
 
