@@ -79,3 +79,8 @@ test('ruck playback waits for modeled ball release and pause cancels playback',(
  assert.ok(js.includes('clearTimeout(timer)'));
  assert.ok(js.includes('if(token!==playToken)return'));
 });
+
+test('fast-ball chain explains terminology and does not guarantee a line break',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ for(const term of ['FAST-BALL CHAIN','data-chain-fast','data-chain-slow','data-chain-attack','data-chain-side','data-chain-defense','data-gap','No reliable gap','Fast ball alone never guarantees a break'])assert.ok(js.includes(term),term);
+});
