@@ -27,24 +27,37 @@ function init(cfg){
  const panel=document.createElement('div');panel.style.cssText='display:none;position:absolute;z-index:3;inset:8px auto auto 8px;max-height:85%;width:min(340px,calc(100% - 16px));overflow:auto;background:#142d22;border:1px solid #bca36c;padding:12px;border-radius:12px;box-sizing:border-box';
  const count=document.createElement('div');count.style.cssText='display:none;position:absolute;inset:0;z-index:4;align-items:center;justify-content:center;background:#091c13a8;font-size:76px;font-weight:800;color:#f5d58d;pointer-events:none';
  stage.append(panel,count);
-  // Read the native SVG checklist, never calculate separate 3D scores.
-  const rubricOverlay=document.createElement('section');rubricOverlay.setAttribute('aria-label','Five-point coaching checklist');rubricOverlay.style.cssText='position:absolute;z-index:2;bottom:10px;left:10px;right:10px;max-height:38%;overflow:auto;background:#10271def;border:1px solid #d8bd78;border-radius:12px;padding:10px;color:#f9e9c3;font-size:12px;line-height:1.45;box-sizing:border-box;display:none';
-  const rubricHeader=document.createElement('button');rubricHeader.type='button';rubricHeader.style.cssText='display:block;width:100%;text-align:left;border:0;background:transparent;color:#f4d58c;font-weight:800;font-size:14px;min-height:30px';
-  const rubricBody=document.createElement('div');rubricBody.style.cssText='display:grid;gap:4px';rubricOverlay.append(rubricHeader,rubricBody);stage.appendChild(rubricOverlay);
-  let rubricCollapsed=false;
-  function updateRubric(){if(!cfg.title.startsWith('2v1'))return;const source=svg.closest(cfg.controlRoot)?.querySelector('#quins-opportunity-checklist');if(!source)return;rubricOverlay.style.display=expanded?'block':'none';const raw=(source.textContent||'').trim();const entries=raw.split(' | ').filter(x=>['✓ ','△ ','○ '].some(mark=>x.startsWith(mark))&&x.includes('. '));const assessed=entries.filter(x=>!x.includes('PENDING:')).length;rubricHeader.textContent='☑ Coaching checklist · '+assessed+'/5 assessed · '+(rubricCollapsed?'Show':'Hide');rubricBody.hidden=rubricCollapsed;if(!rubricCollapsed){rubricBody.replaceChildren();for(const entry of entries){const line=document.createElement('div');line.textContent=entry;line.style.cssText='border-top:1px solid #4a6857;padding:4px 0';rubricBody.appendChild(line);}if(!entries.length)rubricBody.textContent=raw||'Checklist waiting for a scenario.';}}
-  rubricHeader.onclick=()=>{rubricCollapsed=!rubricCollapsed;updateRubric();};
+  // Post-play arcade review mirrors native checklist; scoring stays in the SVG engine.
+  const rubricOverlay=document.createElement('section');rubricOverlay.setAttribute('aria-label','Post-play coaching score');rubricOverlay.setAttribute('aria-live','polite');rubricOverlay.style.cssText='position:absolute;z-index:2;top:44%;left:6%;right:6%;transform:translateY(-50%);pointer-events:none;text-align:center;display:none';
+  const scoreCard=document.createElement('div');scoreCard.style.cssText='background:#10291ff2;border:2px solid #e4c783;border-radius:18px;padding:20px 15px;color:#fff3cb;box-shadow:0 12px 45px #000a;opacity:0;transform:translateY(35px) scale(.85);transition:opacity .3s ease,transform .3s ease;white-space:pre-line;font-size:17px;font-weight:800;line-height:1.6';
+  rubricOverlay.appendChild(scoreCard);stage.appendChild(rubricOverlay);
+  let revealTimers=[],lastResultVisible=false;
+  function stopReveal(){revealTimers.forEach(clearTimeout);revealTimers=[];rubricOverlay.style.display='none';scoreCard.style.opacity='0';}
+  function afterReveal(fn,ms){revealTimers.push(setTimeout(fn,ms));}
+  function rubricEntries(){const source=svg.closest(cfg.controlRoot)?.querySelector('#quins-opportunity-checklist');return (source?.textContent||'').split(' | ').filter(x=>['✓ ','△ ','○ '].some(mark=>x.startsWith(mark))&&x.includes('. '));}
+  function showScore(text,positive){rubricOverlay.style.display='block';scoreCard.style.borderColor=positive?'#a5e5ae':'#e4c783';scoreCard.textContent=text;scoreCard.style.opacity='0';scoreCard.style.transform='translateY(35px) scale(.85)';afterReveal(()=>{scoreCard.style.opacity='1';scoreCard.style.transform='translateY(0) scale(1)';},50);}
+  function startReveal(){
+    if(!expanded||!cfg.title.startsWith('2v1'))return;
+    stopReveal();const entries=rubricEntries();if(!entries.length)return;
+    const achieved=entries.filter(x=>x.includes('ACHIEVED:')).length;
+    const risk=entries.filter(x=>x.includes('RISK:')).length;
+    const unresolved=entries.length-achieved-risk;
+    const sequence=entries.map(entry=>{const parts=entry.split(' — ');const title=(parts[0]||'').replace(/^[✓△○] /,'');const detail=parts.slice(1).join(' — ');const state=detail.startsWith('ACHIEVED:')?'✓ CHECK':detail.startsWith('RISK:')?'△ RISK — BACK YOURSELF':'○ UNRESOLVED';return title.toUpperCase()+'\\n'+state+'\\n'+detail.replace(/^(ACHIEVED|RISK|PENDING): /,'');});
+    sequence.push('PLAY REVIEW COMPLETE\\n'+achieved+' / 5 ACHIEVED'+(risk?' · '+risk+' RISK':'')+(unresolved?' · '+unresolved+' UNRESOLVED':'')+'\\nRisk is a coaching opportunity, not an automatic failure.');
+    sequence.forEach((entry,i)=>afterReveal(()=>showScore(entry,i<entries.length&&entry.includes('✓ CHECK')),i*1900+250));
+    afterReveal(()=>{rubricOverlay.style.display='none';},sequence.length*1900+2100);
+  }
   portal.append(toolbar,stage);document.body.appendChild(portal);
  const sourceRoot=wrapper.parentElement;const canvasHome=document.createComment('three canvas original position');wrapper.insertBefore(canvasHome,canvas);
  let expanded=false,zoom=1,turn=0,tilt=0,pending=null;
- function close(){if(pending){clearTimeout(pending);pending=null;}count.style.display='none';panel.style.display='none';expanded=false;rubricOverlay.style.display='none';portal.style.display='none';wrapper.insertBefore(canvas,canvasHome.nextSibling);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='';document.body.style.overflow=portal.dataset.prevOverflow||'';pose();}
- function open(){if(!enabled)toggle.click();expanded=true;portal.dataset.prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';portal.style.display='flex';stage.insertBefore(canvas,panel);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='100%';updateRubric();pose();}
+ function close(){if(pending){clearTimeout(pending);pending=null;}count.style.display='none';panel.style.display='none';expanded=false;stopReveal();portal.style.display='none';wrapper.insertBefore(canvas,canvasHome.nextSibling);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='';document.body.style.overflow=portal.dataset.prevOverflow||'';pose();}
+ function open(){if(!enabled)toggle.click();expanded=true;portal.dataset.prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';portal.style.display='flex';stage.insertBefore(canvas,panel);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='100%';stopReveal();lastResultVisible=false;pose();}
  expand.onclick=open;
  mk('✕ Close',close);mk('⚙ Controls',()=>{panel.style.display=panel.style.display==='none'?'block':'none';refreshPanel();});mk('↻ Angle',()=>{angle=(angle+1)%3;pose();});mk('＋ Zoom',()=>{zoom=Math.min(2.6,zoom+.25);pose();});mk('－ Zoom',()=>{zoom=Math.max(.7,zoom-.25);pose();});mk('⟲ Reset view',()=>{zoom=1;turn=0;tilt=0;angle=0;pose();});
  let startX=0,startY=0;stage.addEventListener('pointerdown',e=>{if(e.target.closest('button')||panel.contains(e.target))return;startX=e.clientX;startY=e.clientY;stage.setPointerCapture(e.pointerId);});stage.addEventListener('pointerup',e=>{if(!expanded||panel.contains(e.target))return;turn=Math.max(-1.2,Math.min(1.2,turn+(e.clientX-startX)*.006));tilt=Math.max(-.5,Math.min(.5,tilt+(e.clientY-startY)*.003));pose();});
  function countdownPlay(button){
   if(pending){clearTimeout(pending);pending=null;}
-  panel.style.display='none';count.style.display='flex';count.textContent='2';
+  stopReveal();lastResultVisible=false;panel.style.display='none';count.style.display='flex';count.textContent='2';
   pending=setTimeout(()=>{count.textContent='1';pending=setTimeout(()=>{count.style.display='none';pending=null;button.click();},1000);},1000);
  }
  function sourceButtons(){
@@ -87,7 +100,8 @@ function init(cfg){
   panel.appendChild(launch);
  }
  mk('▶ Play / Replay',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);const replay=scope?.querySelector('#quins-sim-watch');if(replay&&!replay.hidden){panel.style.display='none';count.style.display='none';scope.dispatchEvent(new Event('quins:replay-selected'));return;}}const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const current=cfg.title.startsWith('2v1')?svg.closest(cfg.controlRoot)?.querySelector('#quins-sim-start'):null;const target=replay||(current&&!current.disabled?current:play);if(target&&!target.disabled)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
- mk('Change scenario',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);scope?.querySelector('#quins-sim-edit')?.click();}panel.style.display='block';refreshPanel();});
+ mk('☑ Review score',()=>startReveal());
+  mk('Change scenario',()=>{stopReveal();lastResultVisible=false;if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);scope?.querySelector('#quins-sim-edit')?.click();}panel.style.display='block';refreshPanel();});
  document.addEventListener('keydown',e=>{if(expanded&&e.key==='Escape')close();});
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
  const camera=new THREE.PerspectiveCamera(48,1,.1,300);
