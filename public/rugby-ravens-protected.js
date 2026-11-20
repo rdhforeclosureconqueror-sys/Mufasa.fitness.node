@@ -35,6 +35,12 @@ root.innerHTML=`<style>
 <button data-wide>Move wide</button><button data-reset-defense>Reset</button>
 <label style="align-self:center;font-size:.85rem"><input type="checkbox" data-defense-toggle> Defense</label>
 </div>
+<div class="decision" data-chain-panel><strong>FAST-BALL CHAIN · Create the gap</strong>
+<p><strong>Fast ball:</strong> playable ball released quickly after the tackle (≤3s coaching target). <strong>Fold:</strong> defenders moving around the ruck to rebuild their line. <strong>Overload:</strong> more available attackers than defenders in a channel. <strong>Line break:</strong> a carrier passes through the defensive line.</p>
+<label>Attack channel <select data-chain-side><option value="same">Repeat same side</option><option value="switch">Switch sides</option></select></label>
+<label>Defense <select data-chain-defense><option value="fold">Slow to fold</option><option value="disciplined">Disciplined recovery</option></select></label>
+<div><button data-chain-fast>Win fast ball</button><button data-chain-slow>Slow ball</button><button data-chain-attack>Attack the gap</button><button data-chain-reset>Reset chain</button></div>
+<div data-chain-result role="status" aria-live="polite">Win consecutive fast rucks to test whether defensive compression creates a usable gap. No automatic line break.</div></div>
 <div class="decision" data-ruck-panel><strong>RUCK LAB · support and speed</strong><p>Adjust support at the tackle to compare fast ball, slow ball, and turnover risk. This is a training model, not a law or guaranteed match outcome.</p>
 <label><input type="checkbox" data-auto-support checked> Calculate support from pitch positions</label><div data-arrivals role="status" aria-live="polite">Pitch-based support estimates appear at a ruck.</div>
 <label>Attack support <select data-support><option value="1">1 available</option><option value="2" selected>2 available</option><option value="3">3 available</option><option value="4">4 available</option></select></label>
@@ -212,5 +218,47 @@ $('[data-strategy]').addEventListener('change',()=>{crashes=0;recovery=0;decisio
 $('[data-crash]').addEventListener('click',()=>chooseDecision('crash'));
 $('[data-wide]').addEventListener('click',()=>chooseDecision('wide'));
 $('[data-reset-defense]').addEventListener('click',()=>{crashes=0;recovery=0;decisions=[];lastRuck=null;index=0;previousStage=null;render();});
+// Teaching sandbox, separate from the source-faithful RAVENS phase order.
+let chainFast=0,chainSeconds=0,chainCompressed=0,chainOutcome='No gap assessed';
+function chainRender(){
+ const side=$('[data-chain-side]').value,discipline=$('[data-chain-defense]').value==='disciplined';
+ const reset=Math.max(0,Math.floor(chainSeconds/4))+(discipline?chainFast:0);
+ const net=Math.max(0,chainCompressed-reset);
+ const channel=side==='same'?'near-ruck seam':'outside channel';
+ const chance=net>=2?'Gap available':net===1?'Potential mismatch':'Defense organized';
+ $('[data-chain-result]').textContent='Consecutive fast balls: '+chainFast+' · modeled elapsed time: '+chainSeconds.toFixed(1)+'s · defenders drawn in: '+chainCompressed+' · defenders recovered: '+reset+' · '+chance+' at '+channel+'. '+chainOutcome+'. Fast ball alone never guarantees a break.';
+ if(data&&$('[data-defense-toggle]').checked){
+  const defense=defenders.slice(0,Math.min(net,4));
+  defense.forEach((c,i)=>{c.setAttribute('cx',side==='same'?230:260);c.setAttribute('cy',side==='same'?115+i*13:105+i*14);});
+ }
+}
+function chainStep(fast){
+ if(!data)return;
+ pause();
+ if(!$('[data-defense-toggle]').checked)$('[data-defense-toggle]').checked=true;
+ const ruck=evaluateRuck();
+ const seconds=fast?Math.min(3,Math.max(1.5,ruck.time)):Math.max(4.5,ruck.time);
+ chainSeconds+=seconds;
+ if(fast&&!ruck.lost){
+  chainFast++;
+  if($('[data-chain-defense]').value==='fold')chainCompressed=Math.min(5,chainCompressed+1);
+  chainOutcome='Support secures the tackle; #9 releases the ball. Backline must preserve width and depth';
+ }else{
+  chainFast=0;chainCompressed=Math.max(0,chainCompressed-1);
+  chainOutcome=ruck.lost?'Turnover risk: insufficient effective support':'Slow release lets the defensive line fold and reset';
+ }
+ chainRender();
+}
+$('[data-chain-fast]').addEventListener('click',()=>chainStep(true));
+$('[data-chain-slow]').addEventListener('click',()=>chainStep(false));
+$('[data-chain-attack]').addEventListener('click',()=>{
+ const disciplined=$('[data-chain-defense]').value==='disciplined';
+ const net=Math.max(0,chainCompressed-Math.floor(chainSeconds/4)-(disciplined?chainFast:0));
+ chainOutcome=chainFast>=2&&net>=2?'Modeled gap: the backline can attack '+($('[data-chain-side]').value==='same'?'the near-ruck seam':'outside space')+'. Possible line break if the carrier beats the remaining cover':'No reliable gap: carry, recycle, or change the point of attack';
+ chainRender();
+});
+$('[data-chain-reset]').addEventListener('click',()=>{chainFast=0;chainSeconds=0;chainCompressed=0;chainOutcome='Chain reset';chainRender();});
+$('[data-chain-side]').addEventListener('change',chainRender);
+$('[data-chain-defense]').addEventListener('change',chainRender);
 load('wedge');
 })();
