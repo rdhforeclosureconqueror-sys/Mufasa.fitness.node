@@ -80,6 +80,16 @@
   const index=limbStart?Math.min(7,Math.floor(elapsed/7)):0;
   const day=limbStart?Math.min(7,elapsed%7+1):1;
   const current=weeks[index];
+  const limbSupport = {
+    Yama: { chakra: "Heart Chakra", affirmation: "I choose honesty, care, and peaceful boundaries in every relationship." },
+    Niyama: { chakra: "Solar Plexus Chakra", affirmation: "I honor the small practices that strengthen my discipline and self-trust." },
+    Asana: { chakra: "Root Chakra", affirmation: "I meet my body with steadiness, respect, and patient strength." },
+    Pranayama: { chakra: "Throat Chakra", affirmation: "I create room for myself with each conscious breath." },
+    Pratyahara: { chakra: "Third Eye Chakra", affirmation: "I protect my attention and trust the quiet wisdom within." },
+    Dharana: { chakra: "Third Eye Chakra", affirmation: "I return to what matters, one clear moment at a time." },
+    Dhyana: { chakra: "Crown Chakra", affirmation: "I can observe without rushing to react, fix, or judge." },
+    Samadhi: { chakra: "Crown Chakra", affirmation: "I am connected—to myself, to others, and to a larger purpose." },
+  };
   const escapeHtml = (value) =>
     String(value || "").replace(
       /[&<>"']/g,
@@ -89,14 +99,17 @@
         ],
     );
   function renderToday({ lesson, story } = {}) {
+    const support=limbSupport[current.limb];
+    const dateLabel=new Intl.DateTimeFormat(undefined,{weekday:"long",month:"long",day:"numeric"}).format(today);
+    const lessonTitle=lesson?.lesson||"Today’s lesson is loading.";
     const lessonBlock = lesson
-      ? `<div class="practice"><p class="eyebrow">Today’s practice · Day ${day}</p><p><strong>${escapeHtml(lesson.lesson)}</strong></p><p><strong>Try:</strong> ${escapeHtml(lesson.action)}</p><p><strong>Reflect:</strong> ${escapeHtml(lesson.question)}</p></div>`
+      ? `<div class="practice"><p class="eyebrow">Today’s practice</p><p><strong>Try:</strong> ${escapeHtml(lesson.action)}</p><p><strong>Look for this today:</strong> ${escapeHtml(lesson.question)}</p></div>`
       : `<p class="muted">The daily practice is loading from the Mindfulness curriculum.</p>`;
     const storyBlock = story
       ? `<milele-narration title="${escapeHtml(story.title)}"><div data-transcript><p>${escapeHtml(story.story)}</p></div></milele-narration>`
       : "";
     document.querySelector("#todayContent").innerHTML =
-      `<p class="today-label">WEEK ${index + 1} · ${current.limb.toUpperCase()}</p><h2>${current.limb} + ${current.symbol}</h2><p class="symbol">${current.symbol} · ${current.meaning}</p><p>${current.bridge}</p><p><strong>Weekly reflection:</strong> ${current.focus}</p>${lessonBlock}${storyBlock}<p><a class="button" href="/mindfulness.html?community=pac#pac-community-today">Start today in the Mindfulness Dashboard →</a><a class="button secondary" href="/awareness-journey.html">Take today’s awareness practice →</a></p>`;
+      `<article class="daily-snapshot" aria-label="Today's Eight Limbs lesson"><p class="eyebrow">MILELE FIT · EIGHT LIMBS DAILY SNAPSHOT</p><p class="snapshot-date">${escapeHtml(dateLabel)}</p><p class="today-label">WEEK ${index + 1} · DAY ${day} · ${escapeHtml(current.limb.toUpperCase())}</p><p class="snapshot-kicker">TODAY’S REFLECTION</p><h2>${escapeHtml(lessonTitle)}</h2><p class="snapshot-meaning">${escapeHtml(current.bridge)}</p><div class="snapshot-support"><p class="eyebrow">Supporting awareness center</p><p><strong>${escapeHtml(support.chakra)}</strong> supports today’s ${escapeHtml(current.limb)} practice.</p></div><div class="snapshot-affirmation"><p class="eyebrow">Today’s affirmation</p><p>${escapeHtml(support.affirmation)}</p></div>${lessonBlock}<p class="snapshot-reflection"><strong>Reflection:</strong> ${escapeHtml(current.focus)}</p><p><a class="button" href="/awareness-journey.html">Take today’s awareness practice →</a><a class="button secondary" href="/mindfulness.html?community=pac#pac-community-today">Open Chakra Mindfulness Dashboard →</a></p></article>${storyBlock}`;
   }
   if (!limbStart) {
     document.querySelector("#todayContent").innerHTML = `<h2>Start your Eight Limbs journey when you are ready</h2><p>Membership does not start the lessons automatically. Your first day begins when you choose to start.</p><button class="button" id="startLimbJourney">Start My Journey · Day One</button><p class="muted">Your start date is saved to your verified member account.</p>`;
