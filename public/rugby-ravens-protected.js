@@ -29,8 +29,11 @@ root.innerHTML=`<style>
 <rect width="390" height="260" rx="10" fill="#174a33"/><g stroke="#accbb2" stroke-dasharray="6 7" opacity=".5"><path d="M80 12V248M160 12V248M240 12V248M320 12V248M10 85H380M10 175H380"/></g>
 <path d="M18 21H367" stroke="#ffe3a2" stroke-width="4"/><path d="M355 13L370 21L355 29" stroke="#ffe3a2" stroke-width="4" fill="none"/>
 <text x="18" y="44" fill="#ffe3a2" font-size="14" font-weight="800">ATTACK →</text>
-<rect data-gap x="260" y="70" width="55" height="110" fill="#e9d58c" fill-opacity=".16" stroke="#f5d77e" stroke-dasharray="5 5" visibility="hidden"/><g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
+<rect data-gap x="260" y="70" width="55" height="110" fill="#e9d58c" fill-opacity=".16" stroke="#f5d77e" stroke-dasharray="5 5" visibility="hidden"/><g data-drill visibility="hidden"></g><g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
 <text x="12" y="251" font-size="11" fill="#fff">Gold: attackers 1–15 · White: ball</text></svg>
+<div class="decision" data-realign-panel><strong>RUCK REALIGNMENT · Generic teaching drill</strong><p>This is a generic rugby example, <strong>not</strong> the coach-approved RAVENS formation. Follow the carry → tackle → ruck → fold → release sequence to see both units reorganize.</p>
+<div class="pitch-controls"><button data-realign-start>Start drill</button><button data-realign-next>Next step</button><button data-realign-exit>Return to playbook</button></div>
+<div data-realign-status role="status" aria-live="polite">Ready: attacking pod and backline face an organized defense.</div></div>
 <div data-playback-clock role="status" aria-live="polite" style="padding:8px 10px;margin-top:8px;border:1px solid #bba36a;border-radius:9px">Ruck clock ready</div>
 <div class="pitch-controls" aria-label="RAVENS pitch playback and decisions">
 <button data-play>▶ Play</button><button data-pause>Pause</button><button data-replay>↺ Replay</button>
@@ -59,7 +62,7 @@ root.innerHTML=`<style>
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null,playToken=0,pitchView='forwards';
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null,playToken=0,pitchView='forwards',drillStep=-1;
 const defenseGroup=$('[data-defense]'),defenders=[];
 function evaluateRuck(){
  const stage=data?.stages[index],isRuck=stage?.id==='ruck1'||stage?.id==='ruck2';
@@ -116,6 +119,32 @@ function applyPitchView(){
  root.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===pitchView)));
 }
 root.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{pitchView=b.dataset.view;applyPitchView();}));
+// Generic drill geometry is independent of protected coach-supplied positions.
+const drillGroup=$('[data-drill]'),drillDots=[];
+const drillFrames=[
+ {label:'SET SHAPE · Forwards form a carrying pod, #9 and backs hold depth.',a:[[70,120],[56,94],[56,146],[42,118],[98,120],[112,80],[142,60],[172,45]],d:[[242,80],[242,105],[242,130],[242,155],[242,180],[282,100],[282,145]]},
+ {label:'CARRY AND TACKLE · The carrier meets a defender. Support closes on the tackle.',a:[[155,120],[116,101],[116,142],[92,118],[128,120],[132,76],[160,58],[190,42]],d:[[167,120],[230,98],[230,150],[246,170],[246,188],[282,100],[282,145]]},
+ {label:'RUCK · Two cleaners arrive, #9 sets at the base; defenders establish the offside line.',a:[[160,120],[148,108],[148,134],[122,119],[132,120],[143,78],[172,58],[204,44]],d:[[184,119],[195,95],[195,151],[215,173],[237,190],[278,110],[278,152]]},
+ {label:'REALIGN · Forwards reset into a pod; defenders fold while backs maintain width and depth.',a:[[166,120],[156,110],[156,132],[120,121],[139,119],[160,74],[196,56],[233,42]],d:[[204,119],[211,96],[211,148],[228,174],[245,190],[263,100],[280,145]]},
+ {label:'RELEASE · #9 distributes toward #10; defenders who have not folded leave potential space.',a:[[168,120],[154,109],[154,133],[120,121],[138,118],[179,75],[225,57],[264,43]],d:[[207,119],[215,95],[215,150],[231,175],[247,190],[264,105],[282,150]]}
+];
+for(let i=0;i<15;i++){const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r',i<8?'10':'9');c.setAttribute('stroke','#132a1e');c.setAttribute('stroke-width','1.5');c.setAttribute('fill',i<8?'#e4c77d':'#d87571');c.style.transition='cx 700ms ease,cy 700ms ease';drillGroup.appendChild(c);drillDots.push(c);}
+function showDrill(step){
+ drillStep=step;
+ const active=step>=0,frame=drillFrames[step];
+ drillGroup.setAttribute('visibility',active?'visible':'hidden');
+ players.setAttribute('visibility',active?'hidden':'visible');
+ defenseGroup.setAttribute('visibility',active?'hidden':$('[data-defense-toggle]').checked?'visible':'hidden');
+ $('[data-ball]').setAttribute('visibility',active?'hidden':'visible');
+ $('[data-gap]').setAttribute('visibility','hidden');
+ if(active){
+  frame.a.concat(frame.d).forEach((p,i)=>{drillDots[i].setAttribute('cx',p[0]);drillDots[i].setAttribute('cy',p[1]);});
+  $('[data-realign-status]').textContent='Step '+(step+1)+'/5 · '+frame.label+' Generic coaching illustration; not a verified match formation.';
+ }else{$('[data-realign-status]').textContent='Returned to the protected coach playbook.';render();}
+}
+$('[data-realign-start]').addEventListener('click',()=>{pause();showDrill(0);});
+$('[data-realign-next]').addEventListener('click',()=>{pause();showDrill(Math.min(4,drillStep<0?0:drillStep+1));});
+$('[data-realign-exit]').addEventListener('click',()=>{pause();showDrill(-1);});
 function defenseReport(){
  const enabled=$('[data-defense-toggle]').checked,strategy=$('[data-strategy]').value;
  defenseGroup.setAttribute('visibility',enabled?'visible':'hidden');
@@ -199,7 +228,7 @@ function animateBall(from,to){
  ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
 }
 function pause(){playToken++;if(timer!==null)clearTimeout(timer);timer=null;}
-function render(){if(!data)return;const p=data.stages[index];evaluateRuck();if(p.id==='ruck1'||p.id==='ruck2')lastRuck=evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
+function render(){if(!data)return;if(drillStep>=0)return;const p=data.stages[index];evaluateRuck();if(p.id==='ruck1'||p.id==='ruck2')lastRuck=evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
 defenseReport();applyPitchView();$('[data-playback-clock]').textContent=lastRuck?'Last ruck: '+lastRuck.time.toFixed(1)+'s · '+lastRuck.quality+' · defense '+(lastRuck.time<=3?'under pressure':'has time to recover'):'No ruck yet · watch the coach sequence';$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
@@ -212,7 +241,7 @@ data=result.payload;$('[data-gate]').textContent='Coach-approved RAVENS MF loade
 $('[data-prev]').addEventListener('click',()=>{pause();index=Math.max(0,index-1);lastRuck=null;render();});
 $('[data-next]').addEventListener('click',()=>{pause();index=Math.min(data.stages.length-1,index+1);render();});
 $('[data-play]').addEventListener('click',()=>{
- pause();if(!data)return;
+ pause();if(!data||drillStep>=0)return;
  if(index===data.stages.length-1){index=0;previousStage=null;lastRuck=null;}
  render();const token=playToken;
  function next(){
