@@ -60,7 +60,7 @@ function play(){
  if(!(support&&draw&&plan)||phase!=='setup')return;
  phase='approach';clock=0;paused=false;lastPlan={support,draw,plan};kickTarget=null;kickWinner=null;
  applyPlan();$('setup').open=false;$('play').disabled=true;$('finish').disabled=true;
- $('status').textContent='INSIDE THREAT · Both defenders react to the carrier.';
+ $('status').textContent=(draw==='inside'?'INSIDE THREAT':'OUTSIDE THREAT')+' · Both defenders react to the carrier.';
  $('feedback').textContent='Watch D1 and D2 narrow toward the carrier. Support stays deeper than the ball.';
 }
 function finish(){
@@ -68,13 +68,13 @@ function finish(){
  phase=plan==='kick'?'release':'counterstep';clock=0;$('finish').disabled=true;passStart=null;passEnd=null;received=false;
  if(plan==='kick'){release();return;}
  // The carrier first changes direction AWAY from the inside threat.
- targets.a1=[-3,draw==='inside'?-4:5];
+ targets.a1=[-5,draw==='inside'?-4:4];
  // Keep support deeper than the carrier and on the selected lane.
  targets.a2=[-8,support==='outside'?-10:9];
  // Both defenders follow the ball carrier's draw; no teleport to support.
- targets.d1=[-1,draw==='inside'?-6:3];
- targets.d2=[0,draw==='inside'?-3:6];
- $('status').textContent='COUNTERSTEP · Carrier steps outside after drawing both defenders.';
+ targets.d1=[-0.5,draw==='inside'?-6:2];
+ targets.d2=[0.5,draw==='inside'?-3:4.5];
+ $('status').textContent='COUNTERSTEP · Carrier changes angle away from the drawn defenders.';
  $('feedback').textContent='Both defenders track the original carrier. Watch the support runner maintain depth before the release.';
 }
 function release(){
@@ -93,7 +93,8 @@ function release(){
   // Target the receiver's CURRENT location, not a different future location.
   // Receiver holds depth until the catch, and the pass must move backward in +x attack.
   passEnd=[receiver.x,receiver.z];passCaught=false;
-  targets.a1=[1,carrier.z];
+  // The passer must not run through the defenders after releasing.
+  targets.a1=[carrier.x,carrier.z];
   targets.a2=[receiver.x,receiver.z];
   $('status').textContent='BACKWARD PASS · Ball travels behind the carrier to the deeper support runner.';
  }else{
@@ -103,7 +104,7 @@ function release(){
  }
  const free=(support==='outside'&&draw==='inside'||support==='inside'&&draw==='outside')&&plan==='pass';
  $('feedback').textContent=plan==='pass'
-  ?free?'Coaching outcome: both defenders remain committed to A1. A2 receives a backward pass outside and attacks the open channel.'
+  ?free?'Coaching outcome: defenders are drawn away from the receiver. A2 receives a backward pass at depth and attacks the open channel.'
        :'Coaching outcome: support must receive at depth; watch whether the covering defender can recover.'
   :'Coaching outcome: defenders respond to the original carrier; evaluate whether the chosen running lane remains open.';
 }
@@ -135,7 +136,7 @@ function frame(now){
   if(phase==='approach'&&clock>2.5){
    phase='decision';$('finish').disabled=false;
    $('status').textContent='FIVE-YARD DECISION · Defenders compressed. Press Finish move under the pitch.';
-   $('feedback').textContent='Both defenders have closed on A1. A2 remains at depth. Finish to show the outside counterstep and release.';
+   $('feedback').textContent='Defenders react to the carrier while A2 remains deeper. Finish to show the counterstep and pre-contact release.';
   }
   if(phase==='counterstep'&&clock>1.1)release();
   if(phase==='release'&&plan==='pass'){
@@ -148,8 +149,11 @@ function frame(now){
      passCaught=true;received=true;
      const runner=actors.a2.position;
      // After the catch, A2 accelerates through the selected lane.
-     targets.a2=[runner.x+10,runner.z];
+     targets.a2=[runner.x+9,runner.z];
      const insideCovered=support==='inside'&&draw==='inside';
+     // In the complementary draw, defenders remain in the drawn lane;
+     // they may chase later but cannot cut instantly through the receiver.
+     if(!insideCovered){targets.d1=[actors.d1.position.x+2,actors.d1.position.z];targets.d2=[actors.d2.position.x+2,actors.d2.position.z];}
      if(insideCovered){targets.d2=[runner.x+8,runner.z+1];}
      $('feedback').textContent=insideCovered?'Inside support catches the backward pass, but the inside cover can recover.':'Support catches the backward pass at depth and runs into the channel vacated by the committed defenders.';
     }
