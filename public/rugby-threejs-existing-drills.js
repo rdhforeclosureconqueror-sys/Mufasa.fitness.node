@@ -21,10 +21,16 @@ function init(cfg){
  controls.append(toggle,cameraButton);wrapper.parentNode.insertBefore(controls,wrapper);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
  const camera=new THREE.PerspectiveCamera(48,1,.1,300);
- const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));canvas.appendChild(renderer.domElement);
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.domElement.style.cssText='display:block;width:100%;height:100%';canvas.appendChild(renderer.domElement);
  scene.add(new THREE.HemisphereLight(0xffffff,0x496b55,2));
  const field=new THREE.Mesh(new THREE.PlaneGeometry(34,21),new THREE.MeshLambertMaterial({color:0x286547}));field.rotation.x=-Math.PI/2;scene.add(field);
  for(let x=-15;x<=15;x+=10){const line=new THREE.Mesh(new THREE.BoxGeometry(.045,.025,20),new THREE.MeshBasicMaterial({color:0xb6d2b9}));line.position.set(x,.025,0);scene.add(line);}
+ // Rugby H-posts at each end of the teaching pitch (illustrative scale).
+ const postMaterial=new THREE.MeshStandardMaterial({color:0xf2e6c6});
+ for(const end of [-16.6,16.6]){
+  for(const z of [-2.6,2.6]){const upright=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,5.5,8),postMaterial);upright.position.set(end,2.75,z);scene.add(upright);}
+  const crossbar=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,5.2,8),postMaterial);crossbar.rotation.x=Math.PI/2;crossbar.position.set(end,2.8,0);scene.add(crossbar);
+ }
  const pieces={};const ball=new THREE.Mesh(new THREE.SphereGeometry(.34,12,10),new THREE.MeshStandardMaterial({color:0xffedba}));scene.add(ball);
  const sources=cfg.selectors?cfg.selectors.map(selector=>({selector,defender:false})):cfg.ids.map(id=>({id,defender:id.includes('defender')||id.includes('cover')||id.includes('-d')}));
  if(cfg.defenseSelector)for(let i=0;i<15;i++)sources.push({selector:cfg.defenseSelector,index:i,defender:true});
@@ -33,7 +39,7 @@ function init(cfg){
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.55,.7,1.55,10),new THREE.MeshStandardMaterial({color:defender?0xd76b6d:0xe6c77b}));body.position.y=.82;obj.add(body);
  const head=new THREE.Mesh(new THREE.SphereGeometry(.36,12,10),new THREE.MeshStandardMaterial({color:0xd9a47b}));head.position.y=1.85;obj.add(head);scene.add(obj);pieces[id]=obj;source.object=obj;});
  let angle=0,enabled=false,raf=0;
- function pose(){const poses=[[0,32,28],[-29,23,20],[0,42,.1]];camera.position.set(...poses[angle]);camera.lookAt(0,0,0);}
+ function pose(){const poses=[[0,37,37],[-27,35,31],[0,48,.1]];camera.position.set(...poses[angle]);camera.lookAt(0,0,0);}
  pose();
  function point(el){
   if(!el)return null;
