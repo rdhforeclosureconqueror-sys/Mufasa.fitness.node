@@ -26,11 +26,19 @@ function init(cfg){
  const stage=document.createElement('div');stage.style.cssText='flex:1;min-height:0;position:relative;overflow:hidden;border:1px solid #bca36c;border-radius:12px';
  const panel=document.createElement('div');panel.style.cssText='display:none;position:absolute;z-index:3;inset:8px auto auto 8px;max-height:85%;width:min(340px,calc(100% - 16px));overflow:auto;background:#142d22;border:1px solid #bca36c;padding:12px;border-radius:12px;box-sizing:border-box';
  const count=document.createElement('div');count.style.cssText='display:none;position:absolute;inset:0;z-index:4;align-items:center;justify-content:center;background:#091c13a8;font-size:76px;font-weight:800;color:#f5d58d;pointer-events:none';
- stage.append(panel,count);portal.append(toolbar,stage);document.body.appendChild(portal);
+ stage.append(panel,count);
+  // Read the native SVG checklist, never calculate separate 3D scores.
+  const rubricOverlay=document.createElement('section');rubricOverlay.setAttribute('aria-label','Five-point coaching checklist');rubricOverlay.style.cssText='position:absolute;z-index:2;bottom:10px;left:10px;right:10px;max-height:38%;overflow:auto;background:#10271def;border:1px solid #d8bd78;border-radius:12px;padding:10px;color:#f9e9c3;font-size:12px;line-height:1.45;box-sizing:border-box;display:none';
+  const rubricHeader=document.createElement('button');rubricHeader.type='button';rubricHeader.style.cssText='display:block;width:100%;text-align:left;border:0;background:transparent;color:#f4d58c;font-weight:800;font-size:14px;min-height:30px';
+  const rubricBody=document.createElement('div');rubricBody.style.cssText='display:grid;gap:4px';rubricOverlay.append(rubricHeader,rubricBody);stage.appendChild(rubricOverlay);
+  let rubricCollapsed=false;
+  function updateRubric(){if(!cfg.title.startsWith('2v1'))return;const source=svg.closest(cfg.controlRoot)?.querySelector('#quins-opportunity-checklist');if(!source)return;rubricOverlay.style.display=expanded?'block':'none';const raw=(source.textContent||'').trim();const entries=raw.split(' | ').filter(x=>['✓ ','△ ','○ '].some(mark=>x.startsWith(mark))&&x.includes('. '));const assessed=entries.filter(x=>!x.includes('PENDING:')).length;rubricHeader.textContent='☑ Coaching checklist · '+assessed+'/5 assessed · '+(rubricCollapsed?'Show':'Hide');rubricBody.hidden=rubricCollapsed;if(!rubricCollapsed){rubricBody.replaceChildren();for(const entry of entries){const line=document.createElement('div');line.textContent=entry;line.style.cssText='border-top:1px solid #4a6857;padding:4px 0';rubricBody.appendChild(line);}if(!entries.length)rubricBody.textContent=raw||'Checklist waiting for a scenario.';}}
+  rubricHeader.onclick=()=>{rubricCollapsed=!rubricCollapsed;updateRubric();};
+  portal.append(toolbar,stage);document.body.appendChild(portal);
  const sourceRoot=wrapper.parentElement;const canvasHome=document.createComment('three canvas original position');wrapper.insertBefore(canvasHome,canvas);
  let expanded=false,zoom=1,turn=0,tilt=0,pending=null;
- function close(){if(pending){clearTimeout(pending);pending=null;}count.style.display='none';panel.style.display='none';expanded=false;portal.style.display='none';wrapper.insertBefore(canvas,canvasHome.nextSibling);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='';document.body.style.overflow=portal.dataset.prevOverflow||'';pose();}
- function open(){if(!enabled)toggle.click();expanded=true;portal.dataset.prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';portal.style.display='flex';stage.insertBefore(canvas,panel);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='100%';pose();}
+ function close(){if(pending){clearTimeout(pending);pending=null;}count.style.display='none';panel.style.display='none';expanded=false;rubricOverlay.style.display='none';portal.style.display='none';wrapper.insertBefore(canvas,canvasHome.nextSibling);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='';document.body.style.overflow=portal.dataset.prevOverflow||'';pose();}
+ function open(){if(!enabled)toggle.click();expanded=true;portal.dataset.prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';portal.style.display='flex';stage.insertBefore(canvas,panel);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='100%';updateRubric();pose();}
  expand.onclick=open;
  mk('✕ Close',close);mk('⚙ Controls',()=>{panel.style.display=panel.style.display==='none'?'block':'none';refreshPanel();});mk('↻ Angle',()=>{angle=(angle+1)%3;pose();});mk('＋ Zoom',()=>{zoom=Math.min(2.6,zoom+.25);pose();});mk('－ Zoom',()=>{zoom=Math.max(.7,zoom-.25);pose();});mk('⟲ Reset view',()=>{zoom=1;turn=0;tilt=0;angle=0;pose();});
  let startX=0,startY=0;stage.addEventListener('pointerdown',e=>{if(e.target.closest('button')||panel.contains(e.target))return;startX=e.clientX;startY=e.clientY;stage.setPointerCapture(e.pointerId);});stage.addEventListener('pointerup',e=>{if(!expanded||panel.contains(e.target))return;turn=Math.max(-1.2,Math.min(1.2,turn+(e.clientX-startX)*.006));tilt=Math.max(-.5,Math.min(.5,tilt+(e.clientY-startY)*.003));pose();});
@@ -116,6 +124,7 @@ function init(cfg){
  }
  function frame(){
   if(!enabled)return;
+  if(expanded&&cfg.title.startsWith('2v1')){const source=svg.closest(cfg.controlRoot)?.querySelector('#quins-opportunity-checklist');const current=source?.textContent||'';if(current!==rubricOverlay.dataset.lastRubric){rubricOverlay.dataset.lastRubric=current;updateRubric();}}
   const w=canvas.clientWidth,h=canvas.clientHeight;if(w&&h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
   for(const source of sources){const el=source.id?document.getElementById(source.id):source.index===undefined?svg.querySelector(source.selector):svg.querySelectorAll(source.selector)[source.index];
    const visible=el&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
