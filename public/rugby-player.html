@@ -35,4 +35,34 @@ function render(){const n=Number(document.getElementById('week').value)||0;const
 document.getElementById('week').addEventListener('change',render);render();
 (async()=>{const error=document.getElementById('error');try{const auth=await window.AuthNavigation?.requireUser?.({returnTo:'/rugby-player.html'});document.getElementById('loading').classList.add('hidden');if(!auth?.ok){if(auth?.redirected)return;error.textContent='Could not verify your session. Please sign in again or retry later.';error.classList.remove('hidden');return;}const user=auth.user||{};const name=String(user.name||user.displayName||'Athlete').slice(0,80);document.getElementById('welcome').textContent='Welcome, '+name;document.getElementById('identity').textContent=String(user.email||'Milele Fit member').slice(0,120);document.getElementById('dashboard').classList.remove('hidden');const ravensScript=document.createElement('script');ravensScript.src='/rugby-ravens-protected.js';document.body.appendChild(ravensScript);const lessonScript=document.createElement('script');lessonScript.src='/rugby-attack-intelligence.js';document.body.appendChild(lessonScript);lessonScript.addEventListener('load',()=>{const overlapScript=document.createElement('script');overlapScript.src='/rugby-three-v-two.js';document.body.appendChild(overlapScript);});const boardScript=document.createElement('script');boardScript.src='/rugby-tactical-board.js';document.body.appendChild(boardScript);const threeView=document.createElement('script');threeView.src='/rugby-threejs-existing-drills.js';document.body.appendChild(threeView);window.RugbyRecords?.init?.();window.RugbyCheckin?.init?.();window.RugbyDiagnostics?.init?.();}catch(_){document.getElementById('loading').classList.add('hidden');error.textContent='Session check unavailable. Please try again later.';error.classList.remove('hidden');}})();
 })();
+</script><style>
+.quins-lesson-card{margin:12px 0;border:1px solid #627d64;border-radius:14px;background:#1a3326;border-radius:14px}
+.quins-lesson-card>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;padding:17px 15px;color:#f4e4b2;font-weight:800;min-height:56px}
+.quins-lesson-card>summary::-webkit-details-marker{display:none}.quins-lesson-card>summary::after{content:'+';font-size:1.5rem}.quins-lesson-card[open]>summary::after{content:'−'}
+.quins-lesson-body{padding:4px 12px 14px;min-width:0}.quins-lesson-card .quins-lesson-card{background:#223b2d}.quins-lesson-card .quins-lesson-card>summary{font-size:.9rem;padding:12px}.quins-lesson-card .quins-lesson-card .quins-lesson-body{padding:0 8px 10px}
+@media(max-width:480px){.quins-lesson-body{padding:4px 7px 12px}}
+</style><script>
+(function(){'use strict';
+const host=document.getElementById('quins-structure-lesson');if(!host)return;
+function wrap(node,title,key){
+ if(!node||node.closest('details[data-rugby-card]'))return;
+ const card=document.createElement('details');card.className='quins-lesson-card';card.dataset.rugbyCard=key;
+ const summary=document.createElement('summary');summary.textContent=title;
+ const body=document.createElement('div');body.className='quins-lesson-body';
+ node.before(card);card.append(summary,body);body.appendChild(node);
+}
+function organize(){
+ const two=host.querySelector('.quins-simulator');if(two)wrap(two,'2v1 · Build the picture and make the decision','2v1');
+ const three=document.querySelector('.quins-3v2');if(three)wrap(three,'3v2 · Build the overlap','3v2');
+ const ravens=host.querySelector('.quins-ravens-live');
+ if(ravens&&!ravens.closest('details[data-rugby-card]')){
+  const sections=[['[data-realign-panel]','Ruck realignment · Teaching drill','realign'],['[data-chain-panel]','Fast-ball chain · Create the gap','chain'],['[data-ruck-panel]','Ruck Lab · Support and speed','ruck']];
+  for(const [selector,title,key] of sections)wrap(ravens.querySelector(selector),title,key);
+  const strategy=ravens.querySelector('[data-strategy]');if(strategy)wrap(strategy.closest('.decision'),'Defensive response · Fold, hold or rush','defense');
+  wrap(ravens,'RAVENS MF · Coach playbook','ravens');
+ }
+}
+let queued=false;const observer=new MutationObserver(()=>{if(queued)return;queued=true;queueMicrotask(()=>{queued=false;observer.disconnect();organize();observer.observe(host.parentElement,{childList:true,subtree:true});});});
+organize();observer.observe(host.parentElement,{childList:true,subtree:true});
+})();
 </script></body></html>
