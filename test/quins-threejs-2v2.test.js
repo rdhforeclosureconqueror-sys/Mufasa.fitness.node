@@ -16,3 +16,15 @@ test('five-yard decision freezes and finish is user-triggered',()=>{
  assert.ok(html.includes("$('finish').onclick=finish"));
 });
 test('model clearly distinguishes illustrative results',()=>assert.match(html,/simplified scenario, not a guaranteed outcome/));
+
+test('inside draw compresses both defenders and uses an outside counterstep',()=>{
+ assert.match(html,/d1:\[-1,z-1\.5\],d2:\[0,z\+1\.5\]/);
+ assert.match(html,/phase='counterstep'/);
+ assert.match(html,/phase==='counterstep'&&clock>1\.1/);
+});
+test('pass is explicitly backward and has visible flight before receiver possession',()=>{
+ assert.match(html,/Math\.min\(receiver\.x,carrier\.x-1\.2\)/);
+ assert.match(html,/ball\.position\.set\(passStart\[0\]\+/);
+ assert.match(html,/received=true/);
+ assert.match(html,/if\(support==='inside'\)/);
+});
