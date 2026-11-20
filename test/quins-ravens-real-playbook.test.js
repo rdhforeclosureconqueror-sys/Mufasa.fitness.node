@@ -115,3 +115,10 @@ test('defensive line follows ruck anchor rather than static pitch columns',()=>{
  for(const token of ["const priorRuck=","const ruckAnchor=","const lineX=","const fast=ruck&&ruck.time<=3","defenders[n].setAttribute('cx'","defenders[n].setAttribute('cy'"])assert.ok(js.includes(token),token);
  assert.ok(!js.includes("let x=bank===0?290:335"));
 });
+
+test('Three.js rugby comparison loads protected coach phases without public tactic positions',()=>{
+ const html=fs.readFileSync(path.join(__dirname,'../public/quins-rugby-3d-preview.html'),'utf8');
+ for(const token of ['/api/quins/ravens/play?branch=','AuthNavigation?.requireUser','MaatApiClient.request','fieldPoint(pos)','stage?.positions?.[i+1]','ruck.positions[ruck.id','ball.visible=Boolean(p.ballCarrier)'])assert.ok(html.includes(token),token);
+ assert.ok(!html.includes('DECOY JETS / FLASH SET'));
+ assert.ok(!html.includes('Coach Diagram 3'));
+});
