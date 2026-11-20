@@ -22,3 +22,12 @@ test("protected endpoint enforces authentication and enrollment",()=>{
  assert.equal(code,403);assert.equal(payload.error,"QUINS_TEAM_ACCESS_REQUIRED");
  assert.equal(headers["Cache-Control"],"private, no-store");
 });
+
+test("verified platform administrators bypass redundant Quin enrollment",()=>{
+ assert.equal(allowed({auth:{userId:"owner"},authz:{role:"admin"}},{}),true);
+ assert.equal(allowed({auth:{userId:"owner"},authz:{role:"super_admin"}},{}),true);
+ assert.equal(allowed({auth:{userId:"owner"},authz:{role:"member",isBootstrapSuperAdmin:true}},{}),true);
+ assert.equal(allowed({auth:{userId:"owner"},authz:{role:"member"}},{}),false);
+ assert.equal(allowed({auth:null,authz:{role:"admin"}},{}),false);
+ assert.equal(allowed({auth:{userId:"owner",role:"admin"},authz:{role:"member"}},{}),false);
+});
