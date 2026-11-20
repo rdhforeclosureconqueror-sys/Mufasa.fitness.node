@@ -138,7 +138,13 @@ function init(cfg){
  }
  function frame(){
   if(!enabled)return;
-  if(expanded&&cfg.title.startsWith('2v1')){const source=svg.closest(cfg.controlRoot)?.querySelector('#quins-opportunity-checklist');const current=source?.textContent||'';if(current!==rubricOverlay.dataset.lastRubric){rubricOverlay.dataset.lastRubric=current;updateRubric();}}
+  if(expanded&&cfg.title.startsWith('2v1')){
+    const scope=svg.closest(cfg.controlRoot);
+    const resultReady=!!scope?.querySelector('#quins-sim-watch')&&!scope.querySelector('#quins-sim-watch').hidden;
+    if(resultReady&&!lastResultVisible)startReveal();
+    if(!resultReady&&lastResultVisible)stopReveal();
+    lastResultVisible=resultReady;
+  }
   const w=canvas.clientWidth,h=canvas.clientHeight;if(w&&h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
   for(const source of sources){const el=source.id?document.getElementById(source.id):source.index===undefined?svg.querySelector(source.selector):svg.querySelectorAll(source.selector)[source.index];
    const visible=el&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
