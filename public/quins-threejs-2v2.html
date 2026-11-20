@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quin Nation · 2v2 Awareness Lab</title><style>
+*{box-sizing:border-box}body{margin:0;background:#0b201a;color:#f7f0d8;font:15px system-ui,sans-serif}main{max-width:1040px;margin:auto;padding:14px}h1{font-size:clamp(22px,4vw,32px);margin:8px 0}p{line-height:1.5;color:#d3e0d5}.pitch{height:min(62vh,530px);min-height:330px;border:2px solid #c3a45d;border-radius:16px;overflow:hidden;position:relative;background:#173c2a}.pitch canvas{display:block;width:100%;height:100%;touch-action:pan-y}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}button,select{background:#204c37;color:#fff1c7;border:1px solid #bc9b51;border-radius:10px;padding:11px 13px;font:inherit;min-height:46px}button:focus-visible,select:focus-visible{outline:3px solid white}button[aria-pressed="true"]{background:#e6c67d;color:#172d22}button:disabled{opacity:.5}#status,#feedback{background:#1c3a2c;border-radius:10px;padding:12px;margin:9px 0;line-height:1.5}#feedback{min-height:70px}label{display:inline-flex;align-items:center;gap:8px}small{color:#c8d5ca}#loading{position:absolute;inset:0;display:grid;place-items:center;background:#173c2a}#loading[hidden]{display:none}
+</style></head><body><main><h1>QUIN NATION · 2v2 SITUATIONAL AWARENESS</h1>
+<p>Interactive Three.js coaching experiment: two attackers against two defenders. Read the defense, choose a response, and compare the outcome. <strong>Illustrative decision model</strong>—not a verified reconstruction of an earlier 2v2 game.</p>
+<div class="pitch" id="pitch"><div id="loading">Loading 3D field…</div></div>
+<div class="controls"><label>Defensive picture <select id="picture"><option value="balanced">Balanced 2v2</option><option value="press">Inside defender presses</option><option value="drift">Both defenders drift</option><option value="jam">Outside defender jams</option></select></label><button id="new">New rep</button><button id="camera">Camera angle</button></div>
+<div id="status" role="status" aria-live="polite">Read the defensive picture, then choose your attacking action.</div>
+<div class="controls" role="group" aria-label="Attacking decision"><button data-choice="fix" aria-pressed="false">Fix & pass</button><button data-choice="carry" aria-pressed="false">Attack inside</button><button data-choice="wide" aria-pressed="false">Attack outside</button><button data-choice="hold" aria-pressed="false">Hold depth</button></div>
+<div class="controls"><button id="play">▶ Play decision</button><button id="pause">Pause</button><button id="reset">Reset positions</button><button id="replay">Replay</button></div>
+<div id="feedback" role="status" aria-live="polite">Situational awareness: identify the nearest defender's shoulder, the second defender's movement, and the support player's depth before deciding.</div>
+<p><small>Gold = attackers A1 (ball) and A2 (support). Red = defenders D1 and D2. Gold dot = ball. Outcomes are simplified teaching hypotheses, not guaranteed tries or match outcomes. No tackle-contact simulation.</small></p></main>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js';
+const $=id=>document.getElementById(id),holder=$('pitch'),scene=new THREE.Scene();scene.background=new THREE.Color(0x102a23);
+const camera=new THREE.PerspectiveCamera(50,1,.1,220);let cameraIndex=0;
+const renderer=new THREE.WebGLRenderer({antialias:true,powerPreference:'low-power'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));holder.appendChild(renderer.domElement);$('loading').hidden=true;
+scene.add(new THREE.HemisphereLight(0xffffff,0x42604a,2.1));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(-20,40,15);scene.add(sun);
+const turf=new THREE.Mesh(new THREE.PlaneGeometry(48,32),new THREE.MeshLambertMaterial({color:0x155739}));turf.rotation.x=-Math.PI/2;scene.add(turf);
+function line(x,z,w,h){const m=new THREE.Mesh(new THREE.PlaneGeometry(w,h),new THREE.MeshBasicMaterial({color:0xe5eee4}));m.rotation.x=-Math.PI/2;m.position.set(x,.035,z);scene.add(m)}
+for(const x of [-22,-11,0,11,22])line(x,0,.12,30);for(const z of [-15,0,15])line(0,z,44,.12);
+function actor(color,label){const g=new THREE.Group(),body=new THREE.Mesh(new THREE.CapsuleGeometry(.65,1.1,4,8),new THREE.MeshStandardMaterial({color,roughness:.7}));body.position.y=1.15;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.43,12,8),new THREE.MeshStandardMaterial({color:0x8d684c}));head.position.y=2.25;g.add(head);const c=document.createElement('canvas');c.width=128;c.height=64;const ctx=c.getContext('2d');ctx.font='bold 45px sans-serif';ctx.textAlign='center';ctx.fillStyle='white';ctx.fillText(label,64,48);const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true}));sprite.position.y=3.25;sprite.scale.set(3,1.5,1);g.add(sprite);scene.add(g);return g}
+const actors={a1:actor(0xe4be66,'A1'),a2:actor(0xe4be66,'A2'),d1:actor(0xc64a50,'D1'),d2:actor(0xc64a50,'D2')};
+const ball=new THREE.Mesh(new THREE.SphereGeometry(.33,10,8),new THREE.MeshStandardMaterial({color:0xfff7df}));scene.add(ball);
+const starts={a1:[-13,-4],a2:[-15,7],d1:[2,-4],d2:[2,7]};
+const scenarios={
+ balanced:{d1:[2,-4],d2:[2,7],cue:'Both defenders are connected. Identify which defender you can commit before passing.'},
+ press:{d1:[-4,-4],d2:[3,8],cue:'D1 presses inside early. Is A2 available outside if D1 commits?'},
+ drift:{d1:[2,-1],d2:[4,11],cue:'Both defenders drift toward width. Look for the inside shoulder and available space.'},
+ jam:{d1:[3,-4],d2:[-4,7],cue:'D2 shoots toward the support player. Is the outside pass still safe?'}
+};
+let phase='read',choice=null,clock=0,paused=false,lastChoice=null,targets={};
+function setCamera(){const poses=[[0,39,35],[-34,24,24],[0,54,.1]];camera.position.set(...poses[cameraIndex]);camera.lookAt(0,0,0)}
+setCamera();
+function setPositions(){const sc=scenarios[$('picture').value];targets={a1:[...starts.a1],a2:[...starts.a2],d1:[...sc.d1],d2:[...sc.d2]};Object.entries(targets).forEach(([k,p])=>actors[k].position.set(p[0],0,p[1]));ball.position.set(starts.a1[0]+.8,1.4,starts.a1[1]);}
+function newRep(){phase='read';choice=null;lastChoice=null;clock=0;paused=false;setPositions();document.querySelectorAll('[data-choice]').forEach(b=>b.setAttribute('aria-pressed','false'));$('status').textContent='READ DEFENSE · '+scenarios[$('picture').value].cue;$('feedback').textContent='Observe D1, D2 and A2. Select your decision before pressing Play.'}
+function decision(){const s=$('picture').value,c=choice;if(!c)return null;
+ const outcomes={
+ balanced:{fix:['D1 is fixed before the pass; A2 attacks the outside shoulder.','good'],carry:['D1 is connected and can meet the carrier; risk of contact.','risk'],wide:['D2 remains available outside; passing early may leave A2 covered.','risk'],hold:['A1 slows to assess while defenders stay connected.','neutral']},
+ press:{fix:['D1 presses. Commit D1, then release A2 into the exposed outside channel.','good'],carry:['Running into a pressing D1 invites contact.','risk'],wide:['An early pass may work, but A2 must preserve depth and avoid D2.','neutral'],hold:['Waiting allows D1 and D2 to reconnect.','risk']},
+ drift:{fix:['A1 fixes D1 before passing; this can still challenge D2.','neutral'],carry:['D1 drifts wide; A1 attacks the inside shoulder and available seam.','good'],wide:['Both defenders are moving wide; A2 may be covered.','risk'],hold:['Hold depth to read the drift, but release timing matters.','neutral']},
+ jam:{fix:['D2 jams the receiver. A1 must read the interception/contact risk.','risk'],carry:['D2 jams A2, leaving an inside channel for A1 to attack.','good'],wide:['D2 is already closing A2; early pass is exposed.','risk'],hold:['Holding depth can buy a read, but D2 is advancing.','neutral']}
+ };
+ return outcomes[s][c];
+}
+function run(){if(!choice){$('feedback').textContent='Choose an attacking decision first.';return;}phase='run';clock=0;paused=false;lastChoice=choice;const s=scenarios[$('picture').value],result=decision();targets.a1=choice==='carry'?[7,-5]:choice==='wide'?[1,-2]:choice==='hold'?[-5,-4]:[0,-4];targets.a2=choice==='wide'||choice==='fix'?[12,10]:[-3,8];targets.d1=s.d1.map((v,i)=>i===0?v+4:v+(choice==='carry'?-1:0));targets.d2=s.d2.map((v,i)=>i===0?v+4:v+(choice==='wide'||choice==='fix'?1:0));$('status').textContent='EXECUTE · '+choice.toUpperCase()+' · '+result[1].toUpperCase();$('feedback').textContent=result[0]+' Watch spacing, defender commitment and support depth. This is a modeled read, not a guaranteed outcome.'}
+document.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{choice=b.dataset.choice;document.querySelectorAll('[data-choice]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('feedback').textContent='Selected: '+b.textContent+'. Press Play decision to test your read.'});
+$('play').onclick=run;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause'};$('new').onclick=newRep;$('reset').onclick=newRep;$('replay').onclick=()=>{if(lastChoice){choice=lastChoice;setPositions();run()}else newRep()};$('picture').onchange=newRep;$('camera').onclick=()=>{cameraIndex=(cameraIndex+1)%3;setCamera()};
+function resize(){const w=holder.clientWidth,h=holder.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}new ResizeObserver(resize).observe(holder);resize();newRep();
+let last=performance.now();function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(phase==='run'&&!paused){clock+=dt;for(const [k,p] of Object.entries(targets)){const a=actors[k];a.position.x+=(p[0]-a.position.x)*Math.min(1,dt*1.65);a.position.z+=(p[1]-a.position.z)*Math.min(1,dt*1.65)}const pass=choice==='fix'||choice==='wide';const receiver=pass&&clock>1.1;const owner=receiver?actors.a2:actors.a1;ball.position.set(owner.position.x+.75,1.4,owner.position.z);if(clock>4.3){phase='done';$('status').textContent='REVIEW · '+choice.toUpperCase()+' · choose New rep or Replay'}}renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+</script></body></html>
