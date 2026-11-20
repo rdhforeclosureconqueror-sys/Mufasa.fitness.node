@@ -28,3 +28,14 @@ test('pass is explicitly backward and has visible flight before receiver possess
  assert.match(html,/received=true/);
  assert.match(html,/if\(support==='inside'\)/);
 });
+
+test('support lanes are consistent with camera-independent pitch coordinates',()=>{
+ assert.match(html,/support==='inside'\?7:-9/);
+ assert.match(html,/support==='outside'\?-10:9/);
+});
+test('kick starts at the decision and resolves by contested ball recovery',()=>{
+ assert.match(html,/if\(plan==='kick'\)\{release\(\);return;\}/);
+ assert.match(html,/kickOrigin=\[actors\.a1\.position\.x,actors\.a1\.position\.z\]/);
+ assert.match(html,/const candidates=Object\.entries\(actors\)/);
+ assert.match(html,/candidates\[0\]\.d<1\.8/);
+});
