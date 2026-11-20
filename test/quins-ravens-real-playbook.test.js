@@ -91,3 +91,8 @@ test('focused Quin pitch views keep shared state and preserve full XV',()=>{
  assert.ok(js.includes("markers[n].setAttribute('visibility'"));
  assert.ok(js.includes("defenders.forEach((d,i)=>d.setAttribute('visibility'"));
 });
+
+test('generic realignment walkthrough is separate from protected coach playbook',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ for(const token of ['data-realign-start','data-realign-next','data-realign-exit','data-drill','Generic teaching drill','not</strong> the coach-approved RAVENS formation','function showDrill(step)','drillFrames','players.setAttribute(\'visibility\'','function render(){if(!data)return;if(drillStep>=0)return;'])assert.ok(js.includes(token),token);
+});
