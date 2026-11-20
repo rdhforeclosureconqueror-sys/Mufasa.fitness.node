@@ -43,13 +43,13 @@ root.innerHTML=`<style>
 <div data-ruck-result role="status" aria-live="polite">Choose a tackle scenario and evaluate support.</div></div>
 <div data-action-status role="status" aria-live="polite" style="padding:8px;background:#294334;border-radius:8px">Tap Play for the coach sequence, or Crash / Move wide to explore a decision.</div>
 <div class="decision"><label>Defense response <select data-strategy><option value="fold">Fold toward repeated carries</option><option value="hold">Hold width / disciplined line</option><option value="rush">Rush ball carrier</option></select></label>
-<div data-report role="status" aria-live="polite">Turn on defense to see modeled reactions.</div></div>
+<div data-clock-defense role="status" aria-live="polite">Defensive recovery follows modeled ruck release time.</div><div data-report role="status" aria-live="polite">Turn on defense to see modeled reactions.</div></div>
 <div data-ball-status role="status" aria-live="polite">Ball movement: ready</div><div data-explain role="status" aria-live="polite"></div><p style="font-size:.83rem">Restricted Quin training. FLASH is a coach-sourced option; unspecified carrier movement is not invented.</p>
 </div>`;
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null;
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null;
 const defenseGroup=$('[data-defense]'),defenders=[];
 function evaluateRuck(){
  const stage=data?.stages[index],isRuck=stage?.id==='ruck1'||stage?.id==='ruck2';
@@ -96,7 +96,12 @@ function defenseReport(){
  const enabled=$('[data-defense-toggle]').checked,strategy=$('[data-strategy]').value;
  defenseGroup.setAttribute('visibility',enabled?'visible':'hidden');
  const stage=data?.stages[index],carrier=stage?.ballCarrier?stage.positions[stage.ballCarrier]:[230,139];
- const maxFold=strategy==='fold'?Math.max(0,Math.min(4,crashes)-recovery):strategy==='rush'?Math.max(0,Math.min(2,crashes)-recovery):0;
+ const ruckStage=stage?.id==='ruck1'||stage?.id==='ruck2';
+ const ruck=ruckStage?evaluateRuck():lastRuck;
+ const resetSteps=ruck?Math.max(0,Math.floor(Math.max(0,ruck.time-3)/1.2)):0;
+ const maxFold=strategy==='fold'?Math.max(0,Math.min(4,crashes)-recovery-resetSteps):strategy==='rush'?Math.max(0,Math.min(2,crashes)-recovery-resetSteps):0;
+ const speed=ruck?.lost?'TURNOVER RISK':ruck?.quality||'NO RUCK YET';
+ $('[data-clock-defense]').textContent='Ruck clock: '+(ruck?ruck.time.toFixed(1)+'s':'not started')+' · '+speed+'. '+(ruck?.lost?'Defensive contest threatens possession.':ruck?resetSteps+' additional modeled defender(s) recover to the outside bank after the 3s target.':'Advance to a ruck to compare fast and slow ball.');
  for(let n=0;n<15;n++){
   // A baseline of two defensive banks, moving in response to phase and chosen strategy.
   const row=n%8,bank=Math.floor(n/8);
@@ -169,7 +174,7 @@ function animateBall(from,to){
  ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
 }
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
-function render(){if(!data)return;const p=data.stages[index];evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
+function render(){if(!data)return;const p=data.stages[index];evaluateRuck();if(p.id==='ruck1'||p.id==='ruck2')lastRuck=evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
 defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
@@ -183,12 +188,12 @@ $('[data-prev]').addEventListener('click',()=>{pause();index=Math.max(0,index-1)
 $('[data-next]').addEventListener('click',()=>{pause();index=Math.min(data.stages.length-1,index+1);render();});
 $('[data-play]').addEventListener('click',()=>{pause();if(!data)return;if(index===data.stages.length-1){index=0;previousStage=null;}render();timer=setInterval(()=>{if(index===data.stages.length-1){pause();return;}index++;render();},2100);});
 $('[data-pause]').addEventListener('click',pause);
-$('[data-replay]').addEventListener('click',()=>{pause();cancelBall();previousStage=null;index=0;crashes=0;recovery=0;decisions=[];render();});
-$('[data-branch]').addEventListener('change',e=>{crashes=0;recovery=0;decisions=[];load(e.target.value);});
+$('[data-replay]').addEventListener('click',()=>{pause();cancelBall();previousStage=null;index=0;crashes=0;recovery=0;decisions=[];lastRuck=null;render();});
+$('[data-branch]').addEventListener('change',e=>{crashes=0;recovery=0;decisions=[];lastRuck=null;load(e.target.value);});
 $('[data-defense-toggle]').addEventListener('change',defenseReport);
 $('[data-strategy]').addEventListener('change',()=>{crashes=0;recovery=0;decisions=[];defenseReport();});
 $('[data-crash]').addEventListener('click',()=>chooseDecision('crash'));
 $('[data-wide]').addEventListener('click',()=>chooseDecision('wide'));
-$('[data-reset-defense]').addEventListener('click',()=>{crashes=0;recovery=0;decisions=[];index=0;previousStage=null;render();});
+$('[data-reset-defense]').addEventListener('click',()=>{crashes=0;recovery=0;decisions=[];lastRuck=null;index=0;previousStage=null;render();});
 load('wedge');
 })();

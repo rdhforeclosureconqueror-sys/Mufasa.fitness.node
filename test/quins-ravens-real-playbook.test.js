@@ -64,3 +64,10 @@ test('iPhone pitch controls appear before long defensive report and are responsi
  assert.ok(js.includes("if(!$('[data-defense-toggle]').checked){$('[data-defense-toggle]').checked=true;}"));
  assert.ok(js.includes('data-action-status'));
 });
+
+test('ruck clock drives modeled defensive recovery',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ assert.ok(js.includes("Math.floor(Math.max(0,ruck.time-3)/1.2)"));
+ assert.ok(js.includes('data-clock-defense'));
+ assert.ok(js.includes('lastRuck=null'));
+});
