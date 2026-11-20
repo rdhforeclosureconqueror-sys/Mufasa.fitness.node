@@ -51,3 +51,8 @@ test('defensive decisions advance only coach-authored stages',()=>{
  assert.ok(js.includes("recovery++"));
  assert.ok(js.includes("no further coach-authored ruck"));
 });
+
+test('ball transfer visual identifies documented carriers and avoids inventing ruck pass',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ for(const term of ['function animateBall(from,to)','data-ball-status','if(!to.ballCarrier)','in-flight','previousStage=p','cancelBall()'])assert.ok(js.includes(term),term);
+});

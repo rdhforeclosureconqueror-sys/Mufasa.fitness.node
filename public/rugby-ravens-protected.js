@@ -8,7 +8,7 @@ root.innerHTML=`<style>
 .quins-ravens-live button,.quins-ravens-live select{min-height:48px;margin:5px 4px 5px 0;padding:10px;border-radius:9px;background:#ddc482;color:#17291f;font-weight:800}
 .quins-ravens-live [data-explain]{background:#294334;border-radius:10px;padding:12px;min-height:95px;line-height:1.5}
 .quins-ravens-live [data-p]{transition:transform 750ms ease}
-.quins-ravens-live [data-ball]{transition:transform 750ms ease}
+.quins-ravens-live [data-ball]{transition:transform 650ms ease}.quins-ravens-live [data-ball].in-flight{stroke:#a85f26;stroke-width:3}
 .quins-ravens-live button:disabled{opacity:.45}
 .quins-ravens-live [data-defense] circle{transition:cx 650ms ease,cy 650ms ease}
 .quins-ravens-live .decision{padding:12px;border:1px solid #bba36a;border-radius:12px;margin:10px 0}
@@ -31,12 +31,12 @@ root.innerHTML=`<style>
 <div><button data-crash>Simulate crash</button><button data-wide>Move ball wide</button><button data-reset-defense>Reset defensive experiment</button></div>
 <div data-report role="status" aria-live="polite">Turn on defense to experiment. Each crash can draw defenders, but the result depends on defensive strategy and recovery.</div></div>
 <div><button data-prev>Previous</button><button data-next>Next phase</button><button data-play>▶ Play</button><button data-pause>Pause</button><button data-replay>Watch again</button></div>
-<div data-explain role="status" aria-live="polite"></div><p style="font-size:.83rem">Restricted Quin training. FLASH is a coach-sourced option; unspecified carrier movement is not invented.</p>
+<div data-ball-status role="status" aria-live="polite">Ball movement: ready</div><div data-explain role="status" aria-live="polite"></div><p style="font-size:.83rem">Restricted Quin training. FLASH is a coach-sourced option; unspecified carrier movement is not invented.</p>
 </div>`;
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0;
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null;
 const defenseGroup=$('[data-defense]'),defenders=[];
 for(let n=0;n<15;n++){
  const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','9');c.setAttribute('fill','#d87571');c.setAttribute('stroke','#fff0e0');c.setAttribute('stroke-width','1.5');defenseGroup.appendChild(c);defenders.push(c);
@@ -90,12 +90,34 @@ function chooseDecision(action){
  }
  render();
 }
+function cancelBall(){if(ballTimer!==null)clearTimeout(ballTimer);ballTimer=null;$('[data-ball]').classList.remove('in-flight');}
+function animateBall(from,to){
+ cancelBall();
+ const oval=$('[data-ball]'),status=$('[data-ball-status]');
+ if(!to.ballCarrier){oval.setAttribute('opacity','0');status.textContent='Ball secured at ruck; no unverified pass shown.';return;}
+ const dest=to.positions[to.ballCarrier];
+ const target='translate('+(dest[0]+14)+' '+(dest[1]-7)+')';
+ if(!from||!from.ballCarrier||from.ballCarrier===to.ballCarrier){
+  oval.setAttribute('transform',target);oval.setAttribute('opacity','1');
+  status.textContent=from&&from.ballCarrier===to.ballCarrier?'#'+to.ballCarrier+' retains possession.':'Ball with #'+to.ballCarrier+' after ruck.';
+  return;
+ }
+ const origin=from.positions[from.ballCarrier];
+ oval.style.transition='none';
+ oval.setAttribute('transform','translate('+(origin[0]+14)+' '+(origin[1]-7)+')');
+ oval.setAttribute('opacity','1');oval.classList.add('in-flight');
+ status.textContent='Ball transfer #'+from.ballCarrier+' → #'+to.ballCarrier+' (illustrative flight).';
+ oval.getBoundingClientRect();
+ oval.style.transition='';
+ oval.setAttribute('transform',target);
+ ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
+}
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
 function render(){if(!data)return;const p=data.stages[index];for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
-const ball=p.ballCarrier?p.positions[p.ballCarrier]:null;$('[data-ball]').setAttribute('opacity',ball?'1':'0');if(ball)$('[data-ball]').setAttribute('transform','translate('+(ball[0]+14)+' '+(ball[1]-7)+')');
+animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
 defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
-async function load(branch){pause();const id=++requestId;data=null;index=0;$('[data-content]').hidden=true;$('[data-gate]').textContent='Checking Quin team authorization…';
+async function load(branch){pause();cancelBall();previousStage=null;const id=++requestId;data=null;index=0;$('[data-content]').hidden=true;$('[data-gate]').textContent='Checking Quin team authorization…';
 const result=await window.MaatApiClient.request('/api/quins/ravens/play?branch='+encodeURIComponent(branch));
 if(id!==requestId)return;
 if(!result.ok){$('[data-gate]').textContent=result.diagnostics?.status===403?'Quin team enrollment required. Your account is signed in but not authorized for this playbook.':result.diagnostics?.status===401?'Sign in again to access the protected Quin playbook.':'Unable to load protected RAVENS playbook. Retry after deployment.';return;}
@@ -103,9 +125,9 @@ if(!result.payload||!Array.isArray(result.payload.stages)||!result.payload.stage
 data=result.payload;$('[data-gate]').textContent='Coach-approved RAVENS MF loaded securely.';$('[data-content]').hidden=false;render();}
 $('[data-prev]').addEventListener('click',()=>{pause();index=Math.max(0,index-1);render();});
 $('[data-next]').addEventListener('click',()=>{pause();index=Math.min(data.stages.length-1,index+1);render();});
-$('[data-play]').addEventListener('click',()=>{pause();if(!data)return;if(index===data.stages.length-1)index=0;render();timer=setInterval(()=>{if(index===data.stages.length-1){pause();return;}index++;render();},2100);});
+$('[data-play]').addEventListener('click',()=>{pause();if(!data)return;if(index===data.stages.length-1){index=0;previousStage=null;}render();timer=setInterval(()=>{if(index===data.stages.length-1){pause();return;}index++;render();},2100);});
 $('[data-pause]').addEventListener('click',pause);
-$('[data-replay]').addEventListener('click',()=>{pause();index=0;crashes=0;recovery=0;decisions=[];render();});
+$('[data-replay]').addEventListener('click',()=>{pause();cancelBall();previousStage=null;index=0;crashes=0;recovery=0;decisions=[];render();});
 $('[data-branch]').addEventListener('change',e=>{crashes=0;recovery=0;decisions=[];load(e.target.value);});
 $('[data-defense-toggle]').addEventListener('change',defenseReport);
 $('[data-strategy]').addEventListener('change',()=>{crashes=0;recovery=0;decisions=[];defenseReport();});
