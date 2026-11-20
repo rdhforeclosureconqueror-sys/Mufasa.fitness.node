@@ -56,3 +56,11 @@ test('ball transfer visual identifies documented carriers and avoids inventing r
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
  for(const term of ['function animateBall(from,to)','data-ball-status','if(!to.ballCarrier)','in-flight','previousStage=p','cancelBall()'])assert.ok(js.includes(term),term);
 });
+
+test('iPhone pitch controls appear before long defensive report and are responsive',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ assert.ok(js.indexOf('class="pitch-controls"')<js.indexOf('class="decision"'));
+ assert.ok(js.includes('grid-template-columns:repeat(3,minmax(0,1fr))'));
+ assert.ok(js.includes("if(!$('[data-defense-toggle]').checked){$('[data-defense-toggle]').checked=true;}"));
+ assert.ok(js.includes('data-action-status'));
+});
