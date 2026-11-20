@@ -54,7 +54,7 @@
 `;
   host.appendChild(root);
   const pitch=root.querySelector('.quins-sim-pitch');
-  const ball=get('quins-sim-ball');
+  const ball=root.querySelector('#quins-sim-ball');
   // Ball inherits the player's SVG transform while carried; never teleport it ahead.
   function attachBall(player,x,y){player.appendChild(ball);ball.setAttribute('cx',String(x));ball.setAttribute('cy',String(y));}
   const get = id => root.querySelector('#' + id);
