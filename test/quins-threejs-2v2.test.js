@@ -50,3 +50,13 @@ test('inside support plus outside draw is a viable modeled release',()=>{
  assert.match(html,/support==='inside'&&draw==='outside'/);
  assert.match(html,/targets\.d1=\[-1,draw==='inside'\?-6:3\]/);
 });
+
+test('passer holds pre-contact position instead of running through defenders',()=>{
+ assert.match(html,/targets\.a1=\[carrier\.x,carrier\.z\]/);
+ assert.doesNotMatch(html,/targets\.a1=\[1,carrier\.z\]/);
+});
+test('outside draw has distinct defensive lanes and inside receiver stays at depth',()=>{
+ assert.match(html,/targets\.d1=\[-0\.5,draw==='inside'\?-6:2\]/);
+ assert.match(html,/targets\.d2=\[0\.5,draw==='inside'\?-3:4\.5\]/);
+ assert.match(html,/targets\.a2=\[-8,support==='outside'\?-10:9\]/);
+});
