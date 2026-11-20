@@ -18,7 +18,7 @@
       .quins-sim-status{min-height:52px;padding:12px;border:1px solid #54715a;border-radius:11px;background:#213b2b}
       .quins-sim-hint{font-size:.78rem;color:#c5d1c6}
       .quins-sim-outcome{padding:13px;border-left:4px solid #d9bd7b;background:#263d2f;border-radius:8px}
-      .quins-sim-outcome[hidden],.quins-sim-decisions[hidden],.quins-sim-toolbar button[hidden]{display:none}.quins-sim-toolbar{position:relative;grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}.quins-sim-toolbar button{min-height:50px}
+      .quins-sim-plan-summary[hidden],.quins-sim-outcome[hidden],.quins-sim-decisions[hidden],.quins-sim-toolbar button[hidden]{display:none}.quins-sim-toolbar{position:relative;grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}.quins-sim-toolbar button{min-height:50px}
       .quins-sim-player{transition:transform 420ms ease-in-out}.quins-sim-ball{transition:opacity 120ms;pointer-events:none}.quins-sim-pass-guide{transition:opacity 150ms}.quins-sim-controls button[aria-pressed="true"]{outline:3px solid #fff1b9;outline-offset:2px}.quins-sim-stage{font-weight:800;color:#f4d88c}.quins-sim-plan-summary{padding:12px;background:#263d2f;border-radius:10px;margin:10px 0}
       @media(prefers-reduced-motion:reduce){.quins-sim-player,.quins-sim-ball{transition:none}}
     </style>
@@ -50,7 +50,7 @@
       <button type="button" id="quins-sim-inside">Place support inside</button>
 
     </div>
-    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. Play runs the entire selected move automatically: draw the defender, dummy or pass, then finish. The stage narration appears beside the pitch.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Position & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
+    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. Play runs the entire selected move automatically: draw the defender, dummy or pass, then finish. The stage narration appears beside the pitch.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Position & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><div id="quins-kick-direction" class="quins-sim-plan-summary" hidden><strong>4. Kick direction</strong><div class="quins-sim-controls"><button type="button" data-kick="left">Kick left</button><button type="button" data-kick="middle">Kick middle</button><button type="button" data-kick="right">Kick right</button></div><p>Release around 3 yards from defender: a coaching cue, not a law.</p></div><p id="quins-opportunity-checklist" class="quins-sim-plan-summary" role="status" aria-live="polite"></p><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
 `;
   host.appendChild(root);
   const pitch=root.querySelector('.quins-sim-pitch');
@@ -73,7 +73,7 @@
   let sequenceTimers = [];
   let ballFrame=null;
   let ballOwner='carrier';
-  let autoReplay=false;let format='2v1';
+  let autoReplay=false;let format='2v1';let kickDirection=null;
   let carrierPosition={x:100,y:111};
   let supportPosition={x:55,y:65};
   function carryBall(){ballOwner='carrier';attachBall(carrier,113,104);}
@@ -89,11 +89,11 @@
   function narration(t){status.textContent=t;}
   let resultSnapshot = null;
   const initial = {carrier:[0,0],support:[0,0],defender:[0,0],cover:[0,0]};
-  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'MISSING')+' · 2. Draw: '+(defenseLane||'MISSING')+' · 3. Action: '+(plannedChoice||'MISSING')+' · '+format;get('quins-sim-plan-status').textContent=lane&&defenseLane&&plannedChoice?'All three commands ready. Press Play to watch the full move.':'Missing: '+[!lane?'support':null,!defenseLane?'defender draw':null,!plannedChoice?'finishing action':null].filter(Boolean).join(', ')+'.';playButton.disabled=!(lane&&defenseLane&&plannedChoice)||phase!=='setup';root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
+  function summary(){get('quins-kick-direction').hidden=plannedChoice!=='kick';const ready=lane&&defenseLane&&plannedChoice&&(plannedChoice!=='kick'||kickDirection);const target=kickDirection==='middle'?'middle':kickDirection==='left'?'inside':'outside';const checks=[['Defender drawn',!!defenseLane],['Space created',plannedChoice==='kick'?defenseLane!==target:lane!==defenseLane],['Ball targets space',plannedChoice==='kick'?!!kickDirection&&defenseLane!==target:!!plannedChoice],['Support aligned',plannedChoice==='kick'?lane===target:!!lane],['Chase completed',phase==='result'&&!watchButton.hidden]];get('quins-opportunity-checklist').textContent='OPPORTUNITY CHECKLIST · '+checks.map(([label,ok])=>(ok?'✓ ':'△ ')+label).join(' · ')+' · No guaranteed possession.';get('quins-sim-summary').textContent='1. Support: '+(lane||'MISSING')+' · 2. Draw: '+(defenseLane||'MISSING')+' · 3. Action: '+(plannedChoice||'MISSING')+' · '+format+(plannedChoice==='kick'?' · 4. Kick: '+(kickDirection||'MISSING'):'');get('quins-sim-plan-status').textContent=ready?'All commands ready. Press Play to watch the full move.':'Missing: '+[!lane?'support':null,!defenseLane?'defender draw':null,!plannedChoice?'finishing action':null].filter(Boolean).join(', ')+'.';playButton.disabled=!ready||phase!=='setup';root.querySelectorAll('[data-kick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kick===kickDirection)));root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
   function move(el,x,y){ el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function cancel(){stopBall();clearSequence();if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
-    cancel();autoReplay=false;lane=null;plannedChoice=null;defenseLane=null;phase='setup';resultSnapshot=null;
+    cancel();autoReplay=false;lane=null;plannedChoice=null;defenseLane=null;kickDirection=null;phase='setup';resultSnapshot=null;
     ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);cover.style.display=format==='2v1'?'none':'';positionSupport(0,0);carryBall();get("quins-sim-ball").style.opacity="1";get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
@@ -110,7 +110,7 @@
     status.textContent=which==='outside'?'Support is outside, with space beyond the primary defender.':'Support is inside, closer to the covering defender. Notice the traffic.';
   }
   function play(){
-    if(phase!=='setup'||!lane||!defenseLane||!plannedChoice){summary();return;}
+    if(phase!=='setup'||!lane||!defenseLane||!plannedChoice||(plannedChoice==='kick'&&!kickDirection)){summary();return;}
     phase='running';playButton.disabled=true;
     get('quins-sim-outside').disabled=true;get('quins-sim-inside').disabled=true;
     status.textContent='APPROACH · Carrier advances to the five-yard decision area.';
@@ -234,7 +234,7 @@
         positionCarrier(102,drawY*.75);
         ballOwner='flight';
         const from={x:carrierPosition.x+13,y:carrierPosition.y-7};
-        const to={x:332,y:drawY>0?49:169};
+        const to={x:315,y:kickDirection==='left'?169:kickDirection==='right'?51:110};
         pitch.appendChild(ball);ballAt(from.x,from.y);
         guide.setAttribute('d','M'+from.x+' '+from.y+'Q'+(from.x+42)+' '+(from.y-34)+' '+to.x+' '+to.y);
         guide.setAttribute('opacity','.75');
@@ -247,8 +247,8 @@
           later(()=>{
             if(phase!=='result')return;
             guide.setAttribute('opacity','0');
-            outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
-            narration('PLAY COMPLETE · '+message);
+            narration('ARRIVAL · Players chase to the ball landing zone.');positionSupport(to.x-65,to.y-65);positionCarrier(to.x-145,to.y-100);move(defender,to.x-265,to.y-110);
+            later(()=>{if(phase!=='result')return;const favorable=kickDirection!=='middle'&&lane===(kickDirection==='left'?'inside':'outside')&&defenseLane!==(kickDirection==='left'?'inside':'outside');outcome.hidden=false;outcome.textContent=(favorable?'SUPPORT FIRST TO CONTEST · ':'DEFENDER CONTESTS · ')+message;watchButton.hidden=false;summary();narration('CHASE COMPLETE · Recovery remains contested.');},850);
           },850);
         });
       },1600);
@@ -259,12 +259,13 @@
       get('quins-sim-traffic').setAttribute('opacity',fooled?'.25':'1');
       message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
     }else return;
-    if(choice!=='pass'&&choice!=='outside'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
-    if(choice!=='pass'&&choice!=='outside')status.textContent='FINISHING MOVE · '+message;
+    if(choice==='inside'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
+    if(choice==='inside')status.textContent='FINISHING MOVE · '+message;
   }
   root.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>{if(phase==='running'||phase==='decision')return;format=b.dataset.format;reset();root.querySelectorAll('[data-format]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));status.textContent=format==='2v1'?'2v1: one defender. Choose all three commands, then Play.':'2v2: covering defender added. Choose all three commands, then Play.';}));
   root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,0);summary();get('quins-sim-plan-status').textContent='Draw '+defenseLane+'. Choose your action and press Play.';}));
-  root.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;plannedChoice=b.dataset.plan;summary();get('quins-sim-plan-status').textContent='Planned action: '+b.textContent+'. Use Change plan to revise before replaying.';}));
+  root.querySelectorAll('[data-kick]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;kickDirection=b.dataset.kick;summary();}));
+   root.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;plannedChoice=b.dataset.plan;if(plannedChoice!=='kick')kickDirection=null;summary();get('quins-sim-plan-status').textContent='Planned action: '+b.textContent+'. Use Change plan to revise before replaying.';}));
   get('quins-sim-outside').addEventListener('click',()=>place('outside'));
   get('quins-sim-inside').addEventListener('click',()=>place('inside'));
   get('quins-sim-start').addEventListener('click',play);
