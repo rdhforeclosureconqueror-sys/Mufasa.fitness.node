@@ -7,7 +7,7 @@ const vm=require('node:vm');
 const source=fs.readFileSync(path.join(__dirname,'../public/rugby-attack-intelligence.js'),'utf8');
 function setup(present=true){
  const nodes=new Map();
- function node(id){if(!nodes.has(id))nodes.set(id,{textContent:'',listeners:{},addEventListener(event,fn){this.listeners[event]=fn;},setAttribute(){},appendChild(){},querySelector(){return this.selected||null;}});return nodes.get(id);}
+ function node(id){if(!nodes.has(id))nodes.set(id,{textContent:'',listeners:{},addEventListener(event,fn){this.listeners[event]=fn;},setAttribute(k,v){this[k]=v;},appendChild(){},querySelector(){return this.selected||null;}});return nodes.get(id);}
  const host=present?node('quins-structure-lesson'):null;
  const document={getElementById(id){return id==='quins-structure-lesson'?host:node(id);},createElement(){const n=node('lesson-stage');Object.defineProperty(n,'innerHTML',{set(value){this.html=value;},get(){return this.html;}});return n;}};
  vm.runInNewContext(source,{document});
@@ -48,4 +48,12 @@ test('mobile module cards keep each lesson inside a native expandable panel',()=
  assert.match(dashboard,/<details class="quins-module" id="quins-module-mf">/);
  assert.match(dashboard,/id="quins-structure-lesson"/);
  assert.match(dashboard,/\.quins-module-content fieldset\{min-width:0/);
+});
+
+test('visual academy contains training pitch and compact role tiles',()=>{
+ const dashboard=fs.readFileSync(path.join(__dirname,'../public/rugby-player.html'),'utf8');
+ assert.match(dashboard,/quins-academy-head/);
+ assert.match(dashboard,/quins-role-grid/);
+ assert.match(source,/quins-field/);
+ assert.match(source,/quins-defender/);
 });
