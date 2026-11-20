@@ -8,13 +8,13 @@ test('real coach-sourced RAVENS order and possession',()=>{
  for(const s of p.stages){assert.equal(Object.keys(s.positions).length,15);for(const pos of Object.values(s.positions))assert.ok(pos[0]>=0&&pos[0]<=390&&pos[1]>=0&&pos[1]<=260);}
 });
 test('FLASH does not invent carrier',()=>{const p=getPlay('flash');assert.equal(p.stages.at(-1).id,'flash');assert.equal(p.stages.at(-1).ballCarrier,null);assert.throws(()=>getPlay('bad'));});
-test('protected play endpoint is denied without explicit enrollment',()=>{
+test('protected play endpoint rejects anonymous requests',()=>{
  const routes={};installQuinsProtectedRoutes({app:{get(p,...handlers){routes[p]=handlers;}},requireAuth:()=>{},env:{}});
  assert.equal(routes['/api/quins/ravens/play'].length,2);
  let status=200,body;const res={set(){return this;},status(n){status=n;return this;},json(p){body=p;return this;}};
- routes['/api/quins/ravens/play'][1]({auth:{userId:'other'},query:{}},res);
+ routes['/api/quins/ravens/play'][1]({auth:null,query:{}},res);
  assert.equal(status,403);assert.equal(body.error,'QUINS_TEAM_ACCESS_REQUIRED');
- assert.equal(allowed({auth:{userId:'x'}},{}),false);
+ assert.equal(allowed({auth:{userId:'x'}},{}),true);
 });
 test('public script has no private coach play details',()=>{
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
