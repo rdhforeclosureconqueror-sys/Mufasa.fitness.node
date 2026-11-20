@@ -11,6 +11,8 @@ root.innerHTML=`<style>
 .quins-ravens-live [data-ball]{transition:transform 650ms ease}.quins-ravens-live [data-ball].in-flight{stroke:#a85f26;stroke-width:3}
 .quins-ravens-live button:disabled{opacity:.45}
 .quins-ravens-live [data-defense] circle{transition:cx 650ms ease,cy 650ms ease}
+.quins-ravens-live .pitch-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
+.quins-ravens-live .pitch-controls button{min-width:0;width:100%;margin:0;padding:9px 3px;font-size:clamp(12px,3.1vw,16px);overflow-wrap:anywhere}
 .quins-ravens-live .decision{padding:12px;border:1px solid #bba36a;border-radius:12px;margin:10px 0}
 .quins-ravens-live .decision button[aria-pressed="true"]{outline:3px solid white}
 .quins-ravens-live [data-report]{background:#294334;border-radius:9px;padding:12px;line-height:1.5}
@@ -26,11 +28,15 @@ root.innerHTML=`<style>
 <text x="18" y="44" fill="#ffe3a2" font-size="14" font-weight="800">ATTACK →</text>
 <g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
 <text x="12" y="251" font-size="11" fill="#fff">Gold: attackers 1–15 · White: ball</text></svg>
-<div class="decision"><label><input type="checkbox" data-defense-toggle> With Defense</label>
-<label> Defense response <select data-strategy><option value="fold">Fold toward repeated carries</option><option value="hold">Hold width / disciplined line</option><option value="rush">Rush ball carrier</option></select></label>
-<div><button data-crash>Simulate crash</button><button data-wide>Move ball wide</button><button data-reset-defense>Reset defensive experiment</button></div>
-<div data-report role="status" aria-live="polite">Turn on defense to experiment. Each crash can draw defenders, but the result depends on defensive strategy and recovery.</div></div>
-<div><button data-prev>Previous</button><button data-next>Next phase</button><button data-play>▶ Play</button><button data-pause>Pause</button><button data-replay>Watch again</button></div>
+<div class="pitch-controls" aria-label="RAVENS pitch playback and decisions">
+<button data-play>▶ Play</button><button data-pause>Pause</button><button data-replay>↺ Replay</button>
+<button data-prev>◀ Phase</button><button data-next>Next ▶</button><button data-crash>Crash</button>
+<button data-wide>Move wide</button><button data-reset-defense>Reset</button>
+<label style="align-self:center;font-size:.85rem"><input type="checkbox" data-defense-toggle> Defense</label>
+</div>
+<div data-action-status role="status" aria-live="polite" style="padding:8px;background:#294334;border-radius:8px">Tap Play for the coach sequence, or Crash / Move wide to explore a decision.</div>
+<div class="decision"><label>Defense response <select data-strategy><option value="fold">Fold toward repeated carries</option><option value="hold">Hold width / disciplined line</option><option value="rush">Rush ball carrier</option></select></label>
+<div data-report role="status" aria-live="polite">Turn on defense to see modeled reactions.</div></div>
 <div data-ball-status role="status" aria-live="polite">Ball movement: ready</div><div data-explain role="status" aria-live="polite"></div><p style="font-size:.83rem">Restricted Quin training. FLASH is a coach-sourced option; unspecified carrier movement is not invented.</p>
 </div>`;
 host.prepend(root);
@@ -62,8 +68,10 @@ function defenseReport(){
  ' These are simplified responses, not guaranteed real-match outcomes.';
 }
 function chooseDecision(action){
- if(!data||!$('[data-defense-toggle]').checked)return;
+ if(!data)return;
  pause();
+ if(!$('[data-defense-toggle]').checked){$('[data-defense-toggle]').checked=true;}
+ $('[data-action-status]').textContent='Applying '+(action==='crash'?'crash':'wide')+' decision to the coach sequence.';
  if(action==='crash'){
   // Move through the actual coach-approved hit-up/ruck sequence; do not
   // fabricate extra tactical stages or ball carriers.
@@ -72,7 +80,7 @@ function chooseDecision(action){
   const nextRuck=ruck>=0?ruck:edgeRuck;
   if(nextRuck<0){
    decisions.push('no further coach-authored ruck; replay to explore again');
-   defenseReport();return;
+   defenseReport();$('[data-action-status]').textContent='No later recorded ruck. Tap Replay to start another experiment.';return;
   }
   crashes++;
   recovery=Math.max(0,recovery-1);
@@ -82,7 +90,7 @@ function chooseDecision(action){
   const wide=data.stages.findIndex((p,i)=>i>index&&p.id==='edge');
   if(wide<0){
    decisions.push('no later coach-authored wide carry in this branch');
-   defenseReport();return;
+   defenseReport();$('[data-action-status]').textContent='No later recorded wide carry. Tap Replay to start another experiment.';return;
   }
   index=wide;
   recovery++;
@@ -113,7 +121,7 @@ function animateBall(from,to){
  ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
 }
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
-function render(){if(!data)return;const p=data.stages[index];for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
+function render(){if(!data)return;const p=data.stages[index];$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
 defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
@@ -133,6 +141,6 @@ $('[data-defense-toggle]').addEventListener('change',defenseReport);
 $('[data-strategy]').addEventListener('change',()=>{crashes=0;recovery=0;decisions=[];defenseReport();});
 $('[data-crash]').addEventListener('click',()=>chooseDecision('crash'));
 $('[data-wide]').addEventListener('click',()=>chooseDecision('wide'));
-$('[data-reset-defense]').addEventListener('click',()=>{crashes=0;decisions=[];defenseReport();});
+$('[data-reset-defense]').addEventListener('click',()=>{crashes=0;recovery=0;decisions=[];index=0;previousStage=null;render();});
 load('wedge');
 })();
