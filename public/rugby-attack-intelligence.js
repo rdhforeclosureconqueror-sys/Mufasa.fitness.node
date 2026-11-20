@@ -119,7 +119,7 @@
       pending=null;if(phase!=='running')return;
       phase='decision';playButton.hidden=true;continueButton.hidden=autoReplay;
       if(autoReplay){autoReplay=false;choose(plannedChoice);return;}
-      status.textContent='FIVE-YARD DECISION · Planned: '+plannedChoice+'. Press Finish move to watch the three-yard approach, footwork and pass.';
+      status.textContent='FIVE-YARD DECISION · Planned: '+plannedChoice+'. Press Finish move to start the inside cut NOW, five yards from contact, then counterstep and release before the tackle.';
     },1050);
   }
   function choose(choice){
@@ -132,37 +132,38 @@
     const aligned = (choice==='pass' && ((outside && defenseLane==='inside') || (!outside && defenseLane==='outside')));
     const committed = aligned;
     if(choice==='pass'){
-      // Diagram scale ~15px/yard: decision x167 (5yd), approach x197 (3yd),
-      // step x212 (2yd), counterstep x227 (1yd), release before defender x242.
+      // Diagram scale ~15px/yard: carrier at x167 for five-yard decision.
+      // First step x182 (~4yd), counterstep x197 (~3yd), release x207 (~2.3yd).
+      // Keep the defender at x242 until the ball is released: no pre-pass collision.
       const inside=defenseLane==='inside'?18:-18;
       const supportY=outside?65:159;
       // Support stays behind the ball until the single backwards pass.
       const guide=get('quins-sim-pass');
       guide.setAttribute('opacity','0');
       carryBall();
-      narration('5 YARDS · Decision made. Carrier advances to three yards. Support trails behind.');
-      positionCarrier(97,0);positionSupport(60,outside?0:94);
+      narration('5 YARDS · FIRST CUT begins now. Carrier threatens the inside shoulder while support stays behind.');
+      positionCarrier(82,inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
-        narration('3 YARDS · FIRST STEP: carrier attacks the inside gap. Defenders begin to narrow.');
-        positionCarrier(112,inside);
-        move(defender,-12,inside*.4);move(cover,committed?-22:-8,committed?-14:0);
+        narration('4 YARDS · Defender reads the inside threat. Carrier still has room to step outside.');
+        move(defender,0,inside*.45);move(cover,0,committed?inside*.35:0);
       },800);
       later(()=>{
         if(phase!=='result')return;
-        narration('2 YARDS · SECOND STEP: carrier counters to the outside shoulder. Defenders must choose.');
-        positionCarrier(127,-inside);
-        if(committed){move(defender,-21,inside*.6);move(cover,-39,inside*.5);}
-        else{move(cover,-12,outside?-35:5);}
+        narration('3 YARDS · COUNTERSTEP outside. The carrier fixes defenders without running into contact.');
+        positionCarrier(97,-inside);
+        if(committed){move(defender,0,inside*.65);move(cover,0,inside*.5);}
+        else{move(cover,0,outside?-15:5);}
       },1650);
       later(()=>{
         if(phase!=='result')return;
-        narration('1 YARD · RELEASE: white ball travels backwards into the running support BEFORE defenders converge.');
+        narration('BEFORE CONTACT · RELEASE from outside shoulder. One backward pass to support; defenders converge only after the ball leaves.');
+        positionCarrier(107,-inside);
         ballOwner='flight';
         // Reparent only at release, preserving the on-screen hand position.
         const releaseFromHands={x:carrierPosition.x+13,y:carrierPosition.y-7};
         pitch.appendChild(ball);ballAt(releaseFromHands.x,releaseFromHands.y);
-        positionSupport(130,outside?0:94);
+        positionSupport(110,outside?0:94);
         const catchAtHands={x:supportPosition.x+13,y:supportPosition.y-7};
         guide.setAttribute('d','M'+releaseFromHands.x+' '+releaseFromHands.y+'L'+catchAtHands.x+' '+catchAtHands.y);
         guide.setAttribute('opacity','.65');
@@ -171,7 +172,7 @@
           guide.setAttribute('opacity','0');
           receiveBall();get('quins-sim-ball').style.opacity='1';
           narration('CATCH · Support receives the ball in stride and accelerates away from contact.');
-          if(committed){move(defender,-33,inside*.6);move(cover,-55,inside*.5);}
+          if(committed){move(defender,-20,inside*.6);move(cover,-32,inside*.5);}
           else{move(cover,-27,outside?-42:10);}
           later(()=>{
             if(phase!=='result')return;
@@ -182,7 +183,7 @@
         });
       },2550);
       message=committed
-        ?'SPACE CREATED · Five-yard read, three-yard approach, two footwork steps, and early backward release to trailing support. This is a teaching model, not a guaranteed try.'
+        ?'SPACE CREATED · First cut at five yards, counterstep around three yards, and release before contact. The defenders converge after the ball has left. Spacing is essential; this is a teaching model, not a guaranteed try.'
         :'COVER RECOVERS · The carrier did not sufficiently fix both defenders. The backward pass reaches support, but cover can track the receiver.';
     }else if(choice==='outside'){
       const fooled=outside && defenseLane==='inside';
