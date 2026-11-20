@@ -27,19 +27,19 @@ function init(cfg){
  const panel=document.createElement('div');panel.style.cssText='display:none;position:absolute;z-index:3;inset:8px auto auto 8px;max-height:85%;width:min(340px,calc(100% - 16px));overflow:auto;background:#142d22;border:1px solid #bca36c;padding:12px;border-radius:12px;box-sizing:border-box';
  const count=document.createElement('div');count.style.cssText='display:none;position:absolute;inset:0;z-index:4;align-items:center;justify-content:center;background:#091c13a8;font-size:76px;font-weight:800;color:#f5d58d;pointer-events:none';
  stage.append(panel,count);portal.append(toolbar,stage);document.body.appendChild(portal);
- const home=document.createComment('rugby pitch original position');wrapper.parentNode.insertBefore(home,wrapper);
+ const sourceRoot=wrapper.parentElement;const canvasHome=document.createComment('three canvas original position');wrapper.insertBefore(canvasHome,canvas);
  let expanded=false,zoom=1,turn=0,tilt=0,pending=null;
- function close(){if(pending){clearTimeout(pending);pending=null;}count.style.display='none';panel.style.display='none';expanded=false;portal.style.display='none';home.parentNode.insertBefore(wrapper,home.nextSibling);wrapper.style.cssText='position:relative;width:100%';document.body.style.overflow=portal.dataset.prevOverflow||'';pose();}
- function open(){if(!enabled)toggle.click();expanded=true;portal.dataset.prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';portal.style.display='flex';stage.insertBefore(wrapper,panel);wrapper.style.cssText='position:absolute;inset:0;width:100%;height:100%';svg.style.width='100%';svg.style.height='100%';pose();}
+ function close(){if(pending){clearTimeout(pending);pending=null;}count.style.display='none';panel.style.display='none';expanded=false;portal.style.display='none';wrapper.insertBefore(canvas,canvasHome.nextSibling);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='';document.body.style.overflow=portal.dataset.prevOverflow||'';pose();}
+ function open(){if(!enabled)toggle.click();expanded=true;portal.dataset.prevOverflow=document.body.style.overflow;document.body.style.overflow='hidden';portal.style.display='flex';stage.insertBefore(canvas,panel);canvas.style.position='absolute';canvas.style.inset='0';canvas.style.height='100%';pose();}
  expand.onclick=open;
  mk('✕ Close',close);mk('⚙ Controls',()=>{panel.style.display=panel.style.display==='none'?'block':'none';refreshPanel();});mk('↻ Angle',()=>{angle=(angle+1)%3;pose();});mk('＋ Zoom',()=>{zoom=Math.min(2.6,zoom+.25);pose();});mk('－ Zoom',()=>{zoom=Math.max(.7,zoom-.25);pose();});mk('⟲ Reset view',()=>{zoom=1;turn=0;tilt=0;angle=0;pose();});
  let startX=0,startY=0;stage.addEventListener('pointerdown',e=>{if(e.target.closest('button')||panel.contains(e.target))return;startX=e.clientX;startY=e.clientY;stage.setPointerCapture(e.pointerId);});stage.addEventListener('pointerup',e=>{if(!expanded||panel.contains(e.target))return;turn=Math.max(-1.2,Math.min(1.2,turn+(e.clientX-startX)*.006));tilt=Math.max(-.5,Math.min(.5,tilt+(e.clientY-startY)*.003));pose();});
  function refreshPanel(){
   panel.replaceChildren();const heading=document.createElement('strong');heading.textContent='Scenario controls · '+cfg.title;panel.appendChild(heading);
   const note=document.createElement('p');note.textContent='Use the original rugby controls. Play closes this panel and starts after a two-second countdown.';panel.appendChild(note);
-  const scope=home.parentElement?.parentElement||document.body;
-  const buttons=[...scope.querySelectorAll('button')].filter(b=>!portal.contains(b)&&!controls.contains(b)&&!b.disabled&&b.offsetParent!==null);
-  const selects=[...scope.querySelectorAll('select')].filter(el=>!portal.contains(el)&&el.offsetParent!==null);
+  const scope=sourceRoot?.closest('.quins-simulator, .quins-ravens-live, .q32-container, section, article')||sourceRoot?.parentElement||document.body;
+  const buttons=[...scope.querySelectorAll('button')].filter(b=>!portal.contains(b)&&!controls.contains(b)&&!b.disabled&&b.getClientRects().length>0);
+  const selects=[...scope.querySelectorAll('select')].filter(el=>!portal.contains(el)&&el.getClientRects().length>0);
   for(const select of selects.slice(0,4)){const label=document.createElement('label');label.textContent=select.getAttribute('aria-label')||'Play option';label.style.cssText='display:block;margin:10px 0';const copy=select.cloneNode(true);copy.value=select.value;copy.style.cssText='display:block;max-width:100%;padding:8px';copy.onchange=()=>{select.value=copy.value;select.dispatchEvent(new Event('change',{bubbles:true}));};label.appendChild(copy);panel.appendChild(label);}
   for(const b of buttons.slice(0,35)){const label=(b.textContent||'').trim();if(!label||/camera angle|view:|debug/i.test(label))continue;const proxy=document.createElement('button');proxy.type='button';proxy.textContent=label;proxy.style.cssText='display:inline-block;margin:5px;padding:10px;background:#e4c783;color:#10251a;border-radius:8px;font-weight:bold';proxy.onclick=()=>{if(/play|start|replay/i.test(label)){panel.style.display='none';count.style.display='flex';count.textContent='2';pending=setTimeout(()=>{count.textContent='1';pending=setTimeout(()=>{count.style.display='none';pending=null;b.click();},1000);},1000);}else{b.click();refreshPanel();}};panel.appendChild(proxy);}
  }
@@ -71,7 +71,13 @@ function init(cfg){
  function point(el){
   if(!el)return null;
   const r=el.getBoundingClientRect(),b=svg.getBoundingClientRect();if(!b.width||!b.height)return null;
-  return {x:((r.left+r.width/2-b.left)/b.width-.5)*32,z:((r.top+r.height/2-b.top)/b.height-.5)*20};
+  // SVG stays mounted in its original layout. Read node centers in its own viewBox.
+  // This keeps native scenario event handlers and coordinates unchanged in fullscreen.
+  const vb=svg.viewBox.baseVal;
+  if(!vb||!vb.width||!vb.height)return null;
+  const ctm=svg.getScreenCTM();if(!ctm)return null;
+  const local=new DOMPoint(r.left+r.width/2,r.top+r.height/2).matrixTransform(ctm.inverse());
+  return {x:((local.x-vb.x)/vb.width-.5)*32,z:((local.y-vb.y)/vb.height-.5)*20};
  }
  function frame(){
   if(!enabled)return;
