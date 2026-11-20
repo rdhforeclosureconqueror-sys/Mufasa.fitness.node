@@ -5,9 +5,9 @@ let THREE;
 try{THREE=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.module.js');}
 catch(e){console.warn('Three.js unavailable; original drills remain playable',e);return;}
 const drills=[
- {svg:'.quins-simulator svg.quins-sim-pitch',ids:['quins-sim-carrier','quins-sim-support','quins-sim-defender','quins-sim-cover'],ball:'quins-sim-ball',title:'2v1 decision drill'},
- {svg:'#q32-pitch',ids:['q32-a1','q32-a2','q32-a3','q32-d1','q32-d2'],ball:'q32-ball',title:'3v2 overlap drill'},
- {svg:'.quins-ravens-live svg',selectors:Array.from({length:15},(_,i)=>'[data-players] [data-p="'+(i+1)+'"]'),defenseSelector:'[data-defense] circle',drillSelector:'[data-drill] circle',ballSelector:'[data-ball]',title:'Protected RAVENS MF playbook'}
+ {svg:'.quins-simulator svg.quins-sim-pitch',ids:['quins-sim-carrier','quins-sim-support','quins-sim-defender','quins-sim-cover'],ball:'quins-sim-ball',title:'2v1 decision drill',controlRoot:'.quins-simulator',excludeRoot:'.quins-3v2, .quins-ravens-live'},
+ {svg:'#q32-pitch',ids:['q32-a1','q32-a2','q32-a3','q32-d1','q32-d2'],ball:'q32-ball',title:'3v2 overlap drill',controlRoot:'.quins-3v2'},
+ {svg:'.quins-ravens-live svg',selectors:Array.from({length:15},(_,i)=>'[data-players] [data-p="'+(i+1)+'"]'),defenseSelector:'[data-defense] circle',drillSelector:'[data-drill] circle',ballSelector:'[data-ball]',title:'Protected RAVENS MF playbook',controlRoot:'.quins-ravens-live'}
 ];
 function init(cfg){
  const svg=document.querySelector(cfg.svg);if(!svg||svg.dataset.threeMirror)return;
@@ -37,9 +37,10 @@ function init(cfg){
  function refreshPanel(){
   panel.replaceChildren();const heading=document.createElement('strong');heading.textContent='Scenario controls · '+cfg.title;panel.appendChild(heading);
   const note=document.createElement('p');note.textContent='Use the original rugby controls. Play closes this panel and starts after a two-second countdown.';panel.appendChild(note);
-  const scope=sourceRoot?.closest('.quins-simulator, .quins-ravens-live, .q32-container, section, article')||sourceRoot?.parentElement||document.body;
-  const buttons=[...scope.querySelectorAll('button')].filter(b=>!portal.contains(b)&&!controls.contains(b)&&!b.disabled&&b.getClientRects().length>0);
-  const selects=[...scope.querySelectorAll('select')].filter(el=>!portal.contains(el)&&el.getClientRects().length>0);
+  const scope=svg.closest(cfg.controlRoot);if(!scope){note.textContent='Scenario controls unavailable for this drill.';return;}
+  const belongs=el=>!cfg.excludeRoot||!el.closest(cfg.excludeRoot);
+  const buttons=[...scope.querySelectorAll('button')].filter(b=>belongs(b)&&!portal.contains(b)&&!controls.contains(b)&&!b.disabled&&b.getClientRects().length>0);
+  const selects=[...scope.querySelectorAll('select')].filter(el=>belongs(el)&&!portal.contains(el)&&el.getClientRects().length>0);
   for(const select of selects.slice(0,4)){const label=document.createElement('label');label.textContent=select.getAttribute('aria-label')||'Play option';label.style.cssText='display:block;margin:10px 0';const copy=select.cloneNode(true);copy.value=select.value;copy.style.cssText='display:block;max-width:100%;padding:8px';copy.onchange=()=>{select.value=copy.value;select.dispatchEvent(new Event('change',{bubbles:true}));};label.appendChild(copy);panel.appendChild(label);}
   for(const b of buttons.slice(0,35)){const label=(b.textContent||'').trim();if(!label||/camera angle|view:|debug/i.test(label))continue;const proxy=document.createElement('button');proxy.type='button';proxy.textContent=label;proxy.style.cssText='display:inline-block;margin:5px;padding:10px;background:#e4c783;color:#10251a;border-radius:8px;font-weight:bold';proxy.onclick=()=>{if(/play|start|replay/i.test(label)){panel.style.display='none';count.style.display='flex';count.textContent='2';pending=setTimeout(()=>{count.textContent='1';pending=setTimeout(()=>{count.style.display='none';pending=null;b.click();},1000);},1000);}else{b.click();refreshPanel();}};panel.appendChild(proxy);}
  }
