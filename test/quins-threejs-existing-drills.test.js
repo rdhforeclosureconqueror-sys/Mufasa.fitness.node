@@ -19,3 +19,13 @@ test('expanded viewer preserves original engines and provides mobile coaching co
  assert.match(view,/b\.click\(\)/);
  assert.doesNotMatch(view,/\/api\/quins\/ravens\/play/);
 });
+
+test('fullscreen does not reparent the original SVG or break original scenario listeners',()=>{
+ assert.match(view,/stage\.insertBefore\(canvas,panel\)/);
+ assert.match(view,/wrapper\.insertBefore\(canvas,canvasHome\.nextSibling\)/);
+ assert.doesNotMatch(view,/stage\.insertBefore\(wrapper,panel\)/);
+ assert.doesNotMatch(view,/svg\.style\.width='100%'/);
+ assert.match(view,/svg\.getScreenCTM\(\)/);
+ assert.match(view,/matrixTransform\(ctm\.inverse\(\)\)/);
+ assert.match(view,/sourceRoot\?\.closest/);
+});
