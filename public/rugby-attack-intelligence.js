@@ -145,14 +145,14 @@
       positionCarrier(82,inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
-        narration('4 YARDS · Defender reads the inside threat. Carrier still has room to step outside.');
-        move(defender,0,inside*.45);move(cover,0,committed?inside*.35:0);
+        narration('4 YARDS · The inside threat forces defender 2 to STEP UP into the channel, leaving space behind.');
+        move(defender,0,inside*.45);move(cover,committed?-26:-9,committed?-13:0);
       },800);
       later(()=>{
         if(phase!=='result')return;
         narration('3 YARDS · COUNTERSTEP outside. The carrier fixes defenders without running into contact.');
         positionCarrier(97,-inside);
-        if(committed){move(defender,0,inside*.65);move(cover,0,inside*.5);}
+        if(committed){move(defender,0,inside*.65);move(cover,-47,-20);}
         else{move(cover,0,outside?-15:5);}
       },1650);
       later(()=>{
@@ -172,28 +172,28 @@
           guide.setAttribute('opacity','0');
           receiveBall();get('quins-sim-ball').style.opacity='1';
           narration('CATCH · Support receives the ball in stride and accelerates away from contact.');
-          if(committed){move(defender,-20,inside*.6);move(cover,-32,inside*.5);}
+          if(committed){move(defender,-20,inside*.6);move(cover,-66,-23);}
           else{move(cover,-27,outside?-42:10);}
           later(()=>{
             if(phase!=='result')return;
             positionSupport(committed?208:145,outside?0:94);
             outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
-            narration('PLAY COMPLETE · '+(committed?'Both defenders converged on the carrier while support received in space.':'Cover stayed available and can close on the support runner.'));
+            narration('PLAY COMPLETE · '+(committed?'Both defenders stepped up toward the carrier, leaving support space outside.':'Cover stayed available and can close on the support runner.'));
           },650);
         });
       },2550);
       message=committed
-        ?'SPACE CREATED · First cut at five yards, counterstep around three yards, and release before contact. The defenders converge after the ball has left. Spacing is essential; this is a teaching model, not a guaranteed try.'
+        ?'SPACE CREATED · First cut at five yards, counterstep around three yards, and release before contact. Defender 2 steps up to defend the inside threat, and both defenders converge after release. Spacing is essential; this is a teaching model, not a guaranteed try.'
         :'COVER RECOVERS · The carrier did not sufficiently fix both defenders. The backward pass reaches support, but cover can track the receiver.';
     }else if(choice==='outside'){
       const fooled=outside && defenseLane==='inside';
       move(carrier,135,-52);move(defender,-22,fooled?18:-10);move(cover,fooled?-38:-10,fooled?15:-40);
       message=fooled?'DUMMY CREATES SPACE · The carrier threatens the inside seam, the defense narrows, and the carrier attacks the outside shoulder. Support trails for continuity; cover may still recover.':'DUMMY READ · The defense holds width and tracks the ball. The dummy alone does not create space; the carrier meets outside cover. Try drawing defenders inward first.';
     }else if(choice==='kick'){
-      move(carrier,115,0);move(support,105,lane==='outside'?0:94);
+      positionCarrier(115,0);positionSupport(105,lane==='outside'?0:94);
       get('quins-sim-pass').setAttribute('d','M220 110Q265 45 330 42');get('quins-sim-pass').setAttribute('opacity','1');
-      move(cover,15,-40);
-      message='KICK & CHASE · The ball goes beyond the first defender; cover turns and tracks it. A successful chase depends on kick weight, onside timing, support, and recovery. This is an illustrative option, not an automatic try.';
+      move(cover,-35,-18);
+      message='KICK & CHASE · Defender 2 steps up to the carrier, leaving a possible kick space behind; the cover turns to track the ball. A successful chase depends on kick weight, onside timing, support, and recovery. This is an illustrative option, not an automatic try.';
     }else if(choice==='inside'){
       const fooled=!outside && defenseLane==='outside';
       move(carrier,135,35);move(defender,-20,fooled?-18:12);move(cover,fooled?-10:-33,fooled?-30:-10);
