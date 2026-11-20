@@ -1,14 +1,18 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Quin Nation · 2v2 Awareness Lab</title><style>
-*{box-sizing:border-box}body{margin:0;background:#0b201a;color:#f7f0d8;font:15px system-ui,sans-serif}main{max-width:1040px;margin:auto;padding:14px}h1{font-size:clamp(22px,4vw,32px);margin:8px 0}p{line-height:1.5;color:#d3e0d5}.pitch{height:min(62vh,530px);min-height:330px;border:2px solid #c3a45d;border-radius:16px;overflow:hidden;position:relative;background:#173c2a}.pitch canvas{display:block;width:100%;height:100%;touch-action:pan-y}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}button,select{background:#204c37;color:#fff1c7;border:1px solid #bc9b51;border-radius:10px;padding:11px 13px;font:inherit;min-height:46px}button:focus-visible,select:focus-visible{outline:3px solid white}button[aria-pressed="true"]{background:#e6c67d;color:#172d22}button:disabled{opacity:.5}#status,#feedback{background:#1c3a2c;border-radius:10px;padding:12px;margin:9px 0;line-height:1.5}#feedback{min-height:70px}label{display:inline-flex;align-items:center;gap:8px}small{color:#c8d5ca}#loading{position:absolute;inset:0;display:grid;place-items:center;background:#173c2a}#loading[hidden]{display:none}
+*{box-sizing:border-box}body{margin:0;background:#0b201a;color:#f7f0d8;font:15px system-ui,sans-serif}main{max-width:1040px;margin:auto;padding:14px}h1{font-size:clamp(22px,4vw,32px);margin:8px 0}p{line-height:1.5;color:#d3e0d5}.pitch{height:min(62vh,530px);min-height:330px;border:2px solid #c3a45d;border-radius:16px;overflow:hidden;position:relative;background:#173c2a}.pitch canvas{display:block;width:100%;height:100%;touch-action:pan-y}.controls{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}button,select{background:#204c37;color:#fff1c7;border:1px solid #bc9b51;border-radius:10px;padding:11px 13px;font:inherit;min-height:46px}button:focus-visible,select:focus-visible{outline:3px solid white}button[aria-pressed="true"]{background:#e6c67d;color:#172d22}button:disabled{opacity:.5}.pitch-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0 12px}.pitch-actions button{background:#d9be7d;color:#16281d;font-weight:800}.setup{border:1px solid #597563;border-radius:12px;padding:12px;margin:10px 0}.setup summary{cursor:pointer;font-weight:800;padding:6px}.setup .controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.setup button{font-weight:750}.summary{background:#243e31;border-radius:10px;padding:10px}.pitch-actions button:disabled{background:#576456;color:#ddd}#status,#feedback{background:#1c3a2c;border-radius:10px;padding:12px;margin:9px 0;line-height:1.5}#feedback{min-height:70px}label{display:inline-flex;align-items:center;gap:8px}small{color:#c8d5ca}#loading{position:absolute;inset:0;display:grid;place-items:center;background:#173c2a}#loading[hidden]{display:none}
 </style></head><body><main><h1>QUIN NATION · 2v2 SITUATIONAL AWARENESS</h1>
-<p>Interactive Three.js coaching experiment: two attackers against two defenders. Read the defense, choose a response, and compare the outcome. <strong>Illustrative decision model</strong>—not a verified reconstruction of an earlier 2v2 game.</p>
+<p>Interactive Three.js coaching experiment: two attackers against two defenders. The original three-step planning flow is restored in this 3D prototype. <strong>Illustrative decision model</strong>—not a validated match simulation.</p>
 <div class="pitch" id="pitch"><div id="loading">Loading 3D field…</div></div>
-<div class="controls"><label>Defensive picture <select id="picture"><option value="balanced">Balanced 2v2</option><option value="press">Inside defender presses</option><option value="drift">Both defenders drift</option><option value="jam">Outside defender jams</option></select></label><button id="new">New rep</button><button id="camera">Camera angle</button></div>
-<div id="status" role="status" aria-live="polite">Read the defensive picture, then choose your attacking action.</div>
-<div class="controls" role="group" aria-label="Attacking decision"><button data-choice="fix" aria-pressed="false">Fix & pass</button><button data-choice="carry" aria-pressed="false">Attack inside</button><button data-choice="wide" aria-pressed="false">Attack outside</button><button data-choice="hold" aria-pressed="false">Hold depth</button></div>
-<div class="controls"><button id="play">▶ Play decision</button><button id="pause">Pause</button><button id="reset">Reset positions</button><button id="replay">Replay</button></div>
+<div class="pitch-actions" role="group" aria-label="Playback controls directly under the pitch"><button id="play">▶ Play scenario</button><button id="finish" disabled>Finish move</button><button id="pause">Pause</button><button id="replay">Replay</button><button id="reset">Change plan / Reset</button><button id="camera">Camera angle</button></div>
+<div id="status" role="status" aria-live="polite">Set your support lane, draw direction and intended action.</div>
+<details class="setup" id="setup" open><summary>Before Play · Read the picture and choose your plan</summary>
+<p>Support starts behind the carrier. Set the support lane, decide how to draw the defenders, then select your intended action. Playback pauses at the five-yard decision point; Finish move is always directly under the pitch.</p>
+<strong>1. Support lane</strong><div class="controls"><button data-support="outside">Place support outside</button><button data-support="inside">Place support inside</button></div>
+<strong>2. Draw the defenders</strong><div class="controls"><button data-draw="inside">Draw defenders inside</button><button data-draw="outside">Draw defenders outside</button></div>
+<strong>3. Intended action</strong><div class="controls"><button data-plan="pass">Draw & pass</button><button data-plan="outside">Dummy & go outside</button><button data-plan="inside">Dummy & cut inside</button><button data-plan="kick">Kick & chase</button></div>
+<div class="summary" id="summary" role="status">1. Support: not set · 2. Draw: not set · 3. Action: not set</div></details>
 <div id="feedback" role="status" aria-live="polite">Situational awareness: identify the nearest defender's shoulder, the second defender's movement, and the support player's depth before deciding.</div>
 <p><small>Gold = attackers A1 (ball) and A2 (support). Red = defenders D1 and D2. Gold dot = ball. Outcomes are simplified teaching hypotheses, not guaranteed tries or match outcomes. No tackle-contact simulation.</small></p></main>
 <script type="module">
@@ -24,29 +28,86 @@ function actor(color,label){const g=new THREE.Group(),body=new THREE.Mesh(new TH
 const actors={a1:actor(0xe4be66,'A1'),a2:actor(0xe4be66,'A2'),d1:actor(0xc64a50,'D1'),d2:actor(0xc64a50,'D2')};
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.33,10,8),new THREE.MeshStandardMaterial({color:0xfff7df}));scene.add(ball);
 const starts={a1:[-13,-4],a2:[-15,7],d1:[2,-4],d2:[2,7]};
-const scenarios={
- balanced:{d1:[2,-4],d2:[2,7],cue:'Both defenders are connected. Identify which defender you can commit before passing.'},
- press:{d1:[-4,-4],d2:[3,8],cue:'D1 presses inside early. Is A2 available outside if D1 commits?'},
- drift:{d1:[2,-1],d2:[4,11],cue:'Both defenders drift toward width. Look for the inside shoulder and available space.'},
- jam:{d1:[3,-4],d2:[-4,7],cue:'D2 shoots toward the support player. Is the outside pass still safe?'}
-};
-let phase='read',choice=null,clock=0,paused=false,lastChoice=null,targets={};
+const scenarios={inside:{d1:[2,-4],d2:[2,7],cue:'Draw defenders inside to create a potential outside release.'},outside:{d1:[2,-2],d2:[2,11],cue:'Draw defenders outside; assess the inside seam.'}};
+let phase='setup',support=null,draw=null,plan=null,clock=0,paused=false,lastPlan=null,targets={},startPositions={},ballOwner='a1';
 function setCamera(){const poses=[[0,39,35],[-34,24,24],[0,54,.1]];camera.position.set(...poses[cameraIndex]);camera.lookAt(0,0,0)}
 setCamera();
-function setPositions(){const sc=scenarios[$('picture').value];targets={a1:[...starts.a1],a2:[...starts.a2],d1:[...sc.d1],d2:[...sc.d2]};Object.entries(targets).forEach(([k,p])=>actors[k].position.set(p[0],0,p[1]));ball.position.set(starts.a1[0]+.8,1.4,starts.a1[1]);}
-function newRep(){phase='read';choice=null;lastChoice=null;clock=0;paused=false;setPositions();document.querySelectorAll('[data-choice]').forEach(b=>b.setAttribute('aria-pressed','false'));$('status').textContent='READ DEFENSE · '+scenarios[$('picture').value].cue;$('feedback').textContent='Observe D1, D2 and A2. Select your decision before pressing Play.'}
-function decision(){const s=$('picture').value,c=choice;if(!c)return null;
- const outcomes={
- balanced:{fix:['D1 is fixed before the pass; A2 attacks the outside shoulder.','good'],carry:['D1 is connected and can meet the carrier; risk of contact.','risk'],wide:['D2 remains available outside; passing early may leave A2 covered.','risk'],hold:['A1 slows to assess while defenders stay connected.','neutral']},
- press:{fix:['D1 presses. Commit D1, then release A2 into the exposed outside channel.','good'],carry:['Running into a pressing D1 invites contact.','risk'],wide:['An early pass may work, but A2 must preserve depth and avoid D2.','neutral'],hold:['Waiting allows D1 and D2 to reconnect.','risk']},
- drift:{fix:['A1 fixes D1 before passing; this can still challenge D2.','neutral'],carry:['D1 drifts wide; A1 attacks the inside shoulder and available seam.','good'],wide:['Both defenders are moving wide; A2 may be covered.','risk'],hold:['Hold depth to read the drift, but release timing matters.','neutral']},
- jam:{fix:['D2 jams the receiver. A1 must read the interception/contact risk.','risk'],carry:['D2 jams A2, leaving an inside channel for A1 to attack.','good'],wide:['D2 is already closing A2; early pass is exposed.','risk'],hold:['Holding depth can buy a read, but D2 is advancing.','neutral']}
- };
- return outcomes[s][c];
+function setPositions(){
+ const sc=scenarios[draw||'inside'];startPositions={a1:[...starts.a1],a2:[-16,support==='inside'?-9:7],d1:[...sc.d1],d2:[...sc.d2]};
+ targets=structuredClone(startPositions);
+ Object.entries(targets).forEach(([k,p])=>actors[k].position.set(p[0],0,p[1]));
+ ball.position.set(starts.a1[0]+.8,1.4,starts.a1[1]);ballOwner='a1';
 }
-function run(){if(!choice){$('feedback').textContent='Choose an attacking decision first.';return;}phase='run';clock=0;paused=false;lastChoice=choice;const s=scenarios[$('picture').value],result=decision();targets.a1=choice==='carry'?[7,-5]:choice==='wide'?[1,-2]:choice==='hold'?[-5,-4]:[0,-4];targets.a2=choice==='wide'||choice==='fix'?[12,10]:[-3,8];targets.d1=s.d1.map((v,i)=>i===0?v+4:v+(choice==='carry'?-1:0));targets.d2=s.d2.map((v,i)=>i===0?v+4:v+(choice==='wide'||choice==='fix'?1:0));$('status').textContent='EXECUTE · '+choice.toUpperCase()+' · '+result[1].toUpperCase();$('feedback').textContent=result[0]+' Watch spacing, defender commitment and support depth. This is a modeled read, not a guaranteed outcome.'}
-document.querySelectorAll('[data-choice]').forEach(b=>b.onclick=()=>{choice=b.dataset.choice;document.querySelectorAll('[data-choice]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('feedback').textContent='Selected: '+b.textContent+'. Press Play decision to test your read.'});
-$('play').onclick=run;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause'};$('new').onclick=newRep;$('reset').onclick=newRep;$('replay').onclick=()=>{if(lastChoice){choice=lastChoice;setPositions();run()}else newRep()};$('picture').onchange=newRep;$('camera').onclick=()=>{cameraIndex=(cameraIndex+1)%3;setCamera()};
-function resize(){const w=holder.clientWidth,h=holder.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}new ResizeObserver(resize).observe(holder);resize();newRep();
-let last=performance.now();function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;if(phase==='run'&&!paused){clock+=dt;for(const [k,p] of Object.entries(targets)){const a=actors[k];a.position.x+=(p[0]-a.position.x)*Math.min(1,dt*1.65);a.position.z+=(p[1]-a.position.z)*Math.min(1,dt*1.65)}const pass=choice==='fix'||choice==='wide';const receiver=pass&&clock>1.1;const owner=receiver?actors.a2:actors.a1;ball.position.set(owner.position.x+.75,1.4,owner.position.z);if(clock>4.3){phase='done';$('status').textContent='REVIEW · '+choice.toUpperCase()+' · choose New rep or Replay'}}renderer.render(scene,camera);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+function updateSummary(){
+ $('summary').textContent='1. Support: '+(support||'not set')+' · 2. Draw: '+(draw||'not set')+' · 3. Action: '+(plan||'not set');
+ const ready=!!(support&&draw&&plan);$('play').disabled=!ready||phase!=='setup';
+}
+function reset(){
+ phase='setup';support=null;draw=null;plan=null;clock=0;paused=false;lastPlan=null;
+ document.querySelectorAll('[data-support],[data-draw],[data-plan]').forEach(b=>b.setAttribute('aria-pressed','false'));
+ $('setup').open=true;$('finish').disabled=true;$('play').textContent='▶ Play scenario';$('pause').textContent='Pause';
+ setPositions();updateSummary();$('status').textContent='BEFORE PLAY · Choose support, draw direction and intended action.';
+ $('feedback').textContent='Watch the carrier, support depth and both defenders. The defense responds to your intended draw.';
+}
+function applyPlan(){
+ const outside=support==='outside',d=draw==='inside'?-1:1;
+ const supportZ=outside?9:-9;
+ targets={a1:[-5,-4],a2:[-8,supportZ],d1:[-2,d===-1?-5:0],d2:[0,d===-1?-1:11]};
+}
+function play(){
+ if(!(support&&draw&&plan)||phase!=='setup')return;
+ phase='approach';clock=0;paused=false;lastPlan={support,draw,plan};
+ applyPlan();$('setup').open=false;$('play').disabled=true;$('finish').disabled=true;
+ $('status').textContent='APPROACH · Carrier moves toward the five-yard decision point.';
+ $('feedback').textContent=scenarios[draw].cue+' Watch both defenders commit to the developing threat.';
+}
+function finish(){
+ if(phase!=='decision')return;
+ phase='finish';clock=0;$('finish').disabled=true;
+ const outside=support==='outside',pass=plan==='pass',kick=plan==='kick';
+ targets.a1=plan==='inside'?[7,-10]:plan==='outside'?[7,6]:pass?[1,-4]:[6,-4];
+ targets.a2=outside?[10,12]:[8,-10];
+ targets.d1=[3,draw==='inside'?-5:0];targets.d2=[5,draw==='inside'?0:11];
+ $('status').textContent='FINISH MOVE · '+({pass:'Draw & pass',outside:'Dummy & go outside',inside:'Dummy & cut inside',kick:'Kick & chase'}[plan]);
+ const lane=outside?'outside':'inside';
+ const assessment=pass?(outside&&draw==='inside'?'Outside support may exploit a defender drawn inside.':'Check whether the covering defender blocks the passing lane.'):
+ plan==='inside'?(draw==='outside'?'Outside movement can expose the inside shoulder.':'The inside channel may be crowded.'):
+ plan==='outside'?(draw==='inside'?'Inside commitment can create outside space.':'The cover may already be moving outside.'):
+ 'Kick timing and chase alignment require space beyond the defensive line.';
+ $('feedback').textContent='Coaching read: '+assessment+' Support: '+lane+'. This is a simplified scenario, not a guaranteed outcome.';
+}
+function choose(group,value){
+ if(phase!=='setup')return;
+ if(group==='support')support=value;
+ if(group==='draw')draw=value;
+ if(group==='plan')plan=value;
+ document.querySelectorAll('[data-'+group+']').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset[group]===value)));
+ setPositions();updateSummary();
+}
+for(const group of ['support','draw','plan'])document.querySelectorAll('[data-'+group+']').forEach(b=>b.onclick=()=>choose(group,b.dataset[group]));
+$('play').onclick=play;$('finish').onclick=finish;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause'};
+$('reset').onclick=reset;$('replay').onclick=()=>{if(lastPlan){({support,draw,plan}=lastPlan);phase='setup';setPositions();updateSummary();play()}else reset()};
+$('camera').onclick=()=>{cameraIndex=(cameraIndex+1)%3;setCamera()};
+function resize(){const w=holder.clientWidth,h=holder.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}new ResizeObserver(resize).observe(holder);resize();reset();
+let last=performance.now();
+function frame(now){
+ const dt=Math.min(.05,(now-last)/1000);last=now;
+ if(!paused&&(phase==='approach'||phase==='finish')){
+  clock+=dt;
+  for(const [k,p] of Object.entries(targets)){
+   const a=actors[k];a.position.x+=(p[0]-a.position.x)*Math.min(1,dt*1.65);a.position.z+=(p[1]-a.position.z)*Math.min(1,dt*1.65);
+  }
+  if(phase==='approach'&&clock>2.4){
+   phase='decision';$('finish').disabled=false;$('status').textContent='FIVE-YARD DECISION · Freeze. Press Finish move directly under the pitch.';
+   $('feedback').textContent='Defenders have responded. Check support depth, D1 commitment and D2 cover before the final action.';
+  }
+  if(phase==='finish'){
+   const receiver=plan==='pass'&&clock>1.1;
+   if(plan==='kick'&&clock>.9){ball.position.set(actors.a1.position.x+clock*4,2+Math.sin(Math.min(1,clock/2)*Math.PI)*5,actors.a1.position.z);}
+   else {const owner=receiver?actors.a2:actors.a1;ball.position.set(owner.position.x+.75,1.4,owner.position.z);}
+   if(clock>3.8){phase='done';$('status').textContent='REVIEW · Replay or Change plan / Reset.';}
+  }else{ball.position.set(actors.a1.position.x+.75,1.4,actors.a1.position.z);}
+ }
+ renderer.render(scene,camera);requestAnimationFrame(frame);
+}requestAnimationFrame(frame);
 </script></body></html>
