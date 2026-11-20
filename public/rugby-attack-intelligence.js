@@ -139,7 +139,7 @@
   get('quins-sim-replay').addEventListener('click',reset);
   get('quins-sim-continue').addEventListener('click',()=>choose(plannedChoice));
   get('quins-sim-new').addEventListener('click',reset);
-  get('quins-sim-watch').addEventListener('click',()=>{if(phase!=='result'||!resultSnapshot)return;const action=resultSnapshot;phase='decision';get('quins-sim-review').hidden=true;outcome.hidden=true;move(carrier,88,0);move(support,0,lane==='outside'?0:94);move(defender,0,0);move(cover,0,defenseLane==='inside'?0:-80);get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');get('quins-sim-review').hidden=false;get('quins-sim-watch').textContent='Replay final move →';get('quins-sim-watch').onclick=()=>{get('quins-sim-watch').onclick=null;get('quins-sim-watch').textContent='Watch outcome again';choose(action);};status.textContent='Replay paused at three yards. Press Replay final move to watch when ready.';});
+  get('quins-sim-watch').addEventListener('click',()=>{if(phase!=='result'||!resultSnapshot)return;phase='decision';get('quins-sim-review').hidden=true;outcome.hidden=true;move(carrier,88,0);move(support,0,lane==='outside'?0:94);move(defender,0,0);move(cover,0,defenseLane==='inside'?0:-80);get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');get('quins-sim-review').hidden=true;decision.hidden=false;status.textContent='Replay paused at three yards. Press Continue planned move when ready.';});
   support.addEventListener('click',()=>place(lane==='outside'?'inside':'outside'));
   support.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();place(lane==='outside'?'inside':'outside');}});
 
