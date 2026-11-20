@@ -1,6 +1,6 @@
 (function () {
   'use strict';
-  const host = document.getElementById('attack-intelligence');
+  const host = document.getElementById('quins-structure-lesson');
   if (!host) return;
   const stage = document.createElement('div');
   stage.className = 'card';
