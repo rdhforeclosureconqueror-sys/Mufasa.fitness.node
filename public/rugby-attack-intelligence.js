@@ -68,18 +68,18 @@
   let pending = null;
   let resultSnapshot = null;
   const initial = {carrier:[0,0],support:[0,0],defender:[0,0],cover:[0,0]};
-  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'not set')+' · 2. Cover: '+(defenseLane||'not set')+' · 3. Action: '+(plannedChoice||'not set');playButton.disabled=!(lane&&defenseLane&&plannedChoice)||phase!=='setup';root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
+  function summary(){get('quins-sim-summary').textContent='1. Support: '+(lane||'not set')+' · 2. Draw: '+(defenseLane||'not set')+' · 3. Action: '+(plannedChoice||'not set');playButton.disabled=!(lane&&defenseLane&&plannedChoice)||phase!=='setup';root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
   function move(el,x,y){ el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function cancel(){if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
     cancel();lane=null;plannedChoice=null;defenseLane=null;phase='setup';resultSnapshot=null;
-    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,0);get('quins-sim-plan-status').textContent='Choose a support lane, cover position, and intended decision.';
+    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,0);get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
     playButton.hidden=false;playButton.disabled=true;continueButton.hidden=true;watchButton.hidden=true;
     get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
     outcome.hidden=true;outcome.textContent='';
-    status.textContent='Choose your support, cover and move below. Playback stays beside the pitch.';summary();
+    status.textContent='Choose your support, draw and move below. Playback stays beside the pitch.';summary();
   }
   function place(which){
     if(phase!=='setup')return;
@@ -103,12 +103,12 @@
   function choose(choice){
     if(phase!=='decision')return;
     phase='result';continueButton.hidden=true;watchButton.hidden=false;
-    const outside=lane==='outside';const coverInside=defenseLane==='inside';
+    const outside=lane==='outside';
     let message='';
     // Coaching model: defender reactions follow the carrier's threat, not user-controlled defensive placement.
     // Illustrative heuristics, not a predictive match engine. Early ball release / poor lane alignment leave cover free.
     const aligned = (choice==='pass' && ((outside && defenseLane==='inside') || (!outside && defenseLane==='outside')));
-    const committed = aligned && choice==='pass';
+    const committed = aligned;
     if(choice==='pass'){
       move(carrier,117,defenseLane==='inside'?14:-14);
       move(defender,-20,defenseLane==='inside'?13:-13);
