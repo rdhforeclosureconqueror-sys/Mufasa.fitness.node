@@ -186,9 +186,34 @@
         ?'SPACE CREATED · First cut at five yards, counterstep around three yards, and release before contact. Defender 2 steps up to defend the inside threat, and both defenders converge after release. Spacing is essential; this is a teaching model, not a guaranteed try.'
         :'COVER RECOVERS · The carrier did not sufficiently fix both defenders. The backward pass reaches support, but cover can track the receiver.';
     }else if(choice==='outside'){
-      narration('DUMMY PASS · DRAW INSIDE, THEN FINISH OUTSIDE.');const fooled=outside && defenseLane==='inside';
-      move(carrier,135,-52);move(defender,-22,fooled?18:-10);move(cover,fooled?-38:-10,fooled?15:-40);
-      message=fooled?'DUMMY CREATES SPACE · The carrier threatens the inside seam, the defense narrows, and the carrier attacks the outside shoulder. Support trails for continuity; cover may still recover.':'DUMMY READ · The defense holds width and tracks the ball. The dummy alone does not create space; the carrier meets outside cover. Try drawing defenders inward first.';
+      // One continuous inside threat, one dummy, then the outside acceleration.
+      // Do not teleport directly to the finish or invent a second defender draw.
+      const fooled=defenseLane==='inside';
+      narration('5 METRES · DRAW INSIDE · Carrier threatens the defender\'s inside shoulder.');
+      positionCarrier(82,18);positionSupport(48,lane==='outside'?0:94);
+      later(()=>{
+        if(phase!=='result')return;
+        narration('DEFENDER COMMITS · Defender tracks the inside running line.');
+        move(defender,-12,18);if(format==='2v2')move(cover,-9,fooled?8:-8);
+      },650);
+      later(()=>{
+        if(phase!=='result')return;
+        narration('DUMMY INSIDE · Carrier sells the pass or inside continuation while retaining the ball.');
+        positionCarrier(95,22);
+        move(defender,-18,fooled?25:4);
+      },1250);
+      later(()=>{
+        if(phase!=='result')return;
+        narration('GO OUTSIDE · One sharp change of direction; accelerate into the outside channel.');
+        positionCarrier(140,-45);positionSupport(88,lane==='outside'?0:94);
+        if(format==='2v2')move(cover,fooled?-18:-5,fooled?5:-25);
+      },1950);
+      later(()=>{
+        if(phase!=='result')return;
+        message=fooled?'OUTSIDE SPACE · Defender followed the inside threat and the carrier cut outside. Support stays available; this is not a guaranteed try.':'DEFENDER HOLDS · The inside dummy did not commit the defender; outside space is contested.';
+        outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
+        narration('PLAY COMPLETE · '+message);
+      },2850);
     }else if(choice==='kick'){
       positionCarrier(115,0);positionSupport(105,lane==='outside'?0:94);
       get('quins-sim-pass').setAttribute('d','M220 110Q265 45 330 42');get('quins-sim-pass').setAttribute('opacity','1');
@@ -200,8 +225,8 @@
       get('quins-sim-traffic').setAttribute('opacity',fooled?'.25':'1');
       message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
     }else return;
-    if(choice!=='pass'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
-    if(choice!=='pass')status.textContent='FINISHING MOVE · '+message;
+    if(choice!=='pass'&&choice!=='outside'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
+    if(choice!=='pass'&&choice!=='outside')status.textContent='FINISHING MOVE · '+message;
   }
   root.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>{if(phase==='running'||phase==='decision')return;format=b.dataset.format;reset();root.querySelectorAll('[data-format]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));status.textContent=format==='2v1'?'2v1: one defender. Choose all three commands, then Play.':'2v2: covering defender added. Choose all three commands, then Play.';}));
   root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,0);summary();get('quins-sim-plan-status').textContent='Draw '+defenseLane+'. Choose your action and press Play.';}));
@@ -211,15 +236,18 @@
   get('quins-sim-start').addEventListener('click',play);
   continueButton.addEventListener('click',()=>choose(plannedChoice));
   get('quins-sim-edit').addEventListener('click',()=>{reset();get('quins-sim-plan').scrollIntoView({behavior:'smooth',block:'nearest'});});
-  watchButton.addEventListener('click',()=>{
-    if(phase!=='result')return;
+  function replaySelected(){
+    if(phase!=='result')return false;
     cancel();phase='setup';autoReplay=true;
     ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);positionSupport(0,lane==='outside'?0:94);carryBall();get('quins-sim-ball').style.opacity='1';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');
     outcome.hidden=true;watchButton.hidden=true;playButton.hidden=false;
     get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
-    summary();play();
-  });
+    summary();play();return true;
+  }
+  watchButton.addEventListener('click',replaySelected);
+  // The expanded Three.js portal invokes this directly, independent of hidden source buttons.
+  root.addEventListener('quins:replay-selected',()=>{replaySelected();});
   support.addEventListener('click',()=>place(lane==='outside'?'inside':'outside'));
   support.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();place(lane==='outside'?'inside':'outside');}});
 
