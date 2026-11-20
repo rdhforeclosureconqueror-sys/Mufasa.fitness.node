@@ -34,6 +34,12 @@ root.innerHTML=`<style>
 <button data-wide>Move wide</button><button data-reset-defense>Reset</button>
 <label style="align-self:center;font-size:.85rem"><input type="checkbox" data-defense-toggle> Defense</label>
 </div>
+<div class="decision" data-ruck-panel><strong>RUCK LAB · support and speed</strong><p>Adjust support at the tackle to compare fast ball, slow ball, and turnover risk. This is a training model, not a law or guaranteed match outcome.</p>
+<label>Attack support <select data-support><option value="1">1 available</option><option value="2" selected>2 available</option><option value="3">3 available</option><option value="4">4 available</option></select></label>
+<label>Defenders competing <select data-contest><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
+<label>#9 / back arrival <select data-distributor><option value="near" selected>Near ruck</option><option value="late">Late arrival</option><option value="absent">No back available</option></select></label>
+<button data-evaluate-ruck>Evaluate ruck</button>
+<div data-ruck-result role="status" aria-live="polite">Choose a tackle scenario and evaluate support.</div></div>
 <div data-action-status role="status" aria-live="polite" style="padding:8px;background:#294334;border-radius:8px">Tap Play for the coach sequence, or Crash / Move wide to explore a decision.</div>
 <div class="decision"><label>Defense response <select data-strategy><option value="fold">Fold toward repeated carries</option><option value="hold">Hold width / disciplined line</option><option value="rush">Rush ball carrier</option></select></label>
 <div data-report role="status" aria-live="polite">Turn on defense to see modeled reactions.</div></div>
@@ -44,6 +50,21 @@ const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.own
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
 let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null;
 const defenseGroup=$('[data-defense]'),defenders=[];
+function evaluateRuck(){
+ const support=Number($('[data-support]').value),contest=Number($('[data-contest]').value),distributor=$('[data-distributor]').value;
+ const stage=data?.stages[index],isRuck=stage?.id==='ruck1'||stage?.id==='ruck2';
+ // Explicit coaching model: proximity and legal arrival are represented by the
+ // selected 'available' support count, not raw player counts anywhere on pitch.
+ const effective=Math.max(0,support-1); // first support secures initial contact
+ const pressure=Math.max(0,contest-effective);
+ const time=Number((1.5+Math.max(0,2-support)*0.8+contest*0.55+pressure*1.1+(distributor==='near'?0:distributor==='late'?1.2:1.8)).toFixed(1));
+ const lost=contest>=3&&support<=1;
+ const quality=lost?'TURNOVER RISK':time<=3?'FAST BALL':'SLOW BALL';
+ const wide=!lost&&distributor!=='absent'&&support>=2;
+ $('[data-ruck-result]').textContent=quality+' · modeled '+time.toFixed(1)+'s to distribution. '+(lost?'Opposition outnumbers available support; ball security at risk.':wide?'Back available: wide distribution is an option.':'No immediate wide release; likely close-range carry or wait for a back.')+(isRuck?' Current coach phase is a ruck.':' Scenario preview: advance to a ruck to apply this lesson.')+' This is illustrative; tackle entry, legality, skill, and player speed also matter.';
+ return {time,quality,wide,lost};
+}
+$('[data-evaluate-ruck]').addEventListener('click',evaluateRuck);
 for(let n=0;n<15;n++){
  const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','9');c.setAttribute('fill','#d87571');c.setAttribute('stroke','#fff0e0');c.setAttribute('stroke-width','1.5');defenseGroup.appendChild(c);defenders.push(c);
 }
@@ -69,6 +90,9 @@ function defenseReport(){
 }
 function chooseDecision(action){
  if(!data)return;
+ const ruck=evaluateRuck();
+ if(action==='wide'&&!ruck.wide){$('[data-action-status]').textContent='Wide release unavailable in this modeled scenario: bring #9/a back closer and secure the ruck first.';return;}
+ if(ruck.lost){$('[data-action-status]').textContent='Turnover risk: insufficient support against competing defenders. Adjust the support count and retry.';return;}
  pause();
  if(!$('[data-defense-toggle]').checked){$('[data-defense-toggle]').checked=true;}
  $('[data-action-status]').textContent='Applying '+(action==='crash'?'crash':'wide')+' decision to the coach sequence.';
@@ -121,7 +145,7 @@ function animateBall(from,to){
  ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
 }
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
-function render(){if(!data)return;const p=data.stages[index];$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
+function render(){if(!data)return;const p=data.stages[index];if(p.id==='ruck1'||p.id==='ruck2')evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
 defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
