@@ -8,3 +8,5 @@ test('replay cancels staged movement and leaves pitch controls adjacent',()=>{as
 test('ball is parented to carrier until one release and receiver after catch',()=>{assert.match(s,/attachBall\(carrier,113,104\)/);assert.match(s,/pitch\.appendChild\(ball\)/);assert.match(s,/attachBall\(support,68,58\)/);assert.match(s,/autoReplay=true/);assert.match(s,/if\(autoReplay\)\{autoReplay=false;choose\(plannedChoice\)/);});
 
 test('early footwork preserves pre-release clearance',()=>{assert.match(s,/positionCarrier\(82,inside\)/);assert.match(s,/positionCarrier\(97,-inside\)/);assert.match(s,/positionCarrier\(107,-inside\)/);assert.match(s,/move\(defender,0,inside\*\.45\)/);});
+
+test('second defender steps forward on inside threat before release and converges after catch',()=>{const first=s.indexOf('move(cover,committed?-26:-9,committed?-13:0)');const second=s.indexOf('move(cover,-47,-20)');const release=s.indexOf("ballOwner='flight'");const converge=s.indexOf('move(cover,-66,-23)');assert.ok(first>0&&first<second&&second<release&&release<converge);});
