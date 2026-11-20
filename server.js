@@ -3266,7 +3266,12 @@ function createApp(options = {}) {
       return ok(res, req.requestId, { answer, engine:"natural-systems-v1" }, 200);
     } catch (error) {
       console.warn("[nutrition-research] upstream failure", { requestId:req.requestId, category: error?.name === "AbortError" ? "timeout" : error?.upstreamStatus ? "upstream_http" : error instanceof SyntaxError ? "invalid_response" : error?.message === "Empty response" ? "empty_response" : "request_failure", upstreamStatus: Number.isInteger(error?.upstreamStatus) ? error.upstreamStatus : null });
-      return res.status(502).json({ ok:false, error:{ message:"The research assistant could not respond. Please try again." } });
+      const providerStatus = Number.isInteger(error?.upstreamStatus) ? error.upstreamStatus : null;
+      if (providerStatus === 429) {
+        res.set("Retry-After", "60");
+        return res.status(503).json({ ok:false, error:{ code:"NUTRITION_AI_CAPACITY", message:"Mufasa is temporarily unavailable because the AI provider has reached a usage limit. Your question is still here; please try again later or contact support.", requestId:req.requestId } });
+      }
+      return res.status(502).json({ ok:false, error:{ code:"NUTRITION_AI_UPSTREAM", message:"The research assistant could not respond. Please try again.", requestId:req.requestId } });
     } finally { clearTimeout(timeout); }
   }));
 
