@@ -29,3 +29,13 @@ test('fullscreen does not reparent the original SVG or break original scenario l
  assert.match(view,/matrixTransform\(ctm\.inverse\(\)\)/);
  assert.match(view,/sourceRoot\?\.closest/);
 });
+
+test('expanded controls are strictly scoped to the active drill',()=>{
+ assert.match(view,/controlRoot:'\.quins-simulator'/);
+ assert.match(view,/controlRoot:'\.quins-3v2'/);
+ assert.match(view,/controlRoot:'\.quins-ravens-live'/);
+ assert.match(view,/excludeRoot:'\.quins-3v2, \.quins-ravens-live'/);
+ assert.match(view,/svg\.closest\(cfg\.controlRoot\)/);
+ assert.match(view,/!el\.closest\(cfg\.excludeRoot\)/);
+ assert.doesNotMatch(view,/sourceRoot\?\.parentElement\|\|document\.body/);
+});
