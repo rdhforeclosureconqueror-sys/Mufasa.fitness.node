@@ -147,7 +147,7 @@
         narration('1 YARD · RELEASE: white ball travels backwards into the running support BEFORE defenders converge.');
         guide.setAttribute('d','M'+release.x+' '+release.y+'L'+catchPoint.x+' '+catchPoint.y);
         guide.setAttribute('opacity','.65');
-        move(support,111,0);
+        move(support,130,0);
         animateBall(release,catchPoint,1150,()=>{
           if(phase!=='result')return;
           guide.setAttribute('opacity','0');
