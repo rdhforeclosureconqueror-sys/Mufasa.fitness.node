@@ -18,7 +18,7 @@
       .quins-sim-status{min-height:52px;padding:12px;border:1px solid #54715a;border-radius:11px;background:#213b2b}
       .quins-sim-hint{font-size:.78rem;color:#c5d1c6}
       .quins-sim-outcome{padding:13px;border-left:4px solid #d9bd7b;background:#263d2f;border-radius:8px}
-      .quins-sim-outcome[hidden],.quins-sim-decisions[hidden],.quins-sim-toolbar button[hidden]{display:none}.quins-sim-toolbar{position:relative;grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}.quins-sim-toolbar button{min-height:50px}
+      [hidden]#quins-pass-comparison,.quins-sim-outcome[hidden],.quins-sim-decisions[hidden],.quins-sim-toolbar button[hidden]{display:none}.quins-sim-toolbar{position:relative;grid-template-columns:repeat(2,minmax(0,1fr));margin:8px 0}.quins-sim-toolbar button{min-height:50px}
       .quins-sim-player{transition:transform 420ms ease-in-out}.quins-sim-ball{transition:opacity 120ms;pointer-events:none}.quins-sim-pass-guide{transition:opacity 150ms}.quins-sim-controls button[aria-pressed="true"]{outline:3px solid #fff1b9;outline-offset:2px}.quins-sim-stage{font-weight:800;color:#f4d88c}.quins-sim-plan-summary{padding:12px;background:#263d2f;border-radius:10px;margin:10px 0}
       @media(prefers-reduced-motion:reduce){.quins-sim-player,.quins-sim-ball{transition:none}}
     </style>
@@ -45,7 +45,7 @@
     <p class="quins-sim-status" id="quins-sim-status" role="status" aria-live="polite">Choose your setup below, then play here.</p>
     <div id="quins-sim-outcome" class="quins-sim-outcome" role="status" aria-live="polite" hidden></div>
     <p class="quins-sim-hint">C = carrier · S = support · D = primary defender. 2 = covering defender only in 2v2 mode. Support can be placed outside or inside. This is a simplified training scenario.</p>
-    <div class="quins-sim-controls" id="quins-sim-setup">
+    <div id="quins-pass-comparison" class="quins-sim-plan-summary" aria-label="2v1 passing line comparison"><strong>COMPARE · Defender recovery</strong><p>Same start, two carrier lines. Compare an early release with fixing the defender before passing. Passing does not permit deliberate blocking.</p><div class="quins-sim-controls"><button type="button" data-comparison="early" aria-pressed="false">A · Early pass / open lane</button><button type="button" data-comparison="fix" aria-pressed="true">B · Fix defender / lawful follow-through</button></div></div><div class="quins-sim-controls" id="quins-sim-setup">
       <button type="button" id="quins-sim-outside">Place support outside</button>
       <button type="button" id="quins-sim-inside">Place support inside</button>
 
@@ -73,7 +73,7 @@
   let sequenceTimers = [];
   let ballFrame=null;
   let ballOwner='carrier';
-  let autoReplay=false;let format='2v1';
+  let autoReplay=false;let format='2v1';let comparison='fix';
   let carrierPosition={x:100,y:111};
   let supportPosition={x:55,y:65};
   function carryBall(){ballOwner='carrier';attachBall(carrier,113,104);}
@@ -130,7 +130,8 @@
     // Coaching model: defender reactions follow the carrier's threat, not user-controlled defensive placement.
     // Illustrative heuristics, not a predictive match engine. Early ball release / poor lane alignment leave cover free.
     const aligned = (choice==='pass' && ((outside && defenseLane==='inside') || (!outside && defenseLane==='outside')));
-    const committed = aligned;
+    const committed = aligned && comparison==='fix';
+     const compareEarly = format==='2v1' && comparison==='early';
     if(choice==='pass'){
       // Carrier attacks away from support to fix the inside defender, then
       // straightens into a legal passing channel without screening contact.
@@ -139,24 +140,24 @@
       const guide=get('quins-sim-pass');
       guide.setAttribute('opacity','0');
       carryBall();
-      narration('DRAW INSIDE · Step away from outside support and threaten the defender’s inside shoulder.');
-      positionCarrier(79,inside);positionSupport(55,outside?0:94);
+      narration(compareEarly?'EARLY PASS · Defender remains free to slide toward support.':'DRAW · Attack the defender’s inside shoulder away from support.');
+      positionCarrier(79,compareEarly?inside*.15:inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
         narration('DEFENDER FIXED · Defender follows the carrier inward, away from outside support.');
-        move(defender,-9,inside*.65);
+        move(defender,compareEarly?-4:-9,compareEarly?inside*.12:inside*.65);
         if(format==='2v2')move(cover,committed?-12:-5,committed?-12:0);
       },800);
       later(()=>{
         if(phase!=='result')return;
         narration('STRAIGHTEN TO PASS · Step back toward the support-side channel, still ahead of support.');
-        positionCarrier(93,inside*.35);
+        positionCarrier(93,compareEarly?inside*.12:inside*.35);
         if(committed)move(defender,-14,inside*.8);
       },1650);
       later(()=>{
         if(phase!=='result')return;
         narration('RELEASE · Pass backward into outside support’s running line before contact.');
-        positionCarrier(105,inside*.18);
+        positionCarrier(105,compareEarly?inside*.12:inside*.18);
         ballOwner='flight';
         // Reparent only at release, preserving the on-screen hand position.
         const releaseFromHands={x:carrierPosition.x+13,y:carrierPosition.y-7};
@@ -170,17 +171,19 @@
           guide.setAttribute('opacity','0');
           receiveBall();get('quins-sim-ball').style.opacity='1';
           narration('CATCH · Support receives the ball in stride and accelerates away from contact.');
-          if(committed){move(defender,-18,-17);move(cover,-37,-12);}
+          if(compareEarly){move(defender,-12,outside?-40:30);} // Recovery toward receiver after an unfixed pass.
+           else if(committed){move(defender,-18,-17);move(cover,-37,-12);}
           else{move(cover,-27,outside?-42:10);}
           later(()=>{
             if(phase!=='result')return;
             positionSupport(committed?208:145,outside?0:94);
+             if(compareEarly)move(defender,-5,outside?-43:36);
             outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
             narration('PLAY COMPLETE · '+(committed?'Defenders held distinct outside-shoulder and inside-hip positions while support broke into space.':'Cover stayed available and can close on the support runner.'));
           },650);
         });
       },2550);
-      message=committed
+      message=compareEarly?'OPEN RECOVERY LANE · The early pass leaves the defender free to slide toward support. Fix the defender before release; never deliberately block after passing.' : committed
         ?'SPACE CREATED · Carrier steps inward away from support, fixes the defender, straightens toward the passing channel and releases backward before contact. Support attacks the available outside space; not a guaranteed try.'
         :'COVER RECOVERS · The carrier did not sufficiently fix both defenders. The backward pass reaches support, but cover can track the receiver.';
     }else if(choice==='outside'){
@@ -226,7 +229,8 @@
     if(choice!=='pass'&&choice!=='outside'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
     if(choice!=='pass'&&choice!=='outside')status.textContent='FINISHING MOVE · '+message;
   }
-  root.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>{if(phase==='running'||phase==='decision')return;format=b.dataset.format;reset();root.querySelectorAll('[data-format]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));status.textContent=format==='2v1'?'2v1: one defender. Choose all three commands, then Play.':'2v2: covering defender added. Choose all three commands, then Play.';}));
+  root.querySelectorAll('[data-comparison]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;comparison=b.dataset.comparison;root.querySelectorAll('[data-comparison]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));status.textContent=comparison==='early'?'Compare A: early pass leaves a recovery lane.':'Compare B: fix defender before passing; maintain a lawful line.';}));
+   root.querySelectorAll('[data-format]').forEach(b=>b.addEventListener('click',()=>{if(phase==='running'||phase==='decision')return;format=b.dataset.format;get('quins-pass-comparison').hidden=format!=='2v1';reset();root.querySelectorAll('[data-format]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));status.textContent=format==='2v1'?'2v1: one defender. Choose all three commands, then Play.':'2v2: covering defender added. Choose all three commands, then Play.';}));
   root.querySelectorAll('[data-defense]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;defenseLane=b.dataset.defense;move(cover,0,0);summary();get('quins-sim-plan-status').textContent='Draw '+defenseLane+'. Choose your action and press Play.';}));
   root.querySelectorAll('[data-plan]').forEach(b=>b.addEventListener('click',()=>{if(phase!=='setup')return;plannedChoice=b.dataset.plan;summary();get('quins-sim-plan-status').textContent='Planned action: '+b.textContent+'. Use Change plan to revise before replaying.';}));
   get('quins-sim-outside').addEventListener('click',()=>place('outside'));
