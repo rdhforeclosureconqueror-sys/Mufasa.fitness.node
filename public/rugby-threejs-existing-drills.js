@@ -56,7 +56,7 @@ function init(cfg){
    {name:'01 · SUPPORT LANE',hint:'Where will your teammate run?',match:/place support (inside|outside)/i},
    {name:'02 · DEFENSIVE DRAW',hint:'Which direction will you commit the defender?',match:/draw defenders (inside|outside)/i},
    {name:'03 · FINISHING ACTION',hint:'Choose the move to execute.',match:/position & pass|draw & pass|dummy & go outside|dummy & cut inside|kick & chase/i},
-    {name:'04 · KICK DIRECTION',hint:'For Kick & Chase, select left, middle or right.',match:/kick (left|middle|right)/i}
+    {name:'04 · KICK DIRECTION',hint:'For Kick & Chase, select inside, middle or outside.',match:/kick (inside|middle|outside)/i}
   ]:[{name:'SCENARIO ACTIONS',hint:'Select the controls for this drill.',match:/./}];
   const used=new Set();
   for(const group of groups){
