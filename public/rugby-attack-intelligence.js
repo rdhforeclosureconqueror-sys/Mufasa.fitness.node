@@ -89,11 +89,15 @@
   function narration(t){status.textContent=t;}
   let resultSnapshot = null;
   const initial = {carrier:[0,0],support:[0,0],defender:[0,0],cover:[0,0]};
-  function summary(){get('quins-kick-direction').hidden=plannedChoice!=='kick';const ready=lane&&defenseLane&&plannedChoice&&(plannedChoice!=='kick'||kickDirection);const target=kickDirection==='middle'?'middle':kickDirection==='inside'?'inside':'outside';const checks=[['Defender drawn',!!defenseLane],['Space created',plannedChoice==='kick'?defenseLane!==target:lane!==defenseLane],['Ball targets space',plannedChoice==='kick'?!!kickDirection&&defenseLane!==target:!!plannedChoice],['Support aligned',plannedChoice==='kick'?lane===target:!!lane],['Chase completed',phase==='result'&&!watchButton.hidden]];get('quins-opportunity-checklist').textContent='OPPORTUNITY CHECKLIST · '+checks.map(([label,ok])=>(ok?'✓ ':'△ ')+label).join(' · ')+' · No guaranteed possession.';get('quins-sim-summary').textContent='1. Support: '+(lane||'MISSING')+' · 2. Draw: '+(defenseLane||'MISSING')+' · 3. Action: '+(plannedChoice||'MISSING')+' · '+format+(plannedChoice==='kick'?' · 4. Kick: '+(kickDirection||'MISSING'):'');get('quins-sim-plan-status').textContent=ready?'All commands ready. Press Play to watch the full move.':'Missing: '+[!lane?'support':null,!defenseLane?'defender draw':null,!plannedChoice?'finishing action':null].filter(Boolean).join(', ')+'.';playButton.disabled=!ready||phase!=='setup';root.querySelectorAll('[data-kick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kick===kickDirection)));root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
+  const rubricLabels=['Defender manipulated','Usable space created','Ball delivered','Support positioned','Execution outcome'];
+  let rubricEvents={};
+  function rubricSet(index,state,reason){rubricEvents[index]={state,reason};renderRubric();}
+  function renderRubric(){const el=get('quins-opportunity-checklist');if(!el)return;el.textContent='FIVE-POINT COACHING REVIEW · '+rubricLabels.map((label,i)=>{const e=rubricEvents[i]||{state:'pending',reason:'Awaiting observed action'};return (e.state==='achieved'?'✓ ':e.state==='risk'?'△ ':'○ ')+(i+1)+'. '+label+' — '+e.state.toUpperCase()+': '+e.reason;}).join(' | ')+' · Possession outcome is separate from tactical quality.';}
+  function summary(){get('quins-kick-direction').hidden=plannedChoice!=='kick';const ready=lane&&defenseLane&&plannedChoice&&(plannedChoice!=='kick'||kickDirection);const target=kickDirection==='middle'?'middle':kickDirection==='inside'?'inside':'outside';renderRubric();get('quins-sim-summary').textContent='1. Support: '+(lane||'MISSING')+' · 2. Draw: '+(defenseLane||'MISSING')+' · 3. Action: '+(plannedChoice||'MISSING')+' · '+format+(plannedChoice==='kick'?' · 4. Kick: '+(kickDirection||'MISSING'):'');get('quins-sim-plan-status').textContent=ready?'All commands ready. Press Play to watch the full move.':'Missing: '+[!lane?'support':null,!defenseLane?'defender draw':null,!plannedChoice?'finishing action':null].filter(Boolean).join(', ')+'.';playButton.disabled=!ready||phase!=='setup';root.querySelectorAll('[data-kick]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.kick===kickDirection)));root.querySelectorAll('[data-plan],[data-defense]').forEach(b=>b.setAttribute('aria-pressed',String((b.dataset.plan&&b.dataset.plan===plannedChoice)||(b.dataset.defense&&b.dataset.defense===defenseLane))));}
   function move(el,x,y){ el.style.transform = 'translate(' + x + 'px,' + y + 'px)'; }
   function cancel(){stopBall();clearSequence();if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
-    cancel();autoReplay=false;lane=null;plannedChoice=null;defenseLane=null;kickDirection=null;phase='setup';resultSnapshot=null;
+    cancel();autoReplay=false;lane=null;plannedChoice=null;defenseLane=null;kickDirection=null;phase='setup';resultSnapshot=null;rubricEvents={};
     ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);cover.style.display=format==='2v1'?'none':'';positionSupport(0,0);carryBall();get("quins-sim-ball").style.opacity="1";get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
@@ -111,7 +115,7 @@
   }
   function play(){
     if(phase!=='setup'||!lane||!defenseLane||!plannedChoice||(plannedChoice==='kick'&&!kickDirection)){summary();return;}
-    phase='running';playButton.disabled=true;
+    phase='running';rubricEvents={};renderRubric();playButton.disabled=true;
     get('quins-sim-outside').disabled=true;get('quins-sim-inside').disabled=true;
     status.textContent='APPROACH · Carrier advances to the five-yard decision area.';
     positionCarrier(67,0);move(defender,0,0);move(cover,0,0);
@@ -124,7 +128,7 @@
   }
   function choose(choice){
     if(phase!=='decision')return;
-    phase='result';continueButton.hidden=true;watchButton.hidden=true;
+    phase='result';continueButton.hidden=true;watchButton.hidden=true;rubricSet(3,'pending','Support placed '+lane+'; onside and reception not yet established.');
     const outside=lane==='outside';
     let message='';
     // Coaching model: defender reactions follow the carrier's threat, not user-controlled defensive placement.
@@ -143,7 +147,7 @@
       positionCarrier(79,inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
-        narration('DEFENDER FIXED · Defender follows the carrier inward, away from outside support.');
+        narration('DEFENDER FIXED · Defender follows the carrier inward, away from outside support.');rubricSet(0,committed?'achieved':'risk',committed?'Defender tracks away from support.':'Draw fails to separate defender.');rubricSet(1,committed?'achieved':'risk',committed?'Passing channel opens.':'Cover stays available.');
         move(defender,-9,inside*.65);
         if(format==='2v2')move(cover,committed?-12:-5,committed?-12:0);
       },800);
@@ -168,13 +172,13 @@
         animateBall(releaseFromHands,catchAtHands,1150,()=>{
           if(phase!=='result')return;
           guide.setAttribute('opacity','0');
-          receiveBall();get('quins-sim-ball').style.opacity='1';
+          receiveBall();get('quins-sim-ball').style.opacity='1';rubricSet(2,'achieved','Backward pass reaches support.');rubricSet(3,'achieved','Support catches in stride.');
           narration('CATCH · Support receives the ball in stride and accelerates away from contact.');
           if(committed){move(defender,-18,-17);move(cover,-37,-12);}
           else{move(cover,-27,outside?-42:10);}
           later(()=>{
             if(phase!=='result')return;
-            positionSupport(committed?208:145,outside?0:94);
+            positionSupport(committed?208:145,outside?0:94);rubricSet(4,committed?'achieved':'risk',committed?'Receiver advances into space; no guaranteed try.':'Cover can close despite completed pass.');
             outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
             narration('PLAY COMPLETE · '+(committed?'Defenders held distinct outside-shoulder and inside-hip positions while support broke into space.':'Cover stayed available and can close on the support runner.'));
           },650);
@@ -191,7 +195,7 @@
       positionCarrier(82,18);positionSupport(48,lane==='outside'?0:94);
       later(()=>{
         if(phase!=='result')return;
-        narration('DEFENDER COMMITS · Defender tracks the inside running line.');
+        narration('DEFENDER COMMITS · Defender tracks the inside running line.');rubricSet(0,fooled?'achieved':'risk',fooled?'Defender follows inside threat.':'Defender holds outside.');
         move(defender,-12,18);if(format==='2v2')move(cover,-9,fooled?8:-8);
       },650);
       later(()=>{
@@ -202,13 +206,13 @@
       },1250);
       later(()=>{
         if(phase!=='result')return;
-        narration('GO OUTSIDE · One sharp change of direction; accelerate into the outside channel.');
+        narration('GO OUTSIDE · One sharp change of direction; accelerate into the outside channel.');rubricSet(1,fooled?'achieved':'risk',fooled?'Outside channel opens.':'Outside channel contested.');rubricSet(2,'achieved','Carrier retains ball through dummy.');rubricSet(3,lane==='outside'?'achieved':'risk',lane==='outside'?'Support aligned outside.':'Support remains inside.');
         positionCarrier(140,-45);positionSupport(88,lane==='outside'?0:94);
         if(format==='2v2')move(cover,fooled?-18:-5,fooled?5:-25);
       },1950);
       later(()=>{
         if(phase!=='result')return;
-        message=fooled?'OUTSIDE SPACE · Defender followed the inside threat and the carrier cut outside. Support stays available; this is not a guaranteed try.':'DEFENDER HOLDS · The inside dummy did not commit the defender; outside space is contested.';
+        rubricSet(4,fooled?'achieved':'risk',fooled?'Carrier reaches outside channel; try not guaranteed.':'Defender challenges carry.');message=fooled?'OUTSIDE SPACE · Defender followed the inside threat and the carrier cut outside. Support stays available; this is not a guaranteed try.':'DEFENDER HOLDS · The inside dummy did not commit the defender; outside space is contested.';
         outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
         narration('PLAY COMPLETE · '+message);
       },2850);
@@ -224,7 +228,7 @@
       positionCarrier(82,drawY);positionSupport(55,supportY);
       later(()=>{
         if(phase!=='result')return;
-        narration('DEFENDER COMMITS '+defenseLane.toUpperCase()+' · The defender follows the ball carrier’s running line.');
+        narration('DEFENDER COMMITS '+defenseLane.toUpperCase()+' · The defender follows the ball carrier’s running line.');rubricSet(0,'achieved','Defender follows carrier '+defenseLane+'.');rubricSet(1,defenseLane!==kickDirection?'achieved':'risk',defenseLane!==kickDirection?'Kick aims away from draw.':'Kick enters contested draw lane.');
         move(defender,-16,drawY*.85);
         if(format==='2v2')move(cover,-8,drawY*.3);
       },750);
@@ -240,7 +244,7 @@
         guide.setAttribute('opacity','.75');
         animateBall(from,to,1150,()=>{
           if(phase!=='result')return;
-          narration('CHASE · Carrier and support accelerate toward the landing area. Defender turns to recover.');
+          narration('CHASE · Carrier and support accelerate toward the landing area. Defender turns to recover.');rubricSet(2,'achieved','Ball reaches selected '+kickDirection+' landing zone.');
           positionCarrier(158,drawY*.5);positionSupport(146,supportY);
           move(defender,-2,drawY*.35);
           if(format==='2v2')move(cover,8,drawY*.25);
@@ -248,7 +252,7 @@
             if(phase!=='result')return;
             guide.setAttribute('opacity','0');
             narration('ARRIVAL · Players chase to the ball landing zone.');positionSupport(to.x-65,to.y-65);positionCarrier(to.x-145,to.y-100);move(defender,to.x-265,to.y-110);
-            later(()=>{if(phase!=='result')return;const favorable=kickDirection!=='middle'&&lane===(kickDirection==='inside'?'inside':'outside')&&defenseLane!==(kickDirection==='inside'?'inside':'outside');outcome.hidden=false;outcome.textContent=(favorable?'SUPPORT FIRST TO CONTEST · ':'DEFENDER CONTESTS · ')+message;watchButton.hidden=false;summary();narration('CHASE COMPLETE · Recovery remains contested.');},850);
+            later(()=>{if(phase!=='result')return;const favorable=kickDirection!=='middle'&&lane===(kickDirection==='inside'?'inside':'outside')&&defenseLane!==(kickDirection==='inside'?'inside':'outside');outcome.hidden=false;outcome.textContent=(favorable?'SUPPORT FIRST TO CONTEST · ':'DEFENDER CONTESTS · ')+message;watchButton.hidden=false;rubricSet(3,lane===kickDirection?'achieved':'risk',lane===kickDirection?'Support reaches target lane; onside status not modeled.':'Support lane differs from kick target.');rubricSet(4,favorable?'achieved':'risk',favorable?'Support first to contest; possession unresolved.':'Defender contests landing; possession unresolved.');summary();narration('CHASE COMPLETE · Recovery remains contested.');},850);
           },850);
         });
       },1600);
@@ -257,7 +261,7 @@
       narration('DUMMY PASS · DRAW OUTSIDE, THEN FINISH INSIDE.');const fooled=!outside && defenseLane==='outside';
       move(carrier,135,35);move(defender,-20,fooled?-18:12);move(cover,fooled?-10:-33,fooled?-30:-10);
       get('quins-sim-traffic').setAttribute('opacity',fooled?'.25':'1');
-      message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
+      rubricSet(0,fooled?'achieved':'risk',fooled?'Defender shifts outside.':'Defender stays narrow.');rubricSet(1,fooled?'achieved':'risk',fooled?'Inside gap opens.':'Inside traffic remains.');rubricSet(2,'achieved','Carrier retains ball through dummy.');rubricSet(3,lane==='inside'?'achieved':'risk',lane==='inside'?'Support inside.':'Support outside.');rubricSet(4,fooled?'achieved':'risk',fooled?'Inside carry progresses; no guaranteed try.':'Tackle and slow recycle likely.');message=fooled?'INSIDE SPACE · The carrier sells an outside threat and cover widens. The inside lane briefly opens, but the runner must maintain close support.':'TRAFFIC / ISOLATION · The defenders stay narrow. Cutting inside enters the converging defenders and separates the carrier from outside support. A tackle and slow recycle are likely.';
     }else return;
     if(choice==='inside'){outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;}resultSnapshot=choice;
     if(choice==='inside')status.textContent='FINISHING MOVE · '+message;
