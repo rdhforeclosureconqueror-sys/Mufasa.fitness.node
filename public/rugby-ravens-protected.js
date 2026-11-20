@@ -13,6 +13,7 @@ root.innerHTML=`<style>
 .quins-ravens-live [data-defense] circle{transition:cx 650ms ease,cy 650ms ease}
 .quins-ravens-live .pitch-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}
 .quins-ravens-live .pitch-controls button{min-width:0;width:100%;margin:0;padding:9px 3px;font-size:clamp(12px,3.1vw,16px);overflow-wrap:anywhere}
+.quins-ravens-live .pitch-views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:8px 0}.quins-ravens-live .pitch-views button{min-width:0;width:100%;margin:0;padding:8px 2px;font-size:clamp(12px,3.2vw,16px)}.quins-ravens-live .pitch-views button[aria-pressed="true"]{background:#fff2c0;outline:2px solid #fff}
 .quins-ravens-live .decision{padding:12px;border:1px solid #bba36a;border-radius:12px;margin:10px 0}
 .quins-ravens-live .decision button[aria-pressed="true"]{outline:3px solid white}
 .quins-ravens-live [data-report]{background:#294334;border-radius:9px;padding:12px;line-height:1.5}
@@ -22,6 +23,8 @@ root.innerHTML=`<style>
 <div data-gate role="status" aria-live="polite">Checking Quin team authorization…</div>
 <div data-content hidden>
 <label>Play option <select data-branch><option value="wedge">DOUBLE WEDGE</option><option value="flash">FLASH off Ruck 1</option></select></label>
+<div class="pitch-views" role="group" aria-label="Choose rugby learning view"><button data-view="forwards" aria-pressed="true">Forwards</button><button data-view="backs" aria-pressed="false">Backs</button><button data-view="full" aria-pressed="false">Full XV</button></div>
+<div data-view-explain role="status" aria-live="polite">FORWARDS · Watch the carry, cleaning support and #9 distribution.</div>
 <svg viewBox="0 0 390 260" role="img" aria-label="RAVENS MF 15-player formation with ball possession and left-to-right attack">
 <rect width="390" height="260" rx="10" fill="#174a33"/><g stroke="#accbb2" stroke-dasharray="6 7" opacity=".5"><path d="M80 12V248M160 12V248M240 12V248M320 12V248M10 85H380M10 175H380"/></g>
 <path d="M18 21H367" stroke="#ffe3a2" stroke-width="4"/><path d="M355 13L370 21L355 29" stroke="#ffe3a2" stroke-width="4" fill="none"/>
@@ -56,7 +59,7 @@ root.innerHTML=`<style>
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null,playToken=0;
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null,playToken=0,pitchView='forwards';
 const defenseGroup=$('[data-defense]'),defenders=[];
 function evaluateRuck(){
  const stage=data?.stages[index],isRuck=stage?.id==='ruck1'||stage?.id==='ruck2';
@@ -99,6 +102,20 @@ $('[data-auto-support]').addEventListener('change',evaluateRuck);
 for(let n=0;n<15;n++){
  const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','9');c.setAttribute('fill','#d87571');c.setAttribute('stroke','#fff0e0');c.setAttribute('stroke-width','1.5');defenseGroup.appendChild(c);defenders.push(c);
 }
+function applyPitchView(){
+ const isForwards=pitchView==='forwards',isBacks=pitchView==='backs';
+ for(let n=1;n<=15;n++){
+  // Scrum-half bridges the units; show #9 in both focused lessons.
+  const visible=!isForwards&&!isBacks||(isForwards?n<=9:n>=9);
+  markers[n].setAttribute('visibility',visible?'visible':'hidden');
+ }
+ // Limit visual defensive clutter in focused modes while preserving the
+ // same underlying defense state and positions across all three views.
+ defenders.forEach((d,i)=>d.setAttribute('visibility',pitchView==='full'||(isForwards?i<5:i>=8)?'visible':'hidden'));
+ $('[data-view-explain]').textContent=isForwards?'FORWARDS · #1–8 plus #9. Secure the tackle, win clean ball, release quickly.':isBacks?'BACKS · #9–15. Keep depth and width, read the fold, attack a genuine gap.':'FULL XV · All 15 attackers and 15 defenders. Connect the complete coach sequence.';
+ root.querySelectorAll('[data-view]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.view===pitchView)));
+}
+root.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>{pitchView=b.dataset.view;applyPitchView();}));
 function defenseReport(){
  const enabled=$('[data-defense-toggle]').checked,strategy=$('[data-strategy]').value;
  defenseGroup.setAttribute('visibility',enabled?'visible':'hidden');
@@ -123,6 +140,7 @@ function defenseReport(){
  'Defensive experiment: '+crashes+' crash(es), '+recovery+' defensive recovery step(s), current coach phase '+(index+1)+'/'+data.stages.length+'. '+(strategy==='fold'?maxFold+' modeled defenders have folded toward the repeated carry; '+remaining+' remain in the original outside bank.':strategy==='hold'?'Defenders hold their width despite the crashes; no automatic overload.':'Two defenders pressure the carrier; the rest retain their shape.')+
  (decisions.length?' Last decision: '+decisions.at(-1)+'.':'')+
  ' These are simplified responses, not guaranteed real-match outcomes.';
+ applyPitchView();
 }
 function chooseDecision(action){
  if(!data)return;
@@ -184,7 +202,7 @@ function pause(){playToken++;if(timer!==null)clearTimeout(timer);timer=null;}
 function render(){if(!data)return;const p=data.stages[index];evaluateRuck();if(p.id==='ruck1'||p.id==='ruck2')lastRuck=evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
-defenseReport();$('[data-playback-clock]').textContent=lastRuck?'Last ruck: '+lastRuck.time.toFixed(1)+'s · '+lastRuck.quality+' · defense '+(lastRuck.time<=3?'under pressure':'has time to recover'):'No ruck yet · watch the coach sequence';$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
+defenseReport();applyPitchView();$('[data-playback-clock]').textContent=lastRuck?'Last ruck: '+lastRuck.time.toFixed(1)+'s · '+lastRuck.quality+' · defense '+(lastRuck.time<=3?'under pressure':'has time to recover'):'No ruck yet · watch the coach sequence';$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
 async function load(branch){pause();cancelBall();previousStage=null;const id=++requestId;data=null;index=0;$('[data-content]').hidden=true;$('[data-gate]').textContent='Checking Quin team authorization…';
 const result=await window.MaatApiClient.request('/api/quins/ravens/play?branch='+encodeURIComponent(branch));
 if(id!==requestId)return;
