@@ -35,6 +35,7 @@ root.innerHTML=`<style>
 <label style="align-self:center;font-size:.85rem"><input type="checkbox" data-defense-toggle> Defense</label>
 </div>
 <div class="decision" data-ruck-panel><strong>RUCK LAB · support and speed</strong><p>Adjust support at the tackle to compare fast ball, slow ball, and turnover risk. This is a training model, not a law or guaranteed match outcome.</p>
+<label><input type="checkbox" data-auto-support checked> Calculate support from pitch positions</label><div data-arrivals role="status" aria-live="polite">Pitch-based support estimates appear at a ruck.</div>
 <label>Attack support <select data-support><option value="1">1 available</option><option value="2" selected>2 available</option><option value="3">3 available</option><option value="4">4 available</option></select></label>
 <label>Defenders competing <select data-contest><option value="0">0</option><option value="1" selected>1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
 <label>#9 / back arrival <select data-distributor><option value="near" selected>Near ruck</option><option value="late">Late arrival</option><option value="absent">No back available</option></select></label>
@@ -51,20 +52,43 @@ for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('da
 let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null;
 const defenseGroup=$('[data-defense]'),defenders=[];
 function evaluateRuck(){
- const support=Number($('[data-support]').value),contest=Number($('[data-contest]').value),distributor=$('[data-distributor]').value;
  const stage=data?.stages[index],isRuck=stage?.id==='ruck1'||stage?.id==='ruck2';
+ const auto=$('[data-auto-support]').checked&&isRuck;
+ const contest=Number($('[data-contest]').value);
+ let support=Number($('[data-support]').value),distributor=$('[data-distributor]').value;
+ let arrivalPenalty=0;
+ if(auto){
+  // Diagram coordinates are illustrative, so these are teaching-model travel
+  // estimates, not measured field metres or verified player speeds.
+  const prev=data.stages[Math.max(0,index-1)];
+  const anchor=(prev.ballCarrier&&prev.positions[prev.ballCarrier])||stage.positions[9]||[195,130];
+  const distances=Object.entries(stage.positions).map(([number,point])=>({
+   number:Number(number),distance:Math.hypot(point[0]-anchor[0],point[1]-anchor[1])
+  })).filter(p=>p.number!==9&&p.number!==prev.ballCarrier&&p.number<=8)
+    .sort((a,b)=>a.distance-b.distance);
+  const arrivals=distances.slice(0,4).map(p=>({number:p.number,seconds:Number((p.distance/34).toFixed(1))}));
+  support=arrivals.filter(p=>p.seconds<=2).length;
+  const nine=stage.positions[9],nineTime=nine?Math.hypot(nine[0]-anchor[0],nine[1]-anchor[1])/34:Infinity;
+  distributor=nineTime<=2?'near':nineTime<=3.5?'late':'absent';
+  arrivalPenalty=arrivals.length?Math.min(2,arrivals[0].seconds*.3):2;
+  $('[data-arrivals]').textContent='Modeled forward arrivals: '+arrivals.map(p=>'#'+p.number+' '+p.seconds.toFixed(1)+'s').join(' · ')+'. #9 '+(Number.isFinite(nineTime)?nineTime.toFixed(1)+'s':'not located')+'. Effective support within 2s: '+support+'.';
+ }else{
+  $('[data-arrivals]').textContent=isRuck?'Manual scenario selected.':'Advance to a ruck for automatic pitch-based support; manual scenario applies until then.';
+ }
+ $('[data-support]').disabled=auto;$('[data-distributor]').disabled=auto;
  // Explicit coaching model: proximity and legal arrival are represented by the
  // selected 'available' support count, not raw player counts anywhere on pitch.
  const effective=Math.max(0,support-1); // first support secures initial contact
  const pressure=Math.max(0,contest-effective);
- const time=Number((1.5+Math.max(0,2-support)*0.8+contest*0.55+pressure*1.1+(distributor==='near'?0:distributor==='late'?1.2:1.8)).toFixed(1));
+ const time=Number((1.5+Math.max(0,2-support)*0.8+contest*0.55+pressure*1.1+(distributor==='near'?0:distributor==='late'?1.2:1.8)+arrivalPenalty).toFixed(1));
  const lost=contest>=3&&support<=1;
  const quality=lost?'TURNOVER RISK':time<=3?'FAST BALL':'SLOW BALL';
  const wide=!lost&&distributor!=='absent'&&support>=2;
  $('[data-ruck-result]').textContent=quality+' · modeled '+time.toFixed(1)+'s to distribution. '+(lost?'Opposition outnumbers available support; ball security at risk.':wide?'Back available: wide distribution is an option.':'No immediate wide release; likely close-range carry or wait for a back.')+(isRuck?' Current coach phase is a ruck.':' Scenario preview: advance to a ruck to apply this lesson.')+' This is illustrative; tackle entry, legality, skill, and player speed also matter.';
- return {time,quality,wide,lost};
+ return {time,quality,wide,lost,support,distributor};
 }
 $('[data-evaluate-ruck]').addEventListener('click',evaluateRuck);
+$('[data-auto-support]').addEventListener('change',evaluateRuck);
 for(let n=0;n<15;n++){
  const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','9');c.setAttribute('fill','#d87571');c.setAttribute('stroke','#fff0e0');c.setAttribute('stroke-width','1.5');defenseGroup.appendChild(c);defenders.push(c);
 }
@@ -145,7 +169,7 @@ function animateBall(from,to){
  ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
 }
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
-function render(){if(!data)return;const p=data.stages[index];if(p.id==='ruck1'||p.id==='ruck2')evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
+function render(){if(!data)return;const p=data.stages[index];evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
 defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
