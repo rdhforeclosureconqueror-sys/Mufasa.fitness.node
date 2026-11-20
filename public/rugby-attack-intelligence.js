@@ -53,6 +53,7 @@
     <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. The decision freezes five yards from contact. Then the carrier approaches three yards, steps inside, steps outside, and releases before contact. Use Finish move directly under the pitch; you will never need to scroll to advance.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
 `;
   host.appendChild(root);
+  root.querySelector('.quins-sim-pitch').appendChild(root.querySelector('#quins-sim-ball'));
   const get = id => root.querySelector('#' + id);
   const support = get('quins-sim-support');
   const carrier = get('quins-sim-carrier');
@@ -68,6 +69,13 @@
   let pending = null;
   let sequenceTimers = [];
   let ballFrame=null;
+  let ballOwner='carrier';
+  let carrierPosition={x:100,y:111};
+  let supportPosition={x:55,y:65};
+  function carryBall(){ballOwner='carrier';ballAt(carrierPosition.x+13,carrierPosition.y-7);}
+  function receiveBall(){ballOwner='support';ballAt(supportPosition.x+13,supportPosition.y-7);}
+  function positionCarrier(x,y){carrierPosition={x:100+x,y:111+y};move(carrier,x,y);if(ballOwner==='carrier')carryBall();}
+  function positionSupport(x,y){supportPosition={x:55+x,y:65+y};move(support,x,y);if(ballOwner==='support')receiveBall();}
   function stopBall(){if(ballFrame!==null){cancelAnimationFrame(ballFrame);ballFrame=null;}}
   function animateBall(from,to,duration,onArrive){stopBall();ballAt(from.x,from.y);const started=performance.now();const tick=(now)=>{if(phase!=='result')return;const t=Math.min(1,(now-started)/duration);const eased=t*t*(3-2*t);ballAt(from.x+(to.x-from.x)*eased,from.y+(to.y-from.y)*eased);if(t<1){ballFrame=requestAnimationFrame(tick);}else{ballFrame=null;if(onArrive)onArrive();}};ballFrame=requestAnimationFrame(tick);}
 
@@ -82,7 +90,7 @@
   function cancel(){stopBall();clearSequence();if(pending!==null){clearTimeout(pending);pending=null;}}
   function reset(){
     cancel();lane=null;plannedChoice=null;defenseLane=null;phase='setup';resultSnapshot=null;
-    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,0);ballAt(113,104);get("quins-sim-ball").style.opacity="1";get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
+    ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);positionSupport(0,0);carryBall();get("quins-sim-ball").style.opacity="1";get('quins-sim-plan-status').textContent='Choose support lane, how to draw defenders, and your attacking action.';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-pass').setAttribute('d','M110 110L146 63');
     get('quins-sim-traffic').setAttribute('opacity','.2');
     playButton.hidden=false;playButton.disabled=true;continueButton.hidden=true;watchButton.hidden=true;
@@ -92,7 +100,7 @@
   }
   function place(which){
     if(phase!=='setup')return;
-    lane=which;move(support,0,which==='outside'?0:94);
+    lane=which;positionSupport(0,which==='outside'?0:94);
     support.dataset.selected='true';
     summary();
     status.textContent=which==='outside'?'Support is outside, with space beyond the primary defender.':'Support is inside, closer to the covering defender. Notice the traffic.';
@@ -102,7 +110,7 @@
     phase='running';playButton.disabled=true;
     get('quins-sim-outside').disabled=true;get('quins-sim-inside').disabled=true;
     status.textContent='APPROACH · Carrier advances to the five-yard decision area.';
-    move(carrier,67,0);ballAt(180,104);move(defender,0,0);move(cover,0,0);
+    positionCarrier(67,0);move(defender,0,0);move(cover,0,0);
     pending=setTimeout(function(){
       pending=null;if(phase!=='running')return;
       phase='decision';playButton.hidden=true;continueButton.hidden=false;
@@ -128,17 +136,17 @@
       const guide=get('quins-sim-pass');
       guide.setAttribute('opacity','0');
       narration('5 YARDS · Decision made. Carrier advances to three yards. Support trails behind.');
-      move(carrier,97,0);ballAt(210,104);move(support,60,0);
+      positionCarrier(97,0);positionSupport(60,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
         narration('3 YARDS · FIRST STEP: carrier attacks the inside gap. Defenders begin to narrow.');
-        move(carrier,112,inside);ballAt(225,104+inside);
+        positionCarrier(112,inside);
         move(defender,-12,inside*.4);move(cover,committed?-22:-8,committed?-14:0);
       },800);
       later(()=>{
         if(phase!=='result')return;
         narration('2 YARDS · SECOND STEP: carrier counters to the outside shoulder. Defenders must choose.');
-        move(carrier,127,-inside);ballAt(240,104-inside);
+        positionCarrier(127,-inside);
         if(committed){move(defender,-21,inside*.6);move(cover,-39,inside*.5);}
         else{move(cover,-12,outside?-35:5);}
       },1650);
@@ -147,17 +155,20 @@
         narration('1 YARD · RELEASE: white ball travels backwards into the running support BEFORE defenders converge.');
         guide.setAttribute('d','M'+release.x+' '+release.y+'L'+catchPoint.x+' '+catchPoint.y);
         guide.setAttribute('opacity','.65');
-        move(support,130,0);
-        animateBall(release,catchPoint,1150,()=>{
+        ballOwner='flight';positionSupport(130,outside?0:94);
+        const releaseFromHands={x:carrierPosition.x+13,y:carrierPosition.y-7};
+        const catchAtHands={x:supportPosition.x+13,y:supportPosition.y-7};
+        guide.setAttribute('d','M'+releaseFromHands.x+' '+releaseFromHands.y+'L'+catchAtHands.x+' '+catchAtHands.y);
+        animateBall(releaseFromHands,catchAtHands,1150,()=>{
           if(phase!=='result')return;
           guide.setAttribute('opacity','0');
-          get('quins-sim-ball').style.opacity='0';
+          receiveBall();get('quins-sim-ball').style.opacity='1';
           narration('CATCH · Support receives the ball in stride and accelerates away from contact.');
           if(committed){move(defender,-33,inside*.6);move(cover,-55,inside*.5);}
           else{move(cover,-27,outside?-42:10);}
           later(()=>{
             if(phase!=='result')return;
-            move(support,committed?208:145,0);
+            positionSupport(committed?208:145,outside?0:94);
             outcome.hidden=false;outcome.textContent=message;
             narration('PLAY COMPLETE · '+(committed?'Both defenders converged on the carrier while support received in space.':'Cover stayed available and can close on the support runner.'));
           },650);
@@ -194,7 +205,7 @@
   watchButton.addEventListener('click',()=>{
     if(phase!=='result')return;
     cancel();phase='setup';
-    move(carrier,0,0);move(defender,0,0);move(cover,0,0);move(support,0,lane==='outside'?0:94);ballAt(113,104);get('quins-sim-ball').style.opacity='1';
+    ballOwner='carrier';positionCarrier(0,0);move(defender,0,0);move(cover,0,0);positionSupport(0,lane==='outside'?0:94);carryBall();get('quins-sim-ball').style.opacity='1';
     get('quins-sim-pass').setAttribute('opacity','0');get('quins-sim-traffic').setAttribute('opacity','.2');
     outcome.hidden=true;watchButton.hidden=true;playButton.hidden=false;
     get('quins-sim-outside').disabled=false;get('quins-sim-inside').disabled=false;
