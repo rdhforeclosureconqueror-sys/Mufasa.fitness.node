@@ -71,3 +71,11 @@ test('ruck clock drives modeled defensive recovery',()=>{
  assert.ok(js.includes('data-clock-defense'));
  assert.ok(js.includes('lastRuck=null'));
 });
+
+test('ruck playback waits for modeled ball release and pause cancels playback',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ assert.ok(js.includes('data-playback-clock'));
+ assert.ok(js.includes('Math.min(8000,(lastRuck||evaluateRuck()).time*1000)'));
+ assert.ok(js.includes('clearTimeout(timer)'));
+ assert.ok(js.includes('if(token!==playToken)return'));
+});
