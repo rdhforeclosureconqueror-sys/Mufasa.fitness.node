@@ -36,7 +36,7 @@ root.innerHTML=`<style>
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[];
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0;
 const defenseGroup=$('[data-defense]'),defenders=[];
 for(let n=0;n<15;n++){
  const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','9');c.setAttribute('fill','#d87571');c.setAttribute('stroke','#fff0e0');c.setAttribute('stroke-width','1.5');defenseGroup.appendChild(c);defenders.push(c);
@@ -45,7 +45,7 @@ function defenseReport(){
  const enabled=$('[data-defense-toggle]').checked,strategy=$('[data-strategy]').value;
  defenseGroup.setAttribute('visibility',enabled?'visible':'hidden');
  const stage=data?.stages[index],carrier=stage?.ballCarrier?stage.positions[stage.ballCarrier]:[230,139];
- const maxFold=strategy==='fold'?Math.min(4,crashes):strategy==='rush'?Math.min(2,crashes):0;
+ const maxFold=strategy==='fold'?Math.max(0,Math.min(4,crashes)-recovery):strategy==='rush'?Math.max(0,Math.min(2,crashes)-recovery):0;
  for(let n=0;n<15;n++){
   // A baseline of two defensive banks, moving in response to phase and chosen strategy.
   const row=n%8,bank=Math.floor(n/8);
@@ -57,17 +57,38 @@ function defenseReport(){
  }
  const remaining=8-maxFold;
  $('[data-report]').textContent=!enabled?'Without Defense: study the coach sequence. Switch on defense to test your decisions.':
- 'Defensive experiment: '+crashes+' crash(es). '+(strategy==='fold'?maxFold+' modeled defenders have folded toward the repeated carry; '+remaining+' remain in the original outside bank.':strategy==='hold'?'Defenders hold their width despite the crashes; no automatic overload.':'Two defenders pressure the carrier; the rest retain their shape.')+
+ 'Defensive experiment: '+crashes+' crash(es), '+recovery+' defensive recovery step(s), current coach phase '+(index+1)+'/'+data.stages.length+'. '+(strategy==='fold'?maxFold+' modeled defenders have folded toward the repeated carry; '+remaining+' remain in the original outside bank.':strategy==='hold'?'Defenders hold their width despite the crashes; no automatic overload.':'Two defenders pressure the carrier; the rest retain their shape.')+
  (decisions.length?' Last decision: '+decisions.at(-1)+'.':'')+
  ' These are simplified responses, not guaranteed real-match outcomes.';
 }
 function chooseDecision(action){
  if(!data||!$('[data-defense-toggle]').checked)return;
  pause();
- if(action==='crash')crashes++;
- if(action==='wide')crashes=Math.max(0,crashes-1);
- decisions.push(action==='crash'?'crash and secure ball':'move wide / defense begins recovery');
- defenseReport();
+ if(action==='crash'){
+  // Move through the actual coach-approved hit-up/ruck sequence; do not
+  // fabricate extra tactical stages or ball carriers.
+  const ruck=data.stages.findIndex((p,i)=>i>index&&p.id==='ruck1');
+  const edgeRuck=data.stages.findIndex((p,i)=>i>index&&p.id==='ruck2');
+  const nextRuck=ruck>=0?ruck:edgeRuck;
+  if(nextRuck<0){
+   decisions.push('no further coach-authored ruck; replay to explore again');
+   defenseReport();return;
+  }
+  crashes++;
+  recovery=Math.max(0,recovery-1);
+  index=nextRuck;
+  decisions.push('carry into '+data.stages[index].title+'; defense reacts to the collision');
+ }else{
+  const wide=data.stages.findIndex((p,i)=>i>index&&p.id==='edge');
+  if(wide<0){
+   decisions.push('no later coach-authored wide carry in this branch');
+   defenseReport();return;
+  }
+  index=wide;
+  recovery++;
+  decisions.push('advance to coach-authored wide carry; defense begins recovering');
+ }
+ render();
 }
 function pause(){if(timer!==null)clearInterval(timer);timer=null;}
 function render(){if(!data)return;const p=data.stages[index];for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
@@ -84,10 +105,10 @@ $('[data-prev]').addEventListener('click',()=>{pause();index=Math.max(0,index-1)
 $('[data-next]').addEventListener('click',()=>{pause();index=Math.min(data.stages.length-1,index+1);render();});
 $('[data-play]').addEventListener('click',()=>{pause();if(!data)return;if(index===data.stages.length-1)index=0;render();timer=setInterval(()=>{if(index===data.stages.length-1){pause();return;}index++;render();},2100);});
 $('[data-pause]').addEventListener('click',pause);
-$('[data-replay]').addEventListener('click',()=>{pause();index=0;render();});
-$('[data-branch]').addEventListener('change',e=>{crashes=0;decisions=[];load(e.target.value);});
+$('[data-replay]').addEventListener('click',()=>{pause();index=0;crashes=0;recovery=0;decisions=[];render();});
+$('[data-branch]').addEventListener('change',e=>{crashes=0;recovery=0;decisions=[];load(e.target.value);});
 $('[data-defense-toggle]').addEventListener('change',defenseReport);
-$('[data-strategy]').addEventListener('change',()=>{crashes=0;decisions=[];defenseReport();});
+$('[data-strategy]').addEventListener('change',()=>{crashes=0;recovery=0;decisions=[];defenseReport();});
 $('[data-crash]').addEventListener('click',()=>chooseDecision('crash'));
 $('[data-wide]').addEventListener('click',()=>chooseDecision('wide'));
 $('[data-reset-defense]').addEventListener('click',()=>{crashes=0;decisions=[];defenseReport();});
