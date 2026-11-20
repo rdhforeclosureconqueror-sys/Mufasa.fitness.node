@@ -42,8 +42,8 @@ function init(cfg){
     const achieved=entries.filter(x=>x.includes('ACHIEVED:')).length;
     const risk=entries.filter(x=>x.includes('RISK:')).length;
     const unresolved=entries.length-achieved-risk;
-    const sequence=entries.map(entry=>{const parts=entry.split(' — ');const title=(parts[0]||'').replace(/^[✓△○] /,'');const detail=parts.slice(1).join(' — ');const state=detail.startsWith('ACHIEVED:')?'✓ CHECK':detail.startsWith('RISK:')?'△ RISK — BACK YOURSELF':'○ UNRESOLVED';return title.toUpperCase()+'\\n'+state+'\\n'+detail.replace(/^(ACHIEVED|RISK|PENDING): /,'');});
-    sequence.push('PLAY REVIEW COMPLETE\\n'+achieved+' / 5 ACHIEVED'+(risk?' · '+risk+' RISK':'')+(unresolved?' · '+unresolved+' UNRESOLVED':'')+'\\nRisk is a coaching opportunity, not an automatic failure.');
+    const sequence=entries.map(entry=>{const parts=entry.split(' — ');const title=(parts[0]||'').replace(/^[✓△○] /,'');const detail=parts.slice(1).join(' — ');const state=detail.startsWith('ACHIEVED:')?'✓ CHECK':detail.startsWith('RISK:')?'△ RISK — BACK YOURSELF':'○ UNRESOLVED';return title.toUpperCase()+'\n'+state+'\n'+detail.replace(/^(ACHIEVED|RISK|PENDING): /,'');});
+    sequence.push('PLAY REVIEW COMPLETE\n'+achieved+' / 5 ACHIEVED'+(risk?' · '+risk+' RISK':'')+(unresolved?' · '+unresolved+' UNRESOLVED':'')+'\nRisk is a coaching opportunity, not an automatic failure.');
     sequence.forEach((entry,i)=>afterReveal(()=>showScore(entry,i<entries.length&&entry.includes('✓ CHECK')),i*1900+250));
     afterReveal(()=>{rubricOverlay.style.display='none';},sequence.length*1900+2100);
   }
