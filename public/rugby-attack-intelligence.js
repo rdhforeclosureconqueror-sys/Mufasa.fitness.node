@@ -252,11 +252,32 @@
             if(phase!=='result')return;
             guide.setAttribute('opacity','0');
             narration('ARRIVAL · Players chase to the ball landing zone.');positionSupport(to.x-65,to.y-65);positionCarrier(to.x-145,to.y-100);move(defender,to.x-265,to.y-110);
-            later(()=>{if(phase!=='result')return;const favorable=kickDirection!=='middle'&&lane===(kickDirection==='inside'?'inside':'outside')&&defenseLane!==(kickDirection==='inside'?'inside':'outside');outcome.hidden=false;outcome.textContent=(favorable?'SUPPORT FIRST TO CONTEST · ':'DEFENDER CONTESTS · ')+message;watchButton.hidden=false;rubricSet(3,lane===kickDirection?'achieved':'risk',lane===kickDirection?'Support reaches target lane; onside status not modeled.':'Support lane differs from kick target.');rubricSet(4,'pending',favorable?'Support arrives first at the contest; possession is not resolved in this training model.':'Defender contests the landing; possession is not resolved in this training model.');summary();narration('CHASE COMPLETE · Recovery remains contested.');},850);
+            later(()=>{
+              if(phase!=='result')return;
+              const aligned=lane===kickDirection;
+              const spaceOpen=defenseLane!==kickDirection;
+              // Deterministic teaching scenarios, not physics, probabilities or a real match prediction.
+              // Middle is contested by default; an aligned outside/inside chase can recover
+              // unless 2v2 cover is still available in the same channel.
+              const recovery=kickDirection==='middle'?'loose':aligned&&spaceOpen&&format==='2v1'?'attack':(!aligned||!spaceOpen)?'defense':'loose';
+              rubricSet(3,aligned?'achieved':'risk',aligned?'Support reaches the kick channel; onside timing not simulated.':'Support is in a different lane from the landing zone.');
+              narration('CONTEST · '+(recovery==='attack'?'Support arrives first and gathers the ball.':recovery==='defense'?'Defender arrives first and secures the ball.':'Neither side establishes clean possession.'));
+              later(()=>{
+                if(phase!=='result')return;
+                const description=recovery==='attack'?'ATTACK RECOVERY · Support gathers the kick in the '+kickDirection+' channel and can continue the attack. No try is awarded.':recovery==='defense'?'DEFENSIVE RECOVERY · The defender secures the kick before support can recover. Possession changes hands.':'LOOSE BALL · The contest ends without clean possession. A subsequent breakdown or recovery is not simulated.';
+                if(recovery==='attack'){positionSupport(to.x-65,to.y-65);receiveBall();}
+                else if(recovery==='defense'){ballOwner='defender';ballAt(to.x-8,to.y);move(defender,to.x-265,to.y-110);}
+                else {ballOwner='loose';ballAt(to.x,to.y);}
+                outcome.hidden=false;outcome.textContent=description+' · Illustrative coaching scenario; onside eligibility, bounce and contact are not simulated.';
+                watchButton.hidden=false;
+                rubricSet(4,recovery==='attack'?'achieved':recovery==='defense'?'risk':'pending',description);
+                summary();narration('POSSESSION RESULT · '+description);
+              },750);
+            },850);
           },850);
         });
       },1600);
-      message='KICK & CHASE · Carrier drew the defender '+defenseLane+', kicked into space, then chased with support. Recovery is contested; kick weight, onside timing and defender reaction determine the result. This is an illustrative training sequence, not a guaranteed try.';
+      message='KICK & CHASE · Illustrative contest resolves after arrival; onside eligibility, bounce and contact are not simulated.';
     }else if(choice==='inside'){
       narration('DUMMY PASS · DRAW OUTSIDE, THEN FINISH INSIDE.');const fooled=!outside && defenseLane==='outside';
       move(carrier,135,35);move(defender,-20,fooled?-18:12);move(cover,fooled?-10:-33,fooled?-30:-10);
