@@ -13,6 +13,7 @@ const { createAiUsageLedger } = require("./src/services/aiUsageLedger");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
+const { installQuinsPlaybookRoutes } = require("./src/routes/quinsPrivatePlaybookRoutes");
 const { createUserStore } = require("./src/repositories/userStore");
 const { createCommunityCardService } = require("./src/services/communityCardService");
 const { installCommunityCardRoutes } = require("./src/routes/communityCardRoutes");
@@ -3938,6 +3939,9 @@ function createApp(options = {}) {
     }
     return res.sendFile(path.join(PUBLIC_DIR,req.path));
   });
+
+  // Quin private tactical delivery: bearer auth + explicit team allowlist; fail closed unless configured.
+  installQuinsPlaybookRoutes(app, { requireAuth });
 
   // ---- Static assets ----
   app.use(express.static(PUBLIC_DIR, { setHeaders(res, filePath) { if (filePath.endsWith(".html") || filePath.endsWith(".js")) res.set(SHELL_NO_STORE_HEADERS); } }));
