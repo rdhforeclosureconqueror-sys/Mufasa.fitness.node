@@ -132,38 +132,36 @@
     const aligned = (choice==='pass' && ((outside && defenseLane==='inside') || (!outside && defenseLane==='outside')));
     const committed = aligned;
     if(choice==='pass'){
-      // Diagram scale ~15px/yard: carrier at x167 for five-yard decision.
-      // First step x182 (~4yd), counterstep x197 (~3yd), release x207 (~2.3yd).
-      // Keep the defender at x242 until the ball is released: no pre-pass collision.
-      const inside=defenseLane==='inside'?18:-18;
+      // Carrier attacks away from support to fix the inside defender, then
+      // straightens into a legal passing channel without screening contact.
+      const inside=defenseLane==='inside'?26:-26;
       const supportY=outside?65:159;
-      // Support stays behind the ball until the single backwards pass.
       const guide=get('quins-sim-pass');
       guide.setAttribute('opacity','0');
       carryBall();
-      narration('DRAW · Carrier fixes the defender on a legitimate running line; support maintains passing depth.');
-      positionCarrier(82,inside);positionSupport(55,outside?0:94);
+      narration('DRAW INSIDE · Step away from outside support and threaten the defender’s inside shoulder.');
+      positionCarrier(79,inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
-        narration('DRAW '+defenseLane.toUpperCase()+' · '+(format==='2v1'?'The single defender commits to the carrier.':'Both defenders step up to meet the inside threat.'));
-        move(defender,0,inside*.45);move(cover,committed?-19:-9,committed?-27:0);
+        narration('DEFENDER FIXED · Defender follows the carrier inward, away from outside support.');
+        move(defender,-9,inside*.65);
+        if(format==='2v2')move(cover,committed?-12:-5,committed?-12:0);
       },800);
       later(()=>{
         if(phase!=='result')return;
-        narration('POSITION TO PASS · Carrier holds the defender on the original running line; no second draw or obstruction.');
-        positionCarrier(97,inside);
-        if(committed){move(defender,-8,-18);move(cover,-26,-9);}
-        else{move(cover,0,outside?-15:5);}
+        narration('STRAIGHTEN TO PASS · Step back toward the support-side channel, still ahead of support.');
+        positionCarrier(93,inside*.35);
+        if(committed)move(defender,-14,inside*.8);
       },1650);
       later(()=>{
         if(phase!=='result')return;
-        narration('POSITION & PASS · Release backward to support before contact; do not screen the defender.');
-        positionCarrier(107,inside);
+        narration('RELEASE · Pass backward into outside support’s running line before contact.');
+        positionCarrier(105,inside*.18);
         ballOwner='flight';
         // Reparent only at release, preserving the on-screen hand position.
         const releaseFromHands={x:carrierPosition.x+13,y:carrierPosition.y-7};
         pitch.appendChild(ball);ballAt(releaseFromHands.x,releaseFromHands.y);
-        positionSupport(110,outside?0:94);
+        positionSupport(103,outside?0:94);
         const catchAtHands={x:supportPosition.x+13,y:supportPosition.y-7};
         guide.setAttribute('d','M'+releaseFromHands.x+' '+releaseFromHands.y+'L'+catchAtHands.x+' '+catchAtHands.y);
         guide.setAttribute('opacity','.65');
@@ -183,7 +181,7 @@
         });
       },2550);
       message=committed
-        ?'SPACE CREATED · First cut at five yards, counterstep around three yards, and release before contact. Defender 2 steps up to defend the inside threat, and both defenders converge after release. Spacing is essential; this is a teaching model, not a guaranteed try.'
+        ?'SPACE CREATED · Carrier steps inward away from support, fixes the defender, straightens toward the passing channel and releases backward before contact. Support attacks the available outside space; not a guaranteed try.'
         :'COVER RECOVERS · The carrier did not sufficiently fix both defenders. The backward pass reaches support, but cover can track the receiver.';
     }else if(choice==='outside'){
       // One continuous inside threat, one dummy, then the outside acceleration.
