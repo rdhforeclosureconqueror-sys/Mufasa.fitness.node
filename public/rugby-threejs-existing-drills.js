@@ -6,7 +6,8 @@ try{THREE=await import('https://cdn.jsdelivr.net/npm/three@0.160.1/build/three.m
 catch(e){console.warn('Three.js unavailable; original drills remain playable',e);return;}
 const drills=[
  {svg:'.quins-simulator svg.quins-sim-pitch',ids:['quins-sim-carrier','quins-sim-support','quins-sim-defender','quins-sim-cover'],ball:'quins-sim-ball',title:'2v1 decision drill'},
- {svg:'#q32-pitch',ids:['q32-a1','q32-a2','q32-a3','q32-d1','q32-d2'],ball:'q32-ball',title:'3v2 overlap drill'}
+ {svg:'#q32-pitch',ids:['q32-a1','q32-a2','q32-a3','q32-d1','q32-d2'],ball:'q32-ball',title:'3v2 overlap drill'},
+ {svg:'.quins-ravens-live svg',selectors:Array.from({length:15},(_,i)=>'[data-players] [data-p="'+(i+1)+'"]'),defenseSelector:'[data-defense] circle',drillSelector:'[data-drill] circle',ballSelector:'[data-ball]',title:'Protected RAVENS MF playbook'}
 ];
 function init(cfg){
  const svg=document.querySelector(cfg.svg);if(!svg||svg.dataset.threeMirror)return;
@@ -20,16 +21,25 @@ function init(cfg){
  controls.append(toggle,cameraButton);wrapper.parentNode.insertBefore(controls,wrapper);
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
  const camera=new THREE.PerspectiveCamera(48,1,.1,300);
- const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));canvas.appendChild(renderer.domElement);
+ const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false});renderer.setPixelRatio(Math.min(devicePixelRatio||1,2));renderer.domElement.style.cssText='display:block;width:100%;height:100%';canvas.appendChild(renderer.domElement);
  scene.add(new THREE.HemisphereLight(0xffffff,0x496b55,2));
  const field=new THREE.Mesh(new THREE.PlaneGeometry(34,21),new THREE.MeshLambertMaterial({color:0x286547}));field.rotation.x=-Math.PI/2;scene.add(field);
  for(let x=-15;x<=15;x+=10){const line=new THREE.Mesh(new THREE.BoxGeometry(.045,.025,20),new THREE.MeshBasicMaterial({color:0xb6d2b9}));line.position.set(x,.025,0);scene.add(line);}
+ // Rugby H-posts at each end of the teaching pitch (illustrative scale).
+ const postMaterial=new THREE.MeshStandardMaterial({color:0xf2e6c6});
+ for(const end of [-16.6,16.6]){
+  for(const z of [-2.6,2.6]){const upright=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,5.5,8),postMaterial);upright.position.set(end,2.75,z);scene.add(upright);}
+  const crossbar=new THREE.Mesh(new THREE.CylinderGeometry(.065,.065,5.2,8),postMaterial);crossbar.rotation.x=Math.PI/2;crossbar.position.set(end,2.8,0);scene.add(crossbar);
+ }
  const pieces={};const ball=new THREE.Mesh(new THREE.SphereGeometry(.34,12,10),new THREE.MeshStandardMaterial({color:0xffedba}));scene.add(ball);
- cfg.ids.forEach((id,i)=>{const defender=id.includes('defender')||id.includes('cover')||id.includes('-d');const obj=new THREE.Group();
+ const sources=cfg.selectors?cfg.selectors.map(selector=>({selector,defender:false})):cfg.ids.map(id=>({id,defender:id.includes('defender')||id.includes('cover')||id.includes('-d')}));
+ if(cfg.defenseSelector)for(let i=0;i<15;i++)sources.push({selector:cfg.defenseSelector,index:i,defender:true});
+ if(cfg.drillSelector)for(let i=0;i<15;i++)sources.push({selector:cfg.drillSelector,index:i,defender:i>=8});
+ sources.forEach((source,i)=>{const defender=source.defender;const id='piece-'+i;const obj=new THREE.Group();
  const body=new THREE.Mesh(new THREE.CylinderGeometry(.55,.7,1.55,10),new THREE.MeshStandardMaterial({color:defender?0xd76b6d:0xe6c77b}));body.position.y=.82;obj.add(body);
- const head=new THREE.Mesh(new THREE.SphereGeometry(.36,12,10),new THREE.MeshStandardMaterial({color:0xd9a47b}));head.position.y=1.85;obj.add(head);scene.add(obj);pieces[id]=obj;});
+ const head=new THREE.Mesh(new THREE.SphereGeometry(.36,12,10),new THREE.MeshStandardMaterial({color:0xd9a47b}));head.position.y=1.85;obj.add(head);scene.add(obj);pieces[id]=obj;source.object=obj;});
  let angle=0,enabled=false,raf=0;
- function pose(){const poses=[[0,32,28],[-29,23,20],[0,42,.1]];camera.position.set(...poses[angle]);camera.lookAt(0,0,0);}
+ function pose(){const poses=[[0,37,37],[-27,35,31],[0,48,.1]];camera.position.set(...poses[angle]);camera.lookAt(0,0,0);}
  pose();
  function point(el){
   if(!el)return null;
@@ -39,12 +49,17 @@ function init(cfg){
  function frame(){
   if(!enabled)return;
   const w=canvas.clientWidth,h=canvas.clientHeight;if(w&&h){renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();}
-  for(const id of cfg.ids){const p=point(document.getElementById(id));if(p)pieces[id].position.set(p.x,0,p.z);}
-  const p=point(document.getElementById(cfg.ball));if(p)ball.position.set(p.x,1.35,p.z);
+  for(const source of sources){const el=source.id?document.getElementById(source.id):source.index===undefined?svg.querySelector(source.selector):svg.querySelectorAll(source.selector)[source.index];
+   const visible=el&&getComputedStyle(el).visibility!=='hidden'&&getComputedStyle(el).display!=='none';
+   source.object.visible=!!visible;if(visible){const p=point(el);if(p)source.object.position.set(p.x,0,p.z);}
+  }
+  const ballEl=cfg.ballSelector?svg.querySelector(cfg.ballSelector):document.getElementById(cfg.ball);
+  ball.visible=!!ballEl&&getComputedStyle(ballEl).visibility!=='hidden'&&getComputedStyle(ballEl).opacity!=='0';
+  const p=point(ballEl);if(p)ball.position.set(p.x,1.35,p.z);
   renderer.render(scene,camera);raf=requestAnimationFrame(frame);
  }
- toggle.onclick=()=>{enabled=!enabled;canvas.style.display=enabled?'block':'none';svg.style.visibility=enabled?'hidden':'';toggle.textContent=enabled?'View: Original nodes':'View: Three.js';toggle.setAttribute('aria-pressed',String(enabled));cameraButton.hidden=!enabled;if(enabled)frame();else cancelAnimationFrame(raf);};
+ toggle.onclick=()=>{enabled=!enabled;canvas.style.display=enabled?'block':'none';svg.style.opacity=enabled?'0':'';svg.style.pointerEvents=enabled?'none':'';toggle.textContent=enabled?'View: Original nodes':'View: Three.js';toggle.setAttribute('aria-pressed',String(enabled));cameraButton.hidden=!enabled;if(enabled)frame();else cancelAnimationFrame(raf);};
  cameraButton.onclick=()=>{angle=(angle+1)%3;pose();};
 }
-let attempts=0;const check=()=>{drills.forEach(init);if(++attempts<15&&drills.some(d=>!document.querySelector(d.svg)))setTimeout(check,500)};check();
+let attempts=0;const check=()=>{drills.forEach(init);if(++attempts<30&&drills.some(d=>!document.querySelector(d.svg)))setTimeout(check,500)};check();
 })();
