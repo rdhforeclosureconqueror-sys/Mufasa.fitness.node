@@ -55,7 +55,8 @@ function init(cfg){
   const groups=cfg.title.startsWith('2v1')?[
    {name:'01 · SUPPORT LANE',hint:'Where will your teammate run?',match:/place support (inside|outside)/i},
    {name:'02 · DEFENSIVE DRAW',hint:'Which direction will you commit the defender?',match:/draw defenders (inside|outside)/i},
-   {name:'03 · FINISHING ACTION',hint:'Choose the move to execute.',match:/position & pass|draw & pass|dummy & go outside|dummy & cut inside|kick & chase/i}
+   {name:'03 · FINISHING ACTION',hint:'Choose the move to execute.',match:/position & pass|draw & pass|dummy & go outside|dummy & cut inside|kick & chase/i},
+    {name:'04 · KICK DIRECTION',hint:'For Kick & Chase, select left, middle or right.',match:/kick (left|middle|right)/i}
   ]:[{name:'SCENARIO ACTIONS',hint:'Select the controls for this drill.',match:/./}];
   const used=new Set();
   for(const group of groups){
@@ -74,10 +75,10 @@ function init(cfg){
   const selectors=[...scope.querySelectorAll('select')].filter(el=>el.getClientRects().length>0);
   if(!cfg.title.startsWith('2v1'))for(const select of selectors.slice(0,2)){const copy=select.cloneNode(true);copy.value=select.value;copy.style.cssText='width:100%;margin:8px 0;padding:10px';copy.onchange=()=>{select.value=copy.value;select.dispatchEvent(new Event('change',{bubbles:true}));};panel.appendChild(copy);}
   const launch=document.createElement('button');launch.type='button';launch.textContent='▶ EXECUTE SCENARIO · 2s COUNTDOWN';launch.style.cssText='width:100%;margin-top:12px;padding:15px 8px;border:1px solid #f4df9b;border-radius:12px;background:#e4c783;color:#11271c;font-weight:900;letter-spacing:.02em';
-  launch.onclick=()=>{const play=buttons.find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play&&!play.disabled)countdownPlay(play);else{sub.textContent='Choose support, defender draw and finishing action first. If controls are locked, use Reset scenario above.';}};
+  launch.onclick=()=>{const current=svg.closest(cfg.controlRoot);const play=cfg.title.startsWith('2v1')?current?.querySelector('#quins-sim-start'):sourceButtons().find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play&&!play.disabled){panel.style.display='none';countdownPlay(play);}else{sub.textContent='Complete all selections, including kick direction when kicking, before executing.';}};
   panel.appendChild(launch);
  }
- mk('▶ Play / Replay',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);const replay=scope?.querySelector('#quins-sim-watch');if(replay&&!replay.hidden){panel.style.display='none';count.style.display='none';scope.dispatchEvent(new Event('quins:replay-selected'));return;}}const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const target=replay||play;if(target)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
+ mk('▶ Play / Replay',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);const replay=scope?.querySelector('#quins-sim-watch');if(replay&&!replay.hidden){panel.style.display='none';count.style.display='none';scope.dispatchEvent(new Event('quins:replay-selected'));return;}}const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const current=cfg.title.startsWith('2v1')?svg.closest(cfg.controlRoot)?.querySelector('#quins-sim-start'):null;const target=replay||(current&&!current.disabled?current:play);if(target&&!target.disabled)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
  mk('Change scenario',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);scope?.querySelector('#quins-sim-edit')?.click();}panel.style.display='block';refreshPanel();});
  document.addEventListener('keydown',e=>{if(expanded&&e.key==='Escape')close();});
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
