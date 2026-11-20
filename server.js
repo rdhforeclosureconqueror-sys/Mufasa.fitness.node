@@ -13,6 +13,7 @@ const { createAiUsageLedger } = require("./src/services/aiUsageLedger");
 const { ApiError, ok, fail } = require("./src/lib/apiResponse");
 const { createAuthTokenLib } = require("./src/lib/authToken");
 const { authContext, requireAuth, ensureUserScopedAccess, requirePermission } = require("./src/middleware/auth");
+const { installQuinsProtectedRoutes } = require("./src/routes/quinsProtectedRoutes");
 const { createUserStore } = require("./src/repositories/userStore");
 const { createCommunityCardService } = require("./src/services/communityCardService");
 const { installCommunityCardRoutes } = require("./src/routes/communityCardRoutes");
@@ -835,6 +836,7 @@ function createApp(options = {}) {
       }
       : { enabled: false }
   }));
+  installQuinsProtectedRoutes({ app, requireAuth, env });
   // Member-owned Community ID records. Routes are mounted after authContext.
   const communityCardService = createCommunityCardService({ userStore });
   installCommunityCardRoutes({ app, requireAuth, service: communityCardService });
