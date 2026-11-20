@@ -74,7 +74,7 @@ function init(cfg){
   launch.onclick=()=>{const play=buttons.find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play)countdownPlay(play);else{sub.textContent='Choose your scenario on the main page before launching.';}};
   panel.appendChild(launch);
  }
- mk('▶ Play / Replay',()=>{const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const target=replay||play;if(target)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
+ mk('▶ Play / Replay',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);const replay=scope?.querySelector('#quins-sim-watch');if(replay&&!replay.hidden){panel.style.display='none';count.style.display='none';scope.dispatchEvent(new Event('quins:replay-selected'));return;}}const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const target=replay||play;if(target)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
  mk('Change scenario',()=>{panel.style.display='block';refreshPanel();});
  document.addEventListener('keydown',e=>{if(expanded&&e.key==='Escape')close();});
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
