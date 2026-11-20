@@ -4,3 +4,6 @@ test('pass releases ball and records event',()=>{const s=R.step(R.create(),[{typ
 test('kick inside outside middle uses consistent vocabulary',()=>{for(const direction of ['inside','outside','middle']){const s=R.step(R.create(),[{type:'kick',player:'a0',direction}]);assert.equal(s.events[0].direction,direction);}});
 test('reject impossible actions and invalid mode',()=>{assert.throws(()=>R.create('4v4'));assert.throws(()=>R.step(R.create(),[{type:'pass',player:'d0',target:'a1'}]));assert.throws(()=>R.step(R.create(),[{type:'move',player:'a0',dx:Infinity,dy:0}]));});
 test('replay initial state remains independent',()=>{const start=R.create('3v2',9);R.step(start,[{type:'dummy',player:'a0'}]);assert.deepEqual(R.create('3v2',9),start);});
+
+test('kick does not immediately return to kicker',()=>{let s=R.step(R.create(),[{type:'kick',player:'a0',direction:'middle'}]);assert.equal(s.ball.owner,null);for(let i=0;i<7;i++){s=R.step(s);assert.equal(s.ball.owner,null);}assert.equal(s.events.filter(e=>e.type==='recovery').length,0);});
+test('pass cannot be instantly recovered by passer',()=>{let s=R.step(R.create(),[{type:'pass',player:'a0',target:'a1'}]);assert.equal(s.ball.owner,null);assert.equal(s.events.filter(e=>e.type==='recovery').length,0);});
