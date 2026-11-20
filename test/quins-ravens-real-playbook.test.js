@@ -40,3 +40,14 @@ test('same RAVENS UI offers attack-only and responsive-defense experiments',()=>
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
  for(const term of ['data-defense-toggle','data-strategy','data-crash','data-wide','data-reset-defense','defenseReport','With Defense'])assert.ok(js.includes(term),term);
 });
+
+test('defensive decisions advance only coach-authored stages',()=>{
+ const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
+ assert.ok(js.includes("p.id==='ruck1'"));
+ assert.ok(js.includes("p.id==='ruck2'"));
+ assert.ok(js.includes("p.id==='edge'"));
+ assert.ok(js.includes("index=nextRuck"));
+ assert.ok(js.includes("index=wide"));
+ assert.ok(js.includes("recovery++"));
+ assert.ok(js.includes("no further coach-authored ruck"));
+});
