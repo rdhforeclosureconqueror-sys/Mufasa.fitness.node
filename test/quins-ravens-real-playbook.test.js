@@ -96,3 +96,16 @@ test('generic realignment walkthrough is separate from protected coach playbook'
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
  for(const token of ['data-realign-start','data-realign-next','data-realign-exit','data-drill','Generic teaching drill','not</strong> the coach-approved RAVENS formation','function showDrill(step)','drillFrames','players.setAttribute(\'visibility\'','function render(){if(!data)return;if(drillStep>=0)return;'])assert.ok(js.includes(token),token);
 });
+
+test('coach screenshot formation preserves scrum cluster and Ruck 2 pod groupings',()=>{
+ const p=getPlay('wedge');
+ assert.equal(p.geometry,'source-informed-approximate-from-coach-screenshots');
+ const scrum=p.stages.find(s=>s.id==='scrum'),ruck2=p.stages.find(s=>s.id==='ruck2');
+ assert.ok(Math.max(...[1,2,3,4,5,6,7,8].map(n=>scrum.positions[n][0]))<125);
+ for(const group of [[1,2,12],[8,3,15],[4,5,13]]){
+  const xs=group.map(n=>ruck2.positions[n][0]);
+  assert.ok(Math.max(...xs)-Math.min(...xs)<100);
+ }
+ assert.ok(ruck2.positions[1][0]<ruck2.positions[8][0]);
+ assert.ok(ruck2.positions[8][0]<ruck2.positions[4][0]);
+});
