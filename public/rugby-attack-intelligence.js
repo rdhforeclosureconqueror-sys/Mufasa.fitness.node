@@ -213,10 +213,46 @@
         narration('PLAY COMPLETE · '+message);
       },2850);
     }else if(choice==='kick'){
-      positionCarrier(115,0);positionSupport(105,lane==='outside'?0:94);
-      get('quins-sim-pass').setAttribute('d','M220 110Q265 45 330 42');get('quins-sim-pass').setAttribute('opacity','1');
-      move(cover,-35,-18);
-      message='KICK & CHASE · Defender 2 steps up to the carrier, leaving a possible kick space behind; the cover turns to track the ball. A successful chase depends on kick weight, onside timing, support, and recovery. This is an illustrative option, not an automatic try.';
+      // Draw first, kick only after the defender has reacted, then show the chase.
+      // Ball travels independently of the carrier; do not model a guaranteed recovery.
+      const drawY=defenseLane==='inside'?23:-23;
+      const supportY=lane==='outside'?0:94;
+      const guide=get('quins-sim-pass');
+      guide.setAttribute('opacity','0');
+      carryBall();
+      narration('DRAW '+defenseLane.toUpperCase()+' · Carrier threatens the defender’s '+defenseLane+' shoulder before kicking.');
+      positionCarrier(82,drawY);positionSupport(55,supportY);
+      later(()=>{
+        if(phase!=='result')return;
+        narration('DEFENDER COMMITS '+defenseLane.toUpperCase()+' · The defender follows the ball carrier’s running line.');
+        move(defender,-16,drawY*.85);
+        if(format==='2v2')move(cover,-8,drawY*.3);
+      },750);
+      later(()=>{
+        if(phase!=='result')return;
+        narration('KICK INTO SPACE · Carrier releases the ball beyond the committed defender.');
+        positionCarrier(102,drawY*.75);
+        ballOwner='flight';
+        const from={x:carrierPosition.x+13,y:carrierPosition.y-7};
+        const to={x:332,y:drawY>0?49:169};
+        pitch.appendChild(ball);ballAt(from.x,from.y);
+        guide.setAttribute('d','M'+from.x+' '+from.y+'Q'+(from.x+42)+' '+(from.y-34)+' '+to.x+' '+to.y);
+        guide.setAttribute('opacity','.75');
+        animateBall(from,to,1150,()=>{
+          if(phase!=='result')return;
+          narration('CHASE · Carrier and support accelerate toward the landing area. Defender turns to recover.');
+          positionCarrier(158,drawY*.5);positionSupport(146,supportY);
+          move(defender,-2,drawY*.35);
+          if(format==='2v2')move(cover,8,drawY*.25);
+          later(()=>{
+            if(phase!=='result')return;
+            guide.setAttribute('opacity','0');
+            outcome.hidden=false;outcome.textContent=message;watchButton.hidden=false;
+            narration('PLAY COMPLETE · '+message);
+          },850);
+        });
+      },1600);
+      message='KICK & CHASE · Carrier drew the defender '+defenseLane+', kicked into space, then chased with support. Recovery is contested; kick weight, onside timing and defender reaction determine the result. This is an illustrative training sequence, not a guaranteed try.';
     }else if(choice==='inside'){
       narration('DUMMY PASS · DRAW OUTSIDE, THEN FINISH INSIDE.');const fooled=!outside && defenseLane==='outside';
       move(carrier,135,35);move(defender,-20,fooled?-18:12);move(cover,fooled?-10:-33,fooled?-30:-10);

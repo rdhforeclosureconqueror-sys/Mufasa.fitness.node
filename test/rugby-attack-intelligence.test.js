@@ -13,8 +13,8 @@ test('interactive 2v1 is loaded only in authenticated player dashboard',()=>{
  assert.match(source,/getElementById\('quins-structure-lesson'\)/);
 });
 test('simulation provides positioning, timed defender commitment and three tactical decisions',()=>{
- for(const id of ['quins-sim-outside','quins-sim-inside','quins-sim-start','quins-sim-reset','quins-sim-decisions','quins-sim-outcome'])assert.ok(source.includes(id),id);
- for(const choice of ['pass','outside','inside'])assert.ok(source.includes('data-choice="'+choice+'"'),choice);
+ for(const id of ['quins-sim-outside','quins-sim-inside','quins-sim-start','quins-sim-edit','quins-sim-plan','quins-sim-outcome'])assert.ok(source.includes(id),id);
+ for(const choice of ['pass','outside','inside','kick'])assert.ok(source.includes('data-plan="'+choice+'"'),choice);
  assert.match(source,/phase='running'/);
  assert.match(source,/phase='decision'/);
  assert.match(source,/setTimeout/);
@@ -22,10 +22,9 @@ test('simulation provides positioning, timed defender commitment and three tacti
 });
 test('simulator distinguishes support position and inside-cover traffic',()=>{
  assert.match(source,/lane==='outside'/);
- assert.match(source,/SUPPORT INTO TRAFFIC/);
- assert.match(source,/CONTACT \/ ISOLATION RISK/);
+ assert.match(source,/TRAFFIC \/ ISOLATION/);
  assert.match(source,/SPACE CREATED/);
- assert.match(source,/DUMMY AND OUTSIDE/);
+ assert.match(source,/GO OUTSIDE/);
 });
 test('simulation has accessible labels and reduced motion fallback',()=>{
  assert.match(source,/aria-label="Interactive rugby training pitch/);
@@ -36,4 +35,14 @@ test('simulation has accessible labels and reduced motion fallback',()=>{
 test('visual academy retains the three coaching modules',()=>{
  for(const id of ['quins-module-structure','quins-module-four-ps','quins-module-mf'])assert.ok(dashboard.includes(id));
  assert.match(dashboard,/quins-role-grid/);
+});
+
+test('kick and chase draws the selected defender before the ball leaves the carrier',()=>{
+ assert.match(source,/else if\(choice==='kick'\)/);
+ assert.match(source,/const drawY=defenseLane==='inside'\?23:-23/);
+ assert.match(source,/DEFENDER COMMITS/);
+ assert.match(source,/KICK INTO SPACE/);
+ assert.match(source,/animateBall\(from,to,1150/);
+ assert.match(source,/CHASE · Carrier and support/);
+ assert.match(source,/if\(phase!=='result'\)return/);
 });
