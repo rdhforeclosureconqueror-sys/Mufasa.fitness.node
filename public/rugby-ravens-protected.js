@@ -19,7 +19,7 @@ root.innerHTML=`<style>
 .quins-ravens-live [data-report]{background:#294334;border-radius:9px;padding:12px;line-height:1.5}
 @media(prefers-reduced-motion:reduce){.quins-ravens-live [data-p],.quins-ravens-live [data-ball]{transition:none}}
 </style><h3>QUIN NATION · RAVENS MF · COACH PLAYBOOK</h3>
-<p>Actual coach-supplied sequence. Positions are <strong>illustrative until the original PDF geometry is matched</strong>. Attack moves LEFT → RIGHT. The white oval marks the ball.</p>
+<p>Actual coach-supplied sequence. Positions are <strong>source-informed approximations from coach-supplied diagrams</strong>, not surveyed field distances. Attack moves LEFT → RIGHT in this rotated teaching view. Read the coach diagrams bottom-up: scrum → Ruck 1 → Ruck 2. The white oval marks the ball.</p>
 <div data-gate role="status" aria-live="polite">Checking Quin team authorization…</div>
 <div data-content hidden>
 <label>Play option <select data-branch><option value="wedge">DOUBLE WEDGE</option><option value="flash">FLASH off Ruck 1</option></select></label>
