@@ -50,7 +50,7 @@
       <button type="button" id="quins-sim-inside">Place support inside</button>
 
     </div>
-    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. Play runs the entire selected move automatically: draw the defender, dummy or pass, then finish. The stage narration appears beside the pitch.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Draw & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
+    <div class="quins-sim-decisions" id="quins-sim-plan"><h3>Before Play · Read the picture</h3><p>Support starts behind the ball carrier. Choose how you will draw the defenders and your intended action. The defense reacts automatically. Play runs the entire selected move automatically: draw the defender, dummy or pass, then finish. The stage narration appears beside the pitch.</p><div class="quins-sim-controls"><button type="button" data-defense="inside">Draw defenders inside</button><button type="button" data-defense="outside">Draw defenders outside</button></div><div class="quins-sim-controls"><button type="button" data-plan="pass">Position & pass</button><button type="button" data-plan="outside">Dummy & go outside</button><button type="button" data-plan="inside">Dummy & cut inside</button><button type="button" data-plan="kick">Kick & chase</button></div><p class="quins-sim-plan-summary" id="quins-sim-summary">1. Support: not set · 2. Draw: inside · 3. Action: not set</p><p id="quins-sim-plan-status" class="quins-sim-hint" role="status">Choose support, defender-draw intention, and intended decision.</p></div>
 `;
   host.appendChild(root);
   const pitch=root.querySelector('.quins-sim-pitch');
@@ -141,7 +141,7 @@
       const guide=get('quins-sim-pass');
       guide.setAttribute('opacity','0');
       carryBall();
-      narration('5 YARDS · FIRST CUT begins now. Carrier threatens the inside shoulder while support stays behind.');
+      narration('DRAW · Carrier fixes the defender on a legitimate running line; support maintains passing depth.');
       positionCarrier(82,inside);positionSupport(55,outside?0:94);
       later(()=>{
         if(phase!=='result')return;
@@ -150,15 +150,15 @@
       },800);
       later(()=>{
         if(phase!=='result')return;
-        narration('DUMMY / COUNTERSTEP · Carrier changes direction; '+(format==='2v1'?'the defender must choose the carrier or support.':'cover holds the inside hip.'));
-        positionCarrier(97,-inside);
+        narration('POSITION TO PASS · Carrier holds the defender on the original running line; no second draw or obstruction.');
+        positionCarrier(97,inside);
         if(committed){move(defender,-8,-18);move(cover,-26,-9);}
         else{move(cover,0,outside?-15:5);}
       },1650);
       later(()=>{
         if(phase!=='result')return;
-        narration('FINISHING MOVE · BACKWARD PASS · Release to support before contact.');
-        positionCarrier(107,-inside);
+        narration('POSITION & PASS · Release backward to support before contact; do not screen the defender.');
+        positionCarrier(107,inside);
         ballOwner='flight';
         // Reparent only at release, preserving the on-screen hand position.
         const releaseFromHands={x:carrierPosition.x+13,y:carrierPosition.y-7};

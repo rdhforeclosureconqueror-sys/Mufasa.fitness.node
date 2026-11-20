@@ -52,7 +52,7 @@ function init(cfg){
   const groups=cfg.title.startsWith('2v1')?[
    {name:'01 · SUPPORT LANE',hint:'Where will your teammate run?',match:/place support (inside|outside)/i},
    {name:'02 · DEFENSIVE DRAW',hint:'Which direction will you commit the defender?',match:/draw defenders (inside|outside)/i},
-   {name:'03 · FINISHING ACTION',hint:'Choose the move to execute.',match:/draw & pass|dummy & go outside|dummy & cut inside|kick & chase/i}
+   {name:'03 · FINISHING ACTION',hint:'Choose the move to execute.',match:/position & pass|draw & pass|dummy & go outside|dummy & cut inside|kick & chase/i}
   ]:[{name:'SCENARIO ACTIONS',hint:'Select the controls for this drill.',match:/./}];
   const used=new Set();
   for(const group of groups){
@@ -74,7 +74,7 @@ function init(cfg){
   launch.onclick=()=>{const play=buttons.find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play)countdownPlay(play);else{sub.textContent='Choose your scenario on the main page before launching.';}};
   panel.appendChild(launch);
  }
- mk('▶ Play / Replay',()=>{const b=sourceButtons().find(x=>/play scenario|start drill|^play$|replay/i.test((x.textContent||'').trim()));if(b)countdownPlay(b);else{panel.style.display='block';refreshPanel();}});
+ mk('▶ Play / Replay',()=>{const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const target=replay||play;if(target)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
  mk('Change scenario',()=>{panel.style.display='block';refreshPanel();});
  document.addEventListener('keydown',e=>{if(expanded&&e.key==='Escape')close();});
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
