@@ -45,10 +45,13 @@ function init(cfg){
  }
  function refreshPanel(){
   panel.replaceChildren();
-  const heading=document.createElement('h2');heading.textContent='MISSION CONTROL';heading.style.cssText='margin:0;color:#f3d68c;letter-spacing:.12em;font-size:18px';panel.appendChild(heading);
+  const dismiss=document.createElement('button');dismiss.type='button';dismiss.textContent='✕ Close controls';dismiss.style.cssText='float:right;min-height:44px;padding:8px;background:#e4c783;color:#10251a;border-radius:8px;font-weight:800';dismiss.onclick=()=>{panel.style.display='none';};panel.appendChild(dismiss);
+   const heading=document.createElement('h2');heading.textContent='MISSION CONTROL';heading.style.cssText='margin:0;color:#f3d68c;letter-spacing:.12em;font-size:18px';panel.appendChild(heading);
   const sub=document.createElement('p');sub.textContent=cfg.title+' · Choose one option in each step, then launch.';sub.style.cssText='color:#cbd8cf;font-size:14px;line-height:1.5';panel.appendChild(sub);
   const buttons=sourceButtons(),scope=svg.closest(cfg.controlRoot);
   if(!scope){sub.textContent='Controls unavailable for this drill.';return;}
+   const edit=scope.querySelector('#quins-sim-edit');
+   if(cfg.title.startsWith('2v1')&&edit){const resetScenario=document.createElement('button');resetScenario.type='button';resetScenario.textContent='↺ Reset scenario to change choices';resetScenario.style.cssText='width:100%;min-height:48px;margin:10px 0;background:#e4c783;color:#10251a;border-radius:10px;font-weight:800';resetScenario.onclick=()=>{edit.click();refreshPanel();};panel.appendChild(resetScenario);}
   const groups=cfg.title.startsWith('2v1')?[
    {name:'01 · SUPPORT LANE',hint:'Where will your teammate run?',match:/place support (inside|outside)/i},
    {name:'02 · DEFENSIVE DRAW',hint:'Which direction will you commit the defender?',match:/draw defenders (inside|outside)/i},
@@ -71,11 +74,11 @@ function init(cfg){
   const selectors=[...scope.querySelectorAll('select')].filter(el=>el.getClientRects().length>0);
   if(!cfg.title.startsWith('2v1'))for(const select of selectors.slice(0,2)){const copy=select.cloneNode(true);copy.value=select.value;copy.style.cssText='width:100%;margin:8px 0;padding:10px';copy.onchange=()=>{select.value=copy.value;select.dispatchEvent(new Event('change',{bubbles:true}));};panel.appendChild(copy);}
   const launch=document.createElement('button');launch.type='button';launch.textContent='▶ EXECUTE SCENARIO · 2s COUNTDOWN';launch.style.cssText='width:100%;margin-top:12px;padding:15px 8px;border:1px solid #f4df9b;border-radius:12px;background:#e4c783;color:#11271c;font-weight:900;letter-spacing:.02em';
-  launch.onclick=()=>{const play=buttons.find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play)countdownPlay(play);else{sub.textContent='Choose your scenario on the main page before launching.';}};
+  launch.onclick=()=>{const play=buttons.find(b=>/play scenario|start drill|^play$/i.test((b.textContent||'').trim()));if(play&&!play.disabled)countdownPlay(play);else{sub.textContent='Choose support, defender draw and finishing action first. If controls are locked, use Reset scenario above.';}};
   panel.appendChild(launch);
  }
  mk('▶ Play / Replay',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);const replay=scope?.querySelector('#quins-sim-watch');if(replay&&!replay.hidden){panel.style.display='none';count.style.display='none';scope.dispatchEvent(new Event('quins:replay-selected'));return;}}const buttons=sourceButtons();const replay=buttons.find(x=>/watch again|replay/i.test((x.textContent||'').trim()));const play=buttons.find(x=>/play scenario|start drill|^play$/i.test((x.textContent||'').trim()));const target=replay||play;if(target)countdownPlay(target);else{panel.style.display='block';refreshPanel();}});
- mk('Change scenario',()=>{panel.style.display='block';refreshPanel();});
+ mk('Change scenario',()=>{if(cfg.title.startsWith('2v1')){const scope=svg.closest(cfg.controlRoot);scope?.querySelector('#quins-sim-edit')?.click();}panel.style.display='block';refreshPanel();});
  document.addEventListener('keydown',e=>{if(expanded&&e.key==='Escape')close();});
  const scene=new THREE.Scene();scene.background=new THREE.Color(0x14291f);
  const camera=new THREE.PerspectiveCamera(48,1,.1,300);
