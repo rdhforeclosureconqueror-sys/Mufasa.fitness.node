@@ -29,14 +29,14 @@ const actors={a1:actor(0xe4be66,'A1'),a2:actor(0xe4be66,'A2'),d1:actor(0xc64a50,
 const ball=new THREE.Mesh(new THREE.SphereGeometry(.33,10,8),new THREE.MeshStandardMaterial({color:0xfff7df}));scene.add(ball);
 const starts={a1:[-13,-4],a2:[-15,7],d1:[2,-4],d2:[2,7]};
 const scenarios={inside:{d1:[2,-4],d2:[2,7],cue:'Draw defenders inside to create a potential outside release.'},outside:{d1:[2,-2],d2:[2,11],cue:'Draw defenders outside; assess the inside seam.'}};
-let phase='setup',support=null,draw=null,plan=null,clock=0,paused=false,lastPlan=null,targets={},startPositions={},ballOwner='a1';
+let phase='setup',support=null,draw=null,plan=null,clock=0,paused=false,lastPlan=null,targets={},startPositions={},ballOwner='a1',passStart=null,passEnd=null,received=false;
 function setCamera(){const poses=[[0,39,35],[-34,24,24],[0,54,.1]];camera.position.set(...poses[cameraIndex]);camera.lookAt(0,0,0)}
 setCamera();
 function setPositions(){
  const sc=scenarios[draw||'inside'];startPositions={a1:[...starts.a1],a2:[-16,support==='inside'?-9:7],d1:[...sc.d1],d2:[...sc.d2]};
  targets=structuredClone(startPositions);
  Object.entries(targets).forEach(([k,p])=>actors[k].position.set(p[0],0,p[1]));
- ball.position.set(starts.a1[0]+.8,1.4,starts.a1[1]);ballOwner='a1';
+ ball.position.set(starts.a1[0]+.8,1.4,starts.a1[1]);ballOwner='a1';passStart=null;passEnd=null;received=false;
 }
 function updateSummary(){
  $('summary').textContent='1. Support: '+(support||'not set')+' · 2. Draw: '+(draw||'not set')+' · 3. Action: '+(plan||'not set');
@@ -50,31 +50,51 @@ function reset(){
  $('feedback').textContent='Watch the carrier, support depth and both defenders. The defense responds to your intended draw.';
 }
 function applyPlan(){
- const outside=support==='outside',d=draw==='inside'?-1:1;
- const supportZ=outside?9:-9;
- targets={a1:[-5,-4],a2:[-8,supportZ],d1:[-2,d===-1?-5:0],d2:[0,d===-1?-1:11]};
+ // Phase one: carrier threatens the inside shoulder; both defenders compress.
+ // Support remains BEHIND the ball carrier in the attack direction (+x).
+ const inside=draw==='inside',z=inside?-7:1;
+ targets={a1:[-5,z],a2:[-10,support==='outside'?9:-10],
+  d1:[-1,z-1.5],d2:[0,z+1.5]};
 }
 function play(){
  if(!(support&&draw&&plan)||phase!=='setup')return;
  phase='approach';clock=0;paused=false;lastPlan={support,draw,plan};
  applyPlan();$('setup').open=false;$('play').disabled=true;$('finish').disabled=true;
- $('status').textContent='APPROACH · Carrier moves toward the five-yard decision point.';
- $('feedback').textContent=scenarios[draw].cue+' Watch both defenders commit to the developing threat.';
+ $('status').textContent='INSIDE THREAT · Both defenders react to the carrier.';
+ $('feedback').textContent='Watch D1 and D2 narrow toward the carrier. Support stays deeper than the ball.';
 }
 function finish(){
  if(phase!=='decision')return;
- phase='finish';clock=0;$('finish').disabled=true;
- const outside=support==='outside',pass=plan==='pass',kick=plan==='kick';
- targets.a1=plan==='inside'?[7,-10]:plan==='outside'?[7,6]:pass?[1,-4]:[6,-4];
- targets.a2=outside?[10,12]:[8,-10];
- targets.d1=[3,draw==='inside'?-5:0];targets.d2=[5,draw==='inside'?0:11];
- $('status').textContent='FINISH MOVE · '+({pass:'Draw & pass',outside:'Dummy & go outside',inside:'Dummy & cut inside',kick:'Kick & chase'}[plan]);
- const lane=outside?'outside':'inside';
- const assessment=pass?(outside&&draw==='inside'?'Outside support may exploit a defender drawn inside.':'Check whether the covering defender blocks the passing lane.'):
- plan==='inside'?(draw==='outside'?'Outside movement can expose the inside shoulder.':'The inside channel may be crowded.'):
- plan==='outside'?(draw==='inside'?'Inside commitment can create outside space.':'The cover may already be moving outside.'):
- 'Kick timing and chase alignment require space beyond the defensive line.';
- $('feedback').textContent='Coaching read: '+assessment+' Support: '+lane+'. This is a simplified scenario, not a guaranteed outcome.';
+ phase='counterstep';clock=0;$('finish').disabled=true;passStart=null;passEnd=null;received=false;
+ // The carrier first changes direction AWAY from the inside threat.
+ targets.a1=[-2,draw==='inside'?0:-6];
+ targets.a2=[-7,support==='outside'?10:-10];
+ // Defenders remain committed to the original carrier, not the receiver.
+ targets.d1=[-0.5,draw==='inside'?-5:-1];
+ targets.d2=[0.5,draw==='inside'?-3:1];
+ $('status').textContent='COUNTERSTEP · Carrier steps outside after drawing both defenders.';
+ $('feedback').textContent='Both defenders track the original carrier. Watch the support runner maintain depth before the release.';
+}
+function release(){
+ phase='release';clock=0;
+ if(plan==='pass'){
+  // A legal pass must travel backwards relative to the +x attack direction.
+  // Record actual carrier and receiver positions before moving the receiver.
+  const carrier=actors.a1.position,receiver=actors.a2.position;
+  passStart=[carrier.x,carrier.z];passEnd=[Math.min(receiver.x,carrier.x-1.2),receiver.z];
+  targets.a1=[2,carrier.z];
+  targets.a2=[support==='outside'?8:5,support==='outside'?11:-10];
+  $('status').textContent='BACKWARD PASS · Ball travels behind the carrier to the deeper support runner.';
+ }else{
+  targets.a1=plan==='inside'?[6,-10]:plan==='outside'?[6,8]:[5,actors.a1.position.z];
+  targets.a2=[support==='outside'?7:4,support==='outside'?11:-10];
+  $('status').textContent=plan==='kick'?'KICK & CHASE':'DUMMY & GO · Carrier attacks the chosen lane.';
+ }
+ const free=support==='outside'&&draw==='inside'&&plan==='pass';
+ $('feedback').textContent=plan==='pass'
+  ?free?'Coaching outcome: both defenders remain committed to A1. A2 receives a backward pass outside and attacks the open channel.'
+       :'Coaching outcome: A2 receives behind A1, but inside support remains within reach of the recovering defenders.'
+  :'Coaching outcome: defenders respond to the original carrier; evaluate whether the chosen running lane remains open.';
 }
 function choose(group,value){
  if(phase!=='setup')return;
@@ -92,21 +112,38 @@ function resize(){const w=holder.clientWidth,h=holder.clientHeight;camera.aspect
 let last=performance.now();
 function frame(now){
  const dt=Math.min(.05,(now-last)/1000);last=now;
- if(!paused&&(phase==='approach'||phase==='finish')){
+ if(!paused&&['approach','counterstep','release'].includes(phase)){
   clock+=dt;
   for(const [k,p] of Object.entries(targets)){
-   const a=actors[k];a.position.x+=(p[0]-a.position.x)*Math.min(1,dt*1.65);a.position.z+=(p[1]-a.position.z)*Math.min(1,dt*1.65);
+   const a=actors[k];
+   // While the pass is in flight the receiver holds depth; no running ahead of the ball.
+   if(k==='a2'&&phase==='release'&&plan==='pass'&&!received)continue;
+   a.position.x+=(p[0]-a.position.x)*Math.min(1,dt*2.2);
+   a.position.z+=(p[1]-a.position.z)*Math.min(1,dt*2.2);
   }
-  if(phase==='approach'&&clock>2.4){
-   phase='decision';$('finish').disabled=false;$('status').textContent='FIVE-YARD DECISION · Freeze. Press Finish move directly under the pitch.';
-   $('feedback').textContent='Defenders have responded. Check support depth, D1 commitment and D2 cover before the final action.';
+  if(phase==='approach'&&clock>2.5){
+   phase='decision';$('finish').disabled=false;
+   $('status').textContent='FIVE-YARD DECISION · Defenders compressed. Press Finish move under the pitch.';
+   $('feedback').textContent='Both defenders have closed on A1. A2 remains at depth. Finish to show the outside counterstep and release.';
   }
-  if(phase==='finish'){
-   const receiver=plan==='pass'&&clock>1.1;
-   if(plan==='kick'&&clock>.9){ball.position.set(actors.a1.position.x+clock*4,2+Math.sin(Math.min(1,clock/2)*Math.PI)*5,actors.a1.position.z);}
-   else {const owner=receiver?actors.a2:actors.a1;ball.position.set(owner.position.x+.75,1.4,owner.position.z);}
-   if(clock>3.8){phase='done';$('status').textContent='REVIEW · Replay or Change plan / Reset.';}
-  }else{ball.position.set(actors.a1.position.x+.75,1.4,actors.a1.position.z);}
+  if(phase==='counterstep'&&clock>1.1)release();
+  if(phase==='release'&&plan==='pass'){
+   const flight=0.85;
+   if(clock<=flight){
+    const t=Math.min(1,clock/flight);
+    ball.position.set(passStart[0]+(passEnd[0]-passStart[0])*t,1.45+Math.sin(Math.PI*t)*1.1,passStart[1]+(passEnd[1]-passStart[1])*t);
+   }else{
+    received=true;
+    ball.position.set(actors.a2.position.x+.35,1.4,actors.a2.position.z);
+    // Inside support is caught by cover; outside support can exploit the gap.
+    if(support==='inside'){targets.d2=[actors.a2.position.x+1,actors.a2.position.z+1];}
+   }
+  }else if(phase==='release'&&plan==='kick'&&clock>.65){
+   ball.position.set(actors.a1.position.x+clock*4,2+Math.sin(Math.min(1,clock/2)*Math.PI)*5,actors.a1.position.z);
+  }else{
+   ball.position.set(actors.a1.position.x+.75,1.4,actors.a1.position.z);
+  }
+  if(phase==='release'&&clock>3.5){phase='done';$('status').textContent='REVIEW · Replay or Change plan / Reset.';}
  }
  renderer.render(scene,camera);requestAnimationFrame(frame);
 }requestAnimationFrame(frame);
