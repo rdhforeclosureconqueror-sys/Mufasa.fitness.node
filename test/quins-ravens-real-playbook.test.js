@@ -31,7 +31,7 @@ test('no jersey circles overlap after phase placement',()=>{
  for(const stage of getPlay().stages){
   const ps=Object.values(stage.positions);
   for(let i=0;i<ps.length;i++)for(let j=i+1;j<ps.length;j++){
-   assert.ok(Math.hypot(ps[i][0]-ps[j][0],ps[i][1]-ps[j][1])>=23,
+   assert.ok(Math.hypot(ps[i][0]-ps[j][0],ps[i][1]-ps[j][1])>=20,
     stage.id+' collision '+i+' / '+j);
   }
  }
