@@ -28,6 +28,7 @@ root.innerHTML=`<style>
 <text x="18" y="44" fill="#ffe3a2" font-size="14" font-weight="800">ATTACK →</text>
 <g data-defense></g><g data-players></g><ellipse data-ball rx="8" ry="5" fill="#fff" stroke="#694f27" stroke-width="2"/>
 <text x="12" y="251" font-size="11" fill="#fff">Gold: attackers 1–15 · White: ball</text></svg>
+<div data-playback-clock role="status" aria-live="polite" style="padding:8px 10px;margin-top:8px;border:1px solid #bba36a;border-radius:9px">Ruck clock ready</div>
 <div class="pitch-controls" aria-label="RAVENS pitch playback and decisions">
 <button data-play>▶ Play</button><button data-pause>Pause</button><button data-replay>↺ Replay</button>
 <button data-prev>◀ Phase</button><button data-next>Next ▶</button><button data-crash>Crash</button>
@@ -49,7 +50,7 @@ root.innerHTML=`<style>
 host.prepend(root);
 const $=s=>root.querySelector(s),svgNS='http://www.w3.org/2000/svg',doc=root.ownerDocument,players=$('[data-players]'),markers={};
 for(let n=1;n<=15;n++){const g=doc.createElementNS(svgNS,'g');g.setAttribute('data-p',String(n));const c=doc.createElementNS(svgNS,'circle');c.setAttribute('r','12');c.setAttribute('fill','#e4c77d');c.setAttribute('stroke','#152b1f');c.setAttribute('stroke-width','2');const t=doc.createElementNS(svgNS,'text');t.textContent=n;t.setAttribute('text-anchor','middle');t.setAttribute('y','4');t.setAttribute('fill','#152b1f');t.setAttribute('font-size','11');t.setAttribute('font-weight','800');g.append(c,t);players.appendChild(g);markers[n]=g;}
-let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null;
+let data=null,index=0,timer=null,requestId=0,crashes=0,decisions=[],recovery=0,ballTimer=null,previousStage=null,lastRuck=null,playToken=0;
 const defenseGroup=$('[data-defense]'),defenders=[];
 function evaluateRuck(){
  const stage=data?.stages[index],isRuck=stage?.id==='ruck1'||stage?.id==='ruck2';
@@ -173,20 +174,36 @@ function animateBall(from,to){
  oval.setAttribute('transform',target);
  ballTimer=setTimeout(()=>{oval.classList.remove('in-flight');ballTimer=null;},700);
 }
-function pause(){if(timer!==null)clearInterval(timer);timer=null;}
+function pause(){playToken++;if(timer!==null)clearTimeout(timer);timer=null;}
 function render(){if(!data)return;const p=data.stages[index];evaluateRuck();if(p.id==='ruck1'||p.id==='ruck2')lastRuck=evaluateRuck();$('[data-action-status]').textContent='Phase '+(index+1)+'/'+data.stages.length+' · '+p.title+'. '+(crashes?'Crashes: '+crashes+'. ':'')+'Watch the pitch above.';for(let n=1;n<=15;n++){const pos=p.positions[n];markers[n].setAttribute('transform','translate('+pos[0]+' '+pos[1]+')');markers[n].setAttribute('opacity',p.active.includes(n)?'1':'.6');}
 animateBall(previousStage,p);previousStage=p;
 $('[data-explain]').textContent='PHASE '+p.step+'/'+data.stages.length+' · '+p.title+' — '+p.instruction+(p.ballCarrier?' Ball: #'+p.ballCarrier:' Ball secured at ruck / next carrier unspecified.');
-defenseReport();$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
+defenseReport();$('[data-playback-clock]').textContent=lastRuck?'Last ruck: '+lastRuck.time.toFixed(1)+'s · '+lastRuck.quality+' · defense '+(lastRuck.time<=3?'under pressure':'has time to recover'):'No ruck yet · watch the coach sequence';$('[data-prev]').disabled=index===0;$('[data-next]').disabled=index===data.stages.length-1;}
 async function load(branch){pause();cancelBall();previousStage=null;const id=++requestId;data=null;index=0;$('[data-content]').hidden=true;$('[data-gate]').textContent='Checking Quin team authorization…';
 const result=await window.MaatApiClient.request('/api/quins/ravens/play?branch='+encodeURIComponent(branch));
 if(id!==requestId)return;
 if(!result.ok){$('[data-gate]').textContent=result.diagnostics?.status===403?'Quin team enrollment required. Your account is signed in but not authorized for this playbook.':result.diagnostics?.status===401?'Sign in again to access the protected Quin playbook.':'Unable to load protected RAVENS playbook. Retry after deployment.';return;}
 if(!result.payload||!Array.isArray(result.payload.stages)||!result.payload.stages.length){$('[data-gate]').textContent='Playbook response invalid.';return;}
 data=result.payload;$('[data-gate]').textContent='Coach-approved RAVENS MF loaded securely.';$('[data-content]').hidden=false;render();}
-$('[data-prev]').addEventListener('click',()=>{pause();index=Math.max(0,index-1);render();});
+$('[data-prev]').addEventListener('click',()=>{pause();index=Math.max(0,index-1);lastRuck=null;render();});
 $('[data-next]').addEventListener('click',()=>{pause();index=Math.min(data.stages.length-1,index+1);render();});
-$('[data-play]').addEventListener('click',()=>{pause();if(!data)return;if(index===data.stages.length-1){index=0;previousStage=null;}render();timer=setInterval(()=>{if(index===data.stages.length-1){pause();return;}index++;render();},2100);});
+$('[data-play]').addEventListener('click',()=>{
+ pause();if(!data)return;
+ if(index===data.stages.length-1){index=0;previousStage=null;lastRuck=null;}
+ render();const token=playToken;
+ function next(){
+  if(token!==playToken||!data||index>=data.stages.length-1){timer=null;return;}
+  const stage=data.stages[index];
+  const atRuck=stage.id==='ruck1'||stage.id==='ruck2';
+  const wait=atRuck?Math.max(1200,Math.min(8000,(lastRuck||evaluateRuck()).time*1000)):2100;
+  $('[data-playback-clock]').textContent=atRuck?'Ruck contest · '+(wait/1000).toFixed(1)+'s modeled release · defenders recovering':'Running phase '+(index+1)+'/'+data.stages.length;
+  timer=setTimeout(()=>{
+   if(token!==playToken)return;
+   index++;render();next();
+  },wait);
+ }
+ next();
+});
 $('[data-pause]').addEventListener('click',pause);
 $('[data-replay]').addEventListener('click',()=>{pause();cancelBall();previousStage=null;index=0;crashes=0;recovery=0;decisions=[];lastRuck=null;render();});
 $('[data-branch]').addEventListener('change',e=>{crashes=0;recovery=0;decisions=[];lastRuck=null;load(e.target.value);});
