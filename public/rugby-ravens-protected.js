@@ -155,18 +155,32 @@ function defenseReport(){
  const maxFold=strategy==='fold'?Math.max(0,Math.min(4,crashes)-recovery-resetSteps):strategy==='rush'?Math.max(0,Math.min(2,crashes)-recovery-resetSteps):0;
  const speed=ruck?.lost?'TURNOVER RISK':ruck?.quality||'NO RUCK YET';
  $('[data-clock-defense]').textContent='Ruck clock: '+(ruck?ruck.time.toFixed(1)+'s':'not started')+' · '+speed+'. '+(ruck?.lost?'Defensive contest threatens possession.':ruck?resetSteps+' additional modeled defender(s) recover to the outside bank after the 3s target.':'Advance to a ruck to compare fast and slow ball.');
+ // Rebuild the defensive line relative to the current breakdown, rather
+ // than keeping defenders parked in two static columns at the far edge.
+ // These positions illustrate folding and offside-line recovery, not a
+ // coach-authored opposition system or measured metres.
+ const priorRuck=[...data.stages.slice(0,index+1)].reverse().find(p=>p.id==='ruck1'||p.id==='ruck2');
+ const ruckAnchor=priorRuck?.positions[priorRuck.id==='ruck1'?12:14]||carrier;
+ const lineX=Math.max(65,Math.min(340,ruckAnchor[0]+30));
+ const fast=ruck&&ruck.time<=3;
+ const foldCount=strategy==='hold'?0:strategy==='rush'?Math.min(2,maxFold+1):maxFold;
+ const recoverCount=fast?Math.max(3,7-resetSteps):Math.max(6,8-resetSteps);
+ const ordered=[...Array(15).keys()];
  for(let n=0;n<15;n++){
-  // A baseline of two defensive banks, moving in response to phase and chosen strategy.
-  const row=n%8,bank=Math.floor(n/8);
-  let x=bank===0?290:335,y=52+row*23;
-  if(strategy==='fold'&&n>=8-maxFold&&n<8){x=carrier[0]+34;y=carrier[1]+(n-6)*12;}
-  if(strategy==='rush'&&n<2){x=Math.min(360,carrier[0]+22+n*9);y=carrier[1]+(n?14:-14);}
+  const slot=n%8,bank=Math.floor(n/8);
+  const spread=(slot-3.5)*24;
+  const fold=n<foldCount;
+  const isRecovering=n>=foldCount&&n<foldCount+recoverCount;
+  let x=lineX+(bank*19)+(fold?-7:0)+(isRecovering?0:fast?35:13);
+  let y=ruckAnchor[1]+spread+(bank?12:0);
+  if(fold){x=lineX+7;y=ruckAnchor[1]+(n-(foldCount-1)/2)*17;}
+  if(strategy==='rush'&&n<2){x=lineX-10;y=ruckAnchor[1]+(n?12:-12);}
   defenders[n].setAttribute('cx',Math.max(18,Math.min(374,x)));
   defenders[n].setAttribute('cy',Math.max(53,Math.min(235,y)));
  }
- const remaining=8-maxFold;
+ const remaining=15-foldCount;
  $('[data-report]').textContent=!enabled?'Without Defense: study the coach sequence. Switch on defense to test your decisions.':
- 'Defensive experiment: '+crashes+' crash(es), '+recovery+' defensive recovery step(s), current coach phase '+(index+1)+'/'+data.stages.length+'. '+(strategy==='fold'?maxFold+' modeled defenders have folded toward the repeated carry; '+remaining+' remain in the original outside bank.':strategy==='hold'?'Defenders hold their width despite the crashes; no automatic overload.':'Two defenders pressure the carrier; the rest retain their shape.')+
+ 'Defensive experiment: '+crashes+' crash(es), '+recovery+' defensive recovery step(s), current coach phase '+(index+1)+'/'+data.stages.length+'. '+(strategy==='fold'?foldCount+' modeled defenders have folded toward the breakdown; '+remaining+' are reorganizing into defensive width.':strategy==='hold'?'Defenders hold their width while shifting the defensive line with the breakdown; no automatic overload.':'Two defenders pressure the carrier while the remaining defenders realign around the breakdown.')+
  (decisions.length?' Last decision: '+decisions.at(-1)+'.':'')+
  ' These are simplified responses, not guaranteed real-match outcomes.';
  applyPitchView();
