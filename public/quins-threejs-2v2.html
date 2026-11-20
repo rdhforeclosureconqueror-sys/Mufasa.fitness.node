@@ -88,7 +88,7 @@ for(const group of ['support','draw','plan'])document.querySelectorAll('[data-'+
 $('play').onclick=play;$('finish').onclick=finish;$('pause').onclick=()=>{paused=!paused;$('pause').textContent=paused?'Resume':'Pause'};
 $('reset').onclick=reset;$('replay').onclick=()=>{if(lastPlan){({support,draw,plan}=lastPlan);phase='setup';setPositions();updateSummary();play()}else reset()};
 $('camera').onclick=()=>{cameraIndex=(cameraIndex+1)%3;setCamera()};
-function resize(){const w=holder.clientWidth,h=holder.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}new ResizeObserver(resize).observe(holder);resize();newRep();
+function resize(){const w=holder.clientWidth,h=holder.clientHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false)}new ResizeObserver(resize).observe(holder);resize();reset();
 let last=performance.now();
 function frame(now){
  const dt=Math.min(.05,(now-last)/1000);last=now;
