@@ -1,19 +1,20 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Play Rugby HQ | Milele Fit</title><style>
-:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#081b17;color:#f3f7f2}*{box-sizing:border-box}body{margin:0;overflow:hidden}header{height:92px;padding:12px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}a{color:#d8c08a}button{background:#d8c08a;color:#10251b;border:0;border-radius:9px;padding:12px 20px;font-weight:800;cursor:pointer}button:disabled{opacity:.5}#canvas{display:block;width:100%;height:calc(100dvh - 92px);outline:none}#canvas:focus-visible{outline:2px solid #64dfb5;outline-offset:-2px}#overlay{position:fixed;inset:92px 0 0;display:grid;place-content:center;text-align:center;background:#081b17f5;padding:24px}#overlay[hidden]{display:none}progress{width:min(400px,80vw);margin:20px auto}#message{max-width:650px;line-height:1.6}#controls{font-size:14px;margin:0;color:#b8cdc3}#fullscreen{margin-left:auto}#hint{font-size:12px;color:#c1e5d1}#canvas:fullscreen{height:100dvh;width:100vw}@media(max-width:650px){header{height:130px;gap:8px}#canvas{height:calc(100dvh - 130px)}#overlay{top:130px}}
+:root{color-scheme:dark;font-family:system-ui,sans-serif;background:#081b17;color:#f3f7f2}*{box-sizing:border-box}body{margin:0;overflow:hidden}header{height:92px;padding:12px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}a{color:#d8c08a}button{background:#d8c08a;color:#10251b;border:0;border-radius:9px;padding:12px 20px;font-weight:800;cursor:pointer}button:disabled{opacity:.5}#canvas{display:block;width:100%;height:calc(100dvh - 92px);outline:none;touch-action:none}#canvas:focus-visible{outline:2px solid #64dfb5;outline-offset:-2px}#overlay{position:fixed;inset:92px 0 0;display:grid;place-content:center;text-align:center;background:#081b17f5;padding:24px}#overlay[hidden]{display:none}progress{width:min(400px,80vw);margin:20px auto}#message{max-width:650px;line-height:1.6}#controls{font-size:14px;margin:0;color:#b8cdc3}#fullscreen{margin-left:auto}#hint{font-size:12px;color:#c1e5d1}#canvas:fullscreen{height:100dvh;width:100vw}@media(max-width:650px){header{height:130px;gap:8px}#canvas{height:calc(100dvh - 130px)}#overlay{top:130px}}
 </style>$GODOT_HEAD_INCLUDE</head><body>
 <header><a href="/rugby.html">← Rugby HQ</a><strong>QUIN NATION · 2v1</strong><button id="fullscreen" type="button">Fullscreen</button><p id="controls">WASD / arrows: run · Shift: walk · Space / PASS: pass · R: reset · Right-drag: camera</p><span id="hint">Click the field to focus keyboard controls. Press R after a tackle.</span></header>
 <canvas id="canvas" tabindex="0" aria-label="Rugby HQ 3D training field"></canvas>
-<section id="overlay" aria-live="polite"><h1>Rugby HQ · 2v1</h1><p id="message">Train with Rashad, a support runner and a defender. Desktop keyboard recommended.</p><progress id="progress" hidden></progress><button id="start">PLAY RUGBY HQ</button><p><a href="/rugby.html">Back to Rugby HQ</a></p></section>
+<section id="overlay" aria-live="polite"><h1>Rugby HQ · 2v1</h1><p id="message">Train with Rashad, a support runner and a defender. On phones, rotate to landscape and use the joystick and PASS button.</p><progress id="progress" hidden></progress><button id="start">PLAY RUGBY HQ</button><p><a href="/rugby.html">Back to Rugby HQ</a></p></section>
 <noscript>Enable JavaScript to play Rugby HQ.</noscript>
 <script src="$GODOT_URL"></script><script>
 'use strict';
 const canvas=document.getElementById('canvas'),overlay=document.getElementById('overlay'),message=document.getElementById('message'),progress=document.getElementById('progress'),start=document.getElementById('start');
 const configuration=$GODOT_CONFIG;
 const qa=new URLSearchParams(location.search).get('qa')==='1';
-configuration.canvas=canvas; configuration.canvasResizePolicy=2;
+configuration.canvas=canvas; configuration.canvasResizePolicy=0;
 configuration.args=qa?['--','--web-qa']:[];
+function resizeCanvas(){canvas.width=Math.max(1,Math.round(canvas.clientWidth));canvas.height=Math.max(1,Math.round(canvas.clientHeight));} new ResizeObserver(resizeCanvas).observe(canvas);resizeCanvas();
 let started=false,ready=false,watchdog;
 window.rugbyErrors=[];
 function fail(error){clearTimeout(watchdog);document.body.dataset.gameState='error';overlay.hidden=false;progress.hidden=true;message.textContent='The game could not start: '+String(error)+'. Try an up-to-date desktop Chrome, Edge or Firefox browser with WebGL 2 enabled.';start.disabled=false;start.textContent='Reload game';start.onclick=()=>location.reload();}

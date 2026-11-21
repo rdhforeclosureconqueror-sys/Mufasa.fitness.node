@@ -16,8 +16,8 @@
       "sha256": "5b476a9c9ce642c0ee4256436d1bc31d9c38f868aca0f9a8e2a57c18d2dec2a3"
     },
     "index.html": {
-      "bytes": 5196,
-      "sha256": "6786b530613725a1ff71dca36e573b6a2d52a053a34136def19643d07b83c7e5"
+      "bytes": 5458,
+      "sha256": "a5ecd2d08f9da0610155a2157c4e3dbc28cd94d03ebd001416c1d33ab07bdcfa"
     },
     "index.icon.png": {
       "bytes": 5769,
@@ -28,8 +28,8 @@
       "sha256": "8a7c7d57f7da69bb71da9de302480b87e4c7ecb467ce643665b4a288683cd18f"
     },
     "index.pck": {
-      "bytes": 36933380,
-      "sha256": "42375713a2233236799fe4e95312e9390710b4ac6a72e370d8f6990442f0dfad"
+      "bytes": 72074228,
+      "sha256": "7eb54adf46b789889fe5352e87cc6e94e285b4c6c49f377ba33952bbae87aad6"
     },
     "index.png": {
       "bytes": 21443,

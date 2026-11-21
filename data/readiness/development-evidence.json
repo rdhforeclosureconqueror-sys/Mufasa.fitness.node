@@ -6686,6 +6686,25 @@
       "prNumber": 1392,
       "commitSha": "03ff190ca42b2a46c74d09c94c3c3a3728ee29b3",
       "timestamp": "2026-11-21T21:05:11.533Z"
+    },
+    {
+      "operationId": "c5d5b1b1-7dbe-4038-9cbf-2e37d999a446",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "godot/rugby-hq-web/project.godot",
+        "godot/rugby-hq-web/export_presets.cfg",
+        "godot/rugby-hq-web/web-shell.html",
+        "scripts/check-rugby-device-browser.js",
+        "docs/rugby/web-validation/mobile-chromium.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Mobile texture export fixed; 27 frontend/package/rugby tests pass; full keyboard browser regression passes; desktop and phone portrait/landscape touch tests pass including joystick movement and PASS. Screenshots inspected for rendering, not human UX acceptance. Frontend build passes. iPhone Safari acceptance remains pending. Ready for CI and production deployment.",
+      "prNumber": 1392,
+      "commitSha": null,
+      "timestamp": "2026-11-21T23:26:28.620Z"
     }
   ]
 }

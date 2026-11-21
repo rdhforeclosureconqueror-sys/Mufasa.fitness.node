@@ -1,6 +1,6 @@
 # Rugby HQ Web integration
 
-Status: local export and browser regression pass; visual inspection, PR, deployment and human acceptance pending.
+Status: local export, desktop/mobile-emulation browser regression and screenshot inspection pass. PR #1392 prepared; production deployment and human iPhone acceptance pending.
 
 Windows source C:\Users\pftgu\Documents\rugby-hq is unchanged. Independent Web source is godot/rugby-hq-web. Exported assets are public/game/rugby-hq. Existing /rugby.html and Community Hub entry are retained.
 
@@ -19,7 +19,7 @@ Readiness validation passed with READINESS_PREVIOUS_EVIDENCE_FILE holding exact 
 ## Hosting
 Serve .wasm as application/wasm, .js as JavaScript and .pck as binary, without HTML fallback. Single-thread export needs no cross-origin isolation headers. Host may negotiate compression normally. Browser shell provides loading/error states, focus, scroll prevention, fullscreen and back navigation. QA diagnostics require ?qa=1.
 
-Chrome headless is tested. Visible rendering/fullscreen, other browsers, mobile and live route are unverified.
+Chrome desktop and touch-enabled portrait/landscape viewports tested, including joystick drag and touch PASS. Screenshots inspected: field, original avatars, ball, walls and controls render. Portrait is letterboxed; landscape recommended. Actual iPhone Safari, fullscreen and production route remain unverified. Mobile ETC2/ASTC textures included. Canvas resize respects header space.
 
 ## Deployment and rollback
 Target static service: srv-d4qicd7diees739b6n7g, main branch, npm run build:frontend, dist. PR previews disabled. Same repository also auto-deploys backend srv-d4qdha49c44c73bb7vbg; no backend code, configuration or data changes are intended.
@@ -30,3 +30,5 @@ Planned public URL (not yet deployed): https://mufasafitsite.onrender.com/game/r
 Local preview: http://127.0.0.1:8780/game/rugby-hq/index.html
 Rollback baseline: frontend deploy dep-dc0bkih42hec73f3nlrg at commit 541c9f66000ed3abbaf828d0511fdc207317935d. Package archive directory inspection and existing rugby isolation/prototype regressions: 8 tests passed.
 
+
+Device browser regression dependency: npm install --prefix tmp/rugby-browser --no-save --package-lock=false playwright. Run node scripts/check-rugby-device-browser.js; RUGBY_TEST_URL selects the local or production origin. Windows source is not a Git repo; exact source hashes are recorded in web-validation/windows-baseline.json. Local rollback branch: rollback/rugby-hq-pre-web-20261121.

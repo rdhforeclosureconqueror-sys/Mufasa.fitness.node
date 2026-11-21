@@ -26,6 +26,6 @@ func _process(delta: float) -> void:
 		"holder": String(drill.possession.name) if drill.possession else "",
 		"passes": drill.pass_count, "ball": [drill.ball.position.x,drill.ball.position.y,drill.ball.position.z],
 		"ball_visible": drill.ball.is_visible_in_tree(), "walls": drill.get_node("Perimeter").get_child_count(),
-		"players": drill.get_node("Players").get_child_count(), "bones": skeleton.get_bone_count(),
+		"joystick_visible": drill.get_node("HUD/VirtualJoystick").is_visible_in_tree(), "players": drill.get_node("Players").get_child_count(), "bones": skeleton.get_bone_count(),
 		"button_screen": [button_screen.x,button_screen.y], "mouse": [get_viewport().get_mouse_position().x,get_viewport().get_mouse_position().y], "button_hover": drill.get_node("HUD/PassButton").is_hovered(), "over": drill._game_over, "viewport": [get_viewport().get_visible_rect().size.x,get_viewport().get_visible_rect().size.y], "pass_center": [drill.get_node("HUD/PassButton").get_global_rect().get_center().x,drill.get_node("HUD/PassButton").get_global_rect().get_center().y]}
 	JavaScriptBridge.get_interface("window").rugbyReport(JSON.stringify(state))

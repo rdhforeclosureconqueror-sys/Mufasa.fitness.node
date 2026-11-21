@@ -4,8 +4,9 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://l8t33po83p7o"
 path.s3tc="res://.godot/imported/rashad_run_corrected_Image_5.jpg-f2cf659214b156c6d9db46e425173a98.s3tc.ctex"
+path.etc2="res://.godot/imported/rashad_run_corrected_Image_5.jpg-f2cf659214b156c6d9db46e425173a98.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 generator_parameters={
@@ -15,7 +16,7 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/characters/rashad/rashad_run_corrected_Image_5.jpg"
-dest_files=["res://.godot/imported/rashad_run_corrected_Image_5.jpg-f2cf659214b156c6d9db46e425173a98.s3tc.ctex"]
+dest_files=["res://.godot/imported/rashad_run_corrected_Image_5.jpg-f2cf659214b156c6d9db46e425173a98.s3tc.ctex", "res://.godot/imported/rashad_run_corrected_Image_5.jpg-f2cf659214b156c6d9db46e425173a98.etc2.ctex"]
 
 [params]
 
