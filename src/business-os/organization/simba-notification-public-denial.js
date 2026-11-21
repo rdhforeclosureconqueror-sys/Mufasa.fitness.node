@@ -23,9 +23,11 @@ function createSimbaNotificationPublicDenialCheck({pool}={}){
     has_table_privilege(c.oid,'REFERENCES') AS can_reference,
     has_table_privilege(c.oid,'TRIGGER') AS can_trigger
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
-    WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','f','S')`);
-  const accessible=result.rows.filter(r=>Object.entries(r).some(([k,v])=>k.startsWith("can_")&&v===true)).map(r=>r.relname);
-  return Object.freeze({status:accessible.length||!result.rows.length?"NOT_READY":"PUBLIC_ACCESS_DENIED",publicTableDenialVerified:accessible.length===0&&result.rows.length>0,publicObjectsChecked:result.rows.length,accessiblePublicObjects:Object.freeze(accessible)});
+    WHERE n.nspname='public' AND c.relkind IN ('r','p','v','m','f')`);
+  const sequences=await pool.query("SELECT c.relname,has_sequence_privilege(c.oid,'USAGE') AS can_usage,has_sequence_privilege(c.oid,'SELECT') AS can_select,has_sequence_privilege(c.oid,'UPDATE') AS can_update FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind='S'");
+  const sequenceAccess=sequences.rows.filter(r=>r.can_usage===true||r.can_select===true||r.can_update===true).map(r=>r.relname);
+  const accessible=result.rows.filter(r=>Object.entries(r).some(([k,v])=>k.startsWith("can_")&&v===true)).map(r=>r.relname).concat(sequenceAccess);
+  return Object.freeze({status:accessible.length||!result.rows.length?"NOT_READY":"PUBLIC_ACCESS_DENIED",publicTableDenialVerified:accessible.length===0&&result.rows.length>0,publicObjectsChecked:result.rows.length+sequences.rows.length,accessiblePublicObjects:Object.freeze(accessible)});
  }
  return Object.freeze({inspect});
 }
