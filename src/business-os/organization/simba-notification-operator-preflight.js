@@ -9,7 +9,7 @@ function planSimbaNotificationActivation({databaseName,publicTableCount,schemaPr
   existingSimbaTablesPreserved:Number.isSafeInteger(publicTableCount)&&publicTableCount>=69,
   isolatedSchemaNotYetInstalled:schemaPresent===false,
   runtimeRoleNotYetInstalled:runtimeRolePresent===false,
-  backupRecorded:typeof backupExportAt==="string"&&/^\\d{4}-\\d{2}-\\d{2}T/.test(backupExportAt)&&!Number.isNaN(Date.parse(backupExportAt)),
+  backupRecorded:typeof backupExportAt==="string"&&/^\d{4}-\d{2}-\d{2}T/.test(backupExportAt)&&!Number.isNaN(Date.parse(backupExportAt)),
   offsiteCopyConfirmed:backupSaved===true,
   restoreVerified:restoreTested===true
  });
