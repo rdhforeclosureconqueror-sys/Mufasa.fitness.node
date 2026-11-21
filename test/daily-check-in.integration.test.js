@@ -5,17 +5,11 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const vm = require("node:vm");
 const { createApp } = require("../server");
 
-test("member check-in persists and updates dashboard; diagnostic is admin-only", { timeout: 15000 }, async (t) => {
-  Object.assign(process.env, {
-    AUTH_TOKEN_SECRET: "daily-check-in-integration-test-secret",
-    PILOT_LOGIN_PASSWORD: "diagnostic-admin-password",
-    LOGIN_SEED_EMAIL: "owner@example.test",
-    AUTHZ_BOOTSTRAP_SUPER_ADMIN_USER_IDS: "pilot_admin"
-  });
-  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "daily-check-in-http-"));
+test("Community Wellness members receive one daily check-in and no XP", { timeout: 15000 }, async (t) => {
+  Object.assign(process.env, { AUTH_TOKEN_SECRET: "daily-check-in-integration-test-secret" });
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "community-daily-check-in-http-"));
   const server = createApp({ dataDir: directory }).listen(0);
   await new Promise((resolve) => server.once("listening", resolve));
   t.after(async () => {
@@ -28,45 +22,36 @@ test("member check-in persists and updates dashboard; diagnostic is admin-only",
       headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
       body: body && JSON.stringify(body)
     });
-    return { status: response.status, ok: response.ok, payload: await response.json() };
+    return { status: response.status, payload: await response.json() };
   }
 
-  const route = "/api/me/daily-check-in";
-  const diagnostic = "/api/admin/diagnostics/daily-check-in/run";
-  assert.equal((await request(route, { method: "POST" })).status, 401, "Require member authentication");
+  const route = "/api/me/residential-community/daily-check-in";
+  assert.equal((await request(route, { method: "POST" })).status, 401);
   const credentials = { email: "daily@example.test", password: "synthetic-member-password" };
   await request("/api/auth/register", { method: "POST", body: { ...credentials, name: "Daily Test" } });
   const member = (await request("/api/auth/login", { method: "POST", body: credentials })).payload;
-  assert.ok(member.token, "Authenticate synthetic member");
-  assert.equal((await request(diagnostic, { method: "POST", token: member.token })).status, 403);
+  assert.ok(member.token);
+  assert.equal((await request(route, { method: "POST", token: member.token })).status, 403, "Only Community Wellness members qualify");
 
-  const status = {};
-  let click;
-  const button = { addEventListener(_event, callback) { click = callback; } };
-  const panel = { querySelector: (selector) => selector === "button" ? button : status };
-  vm.runInNewContext(fs.readFileSync(path.join(__dirname, "../public/daily-check-in.js"), "utf8"), {
-    document: { querySelector: (selector) => selector === "[data-daily-check-in]" ? panel : null },
-    window: {
-      AuthStateRuntime: { whenReady: () => Promise.resolve() },
-      MaatApiClient: { request: (url, options) => request(url, { ...options, token: member.token }) }
-    }
+  const joined = await request("/api/me/residential-wellness", {
+    method: "PUT", token: member.token, body: { interests: ["yoga"], communicationConsent: true }
   });
-  assert.equal(typeof click, "function", "Dashboard wired the check-in button");
-  while (!status.textContent) await new Promise((resolve) => setImmediate(resolve));
-  assert.match(status.textContent, /Ready for today/);
-  await click();
-  assert.equal(status.textContent, "Check-in complete. Current streak: 1 day. Next milestone: 3 days.");
-  assert.equal(button.disabled, true, "Dashboard reflects completion without reload");
+  assert.equal(joined.status, 200);
+  assert.equal((await request(route, { token: member.token })).payload.data.completed, false);
+  const first = await request(route, { method: "POST", token: member.token });
+  assert.equal(first.status, 200);
+  assert.equal(first.payload.data.streak, 1);
+  assert.equal(first.payload.data.xpAwarded, 0);
   const retry = await request(route, { method: "POST", token: member.token });
-  assert.equal(retry.payload.data.streak, 1);
+  assert.equal(retry.payload.data.streak, 1, "Same-day retry is deduplicated");
   const persisted = JSON.parse(fs.readFileSync(path.join(directory, "users", member.user.id + ".json"), "utf8"));
-  assert.equal(persisted.dailyCheckIns.length, 1);
+  assert.equal(persisted.residentialCommunity.dailyCheckIns.length, 1);
   assert.equal(fs.existsSync(path.join(directory, "gamification", "events.json")), false);
 
-  const admin = (await request("/api/auth/login", {
-    method: "POST",
-    body: { email: "owner@example.test", password: "diagnostic-admin-password" }
-  })).payload;
-  assert.ok(admin.token, "Authenticate synthetic admin");
-  assert.equal((await request(diagnostic, { method: "POST", token: admin.token })).payload.data.passed, true);
+  const hub = fs.readFileSync(path.join(__dirname, "../public/community-hub.html"), "utf8");
+  const script = fs.readFileSync(path.join(__dirname, "../public/community-hub.js"), "utf8");
+  const dashboard = fs.readFileSync(path.join(__dirname, "../public/dashboard.html"), "utf8");
+  assert.match(hub, /YOUR DAILY COMMUNITY MOMENTUM/);
+  assert.match(script, /residential-community\/daily-check-in/);
+  assert.doesNotMatch(dashboard, /daily-check-in/);
 });
