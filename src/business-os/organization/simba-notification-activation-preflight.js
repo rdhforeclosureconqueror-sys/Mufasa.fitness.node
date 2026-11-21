@@ -11,7 +11,7 @@ function createSimbaNotificationActivationPreflight({pool}={}){
    pool.query("SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname=$1) AS present",[SCHEMA]),
    pool.query("SELECT table_name FROM information_schema.tables WHERE table_schema=$1 AND table_type='BASE TABLE'",[SCHEMA]),
    pool.query("SELECT rolname,rolsuper,rolcreatedb,rolcreaterole FROM pg_roles WHERE rolname=$1",[runtimeRole]),
-   pool.query(`SELECT c.relname,has_table_privilege($1,c.oid,'SELECT') AS can_select,has_table_privilege($1,c.oid,'INSERT') AS can_insert,has_table_privilege($1,c.oid,'UPDATE') AS can_update,has_table_privilege($1,c.oid,'DELETE') AS can_delete
+   pool.query(`SELECT c.relname,has_table_privilege(to_regrole($1),c.oid,'SELECT') AS can_select,has_table_privilege(to_regrole($1),c.oid,'INSERT') AS can_insert,has_table_privilege(to_regrole($1),c.oid,'UPDATE') AS can_update,has_table_privilege(to_regrole($1),c.oid,'DELETE') AS can_delete
     FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname=$2 AND c.relkind IN ('r','p')`,[runtimeRole,SCHEMA])
   ]);
   const schemaPresent=schema.rows[0]?.present===true;
