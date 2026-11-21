@@ -1,0 +1,16 @@
+name: Simba notification schema isolation
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/simba-notification-schema-migration.js'
+      - 'test/simba-notification-schema-migration.test.js'
+      - '.github/workflows/simba-notification-schema-migration.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/simba-notification-schema-migration.test.js test/notification-recovery-reconciliation.test.js
