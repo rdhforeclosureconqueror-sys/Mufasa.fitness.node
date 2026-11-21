@@ -1,0 +1,16 @@
+name: Simba notification public denial
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/simba-notification-public-denial.js'
+      - 'test/simba-notification-public-denial.test.js'
+      - '.github/workflows/simba-notification-public-denial.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/simba-notification-public-denial.test.js test/simba-notification-activation-preflight.test.js
