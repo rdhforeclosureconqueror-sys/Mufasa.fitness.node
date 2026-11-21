@@ -1,37 +1,58 @@
 "use strict";
 const crypto=require("node:crypto");
 const DESTINATION="rdhforeclosureconqueror@gmail.com";
-function describe(value){
- if(value==null||value==="")return "Not available";
- if(typeof value==="string"||typeof value==="number"||typeof value==="boolean")return String(value);
- if(Array.isArray(value))return value.map((item,i)=>"  "+(i+1)+". "+describe(item)).join("\n");
- if(typeof value==="object")return Object.entries(value).map(([key,item])=>key+": "+describe(item)).join("\n");
- return String(value);
+function valueText(value){
+ if(value==null||value==="")return "";
+ if(typeof value==="string"||typeof value==="number")return String(value);
+ if(Array.isArray(value))return value.map(valueText).filter(Boolean).join(", ");
+ if(typeof value==="object")return value.label||value.name||value.title||value.preview||"";
+ return "";
 }
+function addField(lines,label,value){const text=valueText(value);if(text)lines.push(label+": "+text);}
 function buildSoundAssessmentEmailText({assessmentId,mode,createdAt,result}){
- const lines=[
-  "Milele Fit — "+(mode==="deep"?"Full":"Quick")+" Sound Assessment",
-  "Assessment ID: "+assessmentId,
-  "Received: "+createdAt,
-  "",
-  "ASSESSMENT INTERPRETATION",
-  "Primary: "+describe(result?.primary),
-  "Secondary: "+describe(result?.secondary),
-  "Summary: "+describe(result?.summary),
-  "",
-  "SECTION BREAKDOWN",
-  describe(result?.sections),
-  "",
-  "SOUND SESSION GUIDANCE",
-  "Sound preview: "+describe(result?.soundPreview),
-  "Sound foundation: "+describe(result?.soundFoundation),
-  "",
-  "Confidence: "+describe(result?.confidence),
-  "Suggested next step: "+describe(result?.cta),
-  "",
-  "This email contains the interpretation, not the raw question-by-question answers.",
-  "Assessment records are also saved by the Milele Fit backend."
- ];
+ const lines=["Milele Fit — "+(mode==="deep"?"Full":"Quick")+" Sound Assessment","Assessment ID: "+assessmentId,"Received: "+createdAt,"","ASSESSMENT OVERVIEW"];
+ addField(lines,"Primary focus",result?.primary);
+ addField(lines,"Secondary focus",result?.secondary);
+ addField(lines,"Summary",result?.summary);
+ if(Array.isArray(result?.sections)&&result.sections.length){
+  lines.push("","YOUR ASSESSMENT BREAKDOWN");
+  result.sections.forEach((section,index)=>{
+   lines.push("",(index+1)+". "+valueText(section.title));
+   if(section.preview)lines.push(valueText(section.preview));
+   if(section.detail)lines.push(valueText(section.detail));
+  });
+ }
+ if(result?.soundPreview||result?.soundFoundation){
+  lines.push("","SOUND SESSION GUIDANCE");
+  if(result.soundPreview){
+   addField(lines,"Direction",result.soundPreview.title);
+   addField(lines,"Starting intention",result.soundPreview.preview);
+   addField(lines,"Practitioner notes",result.soundPreview.detail);
+  }
+  const foundation=result.soundFoundation;
+  if(foundation){
+   addField(lines,"Foundation",foundation.name);
+   if(Array.isArray(foundation.bowls))foundation.bowls.forEach((bowl,index)=>{
+    const name=typeof bowl==="string"?bowl:(bowl?.name||bowl?.label||bowl?.chakra||"Bowl "+(index+1));
+    lines.push("Bowl "+(index+1)+": "+name);
+    if(bowl&&typeof bowl==="object"){
+     for(const key of ["note","frequency","role","purpose"])addField(lines,"  "+key[0].toUpperCase()+key.slice(1),bowl[key]);
+    }
+   });
+   for(const [label,key] of [["Direction","direction"],["Accent notes","accentNotes"],["Pulse","pulse"],["Bija mantra","bijaMantra"],["Closing","closing"]])addField(lines,label,foundation[key]);
+  }
+ }
+ if(result?.confidence){
+  lines.push("","INTERPRETATION CONFIDENCE");
+  addField(lines,"Level",result.confidence.label);
+  addField(lines,"Context",result.confidence.note);
+ }
+ if(result?.cta){
+  lines.push("","SUGGESTED NEXT STEP");
+  addField(lines,"Next step",result.cta.title);
+  addField(lines,"Why",result.cta.preview);
+ }
+ lines.push("","This message includes the interpretation, not the individual answers.","Assessment records are saved by Milele Fit.");
  return lines.join("\n");
 }
 async function sendSoundAssessmentEmail({assessmentId,mode,createdAt,result,env=process.env,fetchImpl=globalThis.fetch}){
