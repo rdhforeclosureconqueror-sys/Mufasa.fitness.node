@@ -1,0 +1,23 @@
+name: Avatar Original vs Community Picker Parity
+on:
+  pull_request:
+    paths:
+      - 'public/workout.html'
+      - 'public/push-up-release.html'
+      - 'public/community-avatar-setup-mode.js'
+      - 'scripts/acceptance-avatar-picker-parity.js'
+      - '.github/workflows/avatar-picker-parity.yml'
+  workflow_dispatch:
+jobs:
+  mobile-file-input-parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm install --no-save --ignore-scripts --no-audit --no-fund playwright
+      - run: npx playwright install --with-deps chromium
+      - run: node scripts/acceptance-avatar-picker-parity.js
