@@ -6669,6 +6669,23 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-21T21:02:47.840Z"
+    },
+    {
+      "operationId": "8681c285-4aff-44d6-b5d5-a145f5ffedf8",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby.html",
+        "test/rugby-godot-web.test.js",
+        "docs/rugby/web-integration.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Draft PR 1392 created. Local export, Chrome gameplay regression, package tests and frontend build pass. No production deployment. Visible Chrome inspection blocked by browser-control geometry errors; owner acceptance remains pending.",
+      "prNumber": 1392,
+      "commitSha": "03ff190ca42b2a46c74d09c94c3c3a3728ee29b3",
+      "timestamp": "2026-11-21T21:05:11.533Z"
     }
   ]
 }
