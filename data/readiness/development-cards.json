@@ -908,6 +908,20 @@
       "createdAt": "2026-11-12T16:56:11.501Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-hq-web",
+      "board": "launch",
+      "canonical": false,
+      "title": "Rugby HQ Godot Web integration",
+      "category": "RUGBY HQ",
+      "description": "Preserve Windows project; export independent GDScript 2v1 Web build, reuse Rugby HQ landing page, validate preview, deploy and request owner acceptance.",
+      "priority": "CRITICAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-21T17:40:41.784Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

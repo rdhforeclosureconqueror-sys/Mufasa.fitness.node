@@ -4,6 +4,10 @@ on:
     branches: [main]
     paths:
       - 'public/rugby-player.html'
+      - 'public/rugby.html'
+      - 'public/game/rugby-hq/**'
+      - 'godot/rugby-hq-web/**'
+      - 'scripts/*rugby-web*.js'
       - 'public/rugby-attack-intelligence.js'
       - 'src/rugby/**'
       - 'src/routes/rugbyProfileRoutes.js'
@@ -12,6 +16,10 @@ on:
   pull_request:
     paths:
       - 'public/rugby-player.html'
+      - 'public/rugby.html'
+      - 'public/game/rugby-hq/**'
+      - 'godot/rugby-hq-web/**'
+      - 'scripts/*rugby-web*.js'
       - 'public/rugby-attack-intelligence.js'
       - 'src/rugby/**'
       - 'src/routes/rugbyProfileRoutes.js'
@@ -28,6 +36,6 @@ jobs:
         with:
           node-version: '22'
       - name: Run rugby contract tests
-        run: node --test test/rugby-attack-intelligence.test.js test/rugby-acceptance-contract.test.js test/rugby-assessment-validation.test.js test/rugby-checkin-validation.test.js test/rugby-inseason-plan.test.js test/rugby-profile-validation.test.js
+        run: node --test test/rugby-godot-web.test.js test/rugby-attack-intelligence.test.js test/rugby-acceptance-contract.test.js test/rugby-assessment-validation.test.js test/rugby-checkin-validation.test.js test/rugby-inseason-plan.test.js test/rugby-profile-validation.test.js
       - name: Smoke test live Rugby HQ assets
         run: node --test test/rugby-live-public-smoke.test.js

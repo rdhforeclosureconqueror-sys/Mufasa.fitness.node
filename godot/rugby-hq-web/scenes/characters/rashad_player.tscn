@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/characters/rugby_player.gd" id="1_player"]
+[ext_resource type="PackedScene" path="res://assets/characters/rashad/rashad1.glb" id="2_avatar"]
+
+[sub_resource type="CapsuleShape3D" id="Capsule_player"]
+radius = 0.32
+height = 1.82
+
+[node name="RashadPlayer" type="CharacterBody3D"]
+collision_layer = 1
+collision_mask = 1
+script = ExtResource("1_player")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.91, 0)
+shape = SubResource("Capsule_player")
+
+[node name="AvatarModel" parent="." instance=ExtResource("2_avatar")]
+position = Vector3(0, 0, 0)
+
+[node name="NameTag" type="Label3D" parent="."]
+position = Vector3(0, 2.08, 0)
+pixel_size = 0.005
+billboard = 1
+font_size = 30
+text = "PLAYER"

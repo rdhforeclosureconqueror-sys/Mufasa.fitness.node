@@ -1,0 +1,41 @@
+{
+  "base": "http://127.0.0.1:8780",
+  "results": [
+    {
+      "mode": "desktop",
+      "pass": true,
+      "touch": false,
+      "canvas": {
+        "x": 0,
+        "y": 92,
+        "width": 1280,
+        "height": 808
+      },
+      "errors": []
+    },
+    {
+      "mode": "phone-landscape",
+      "pass": true,
+      "touch": true,
+      "canvas": {
+        "x": 0,
+        "y": 92,
+        "width": 844,
+        "height": 298
+      },
+      "errors": []
+    },
+    {
+      "mode": "phone-portrait",
+      "pass": true,
+      "touch": true,
+      "canvas": {
+        "x": 0,
+        "y": 130,
+        "width": 390,
+        "height": 714
+      },
+      "errors": []
+    }
+  ]
+}
