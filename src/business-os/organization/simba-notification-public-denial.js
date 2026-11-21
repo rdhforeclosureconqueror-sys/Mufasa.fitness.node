@@ -3,7 +3,8 @@
 // never using Simba's owner/administrator pool. No data reads or writes to application tables.
 function createSimbaNotificationPublicDenialCheck({pool}={}){
  if(typeof pool?.query!=="function")throw Error("notification_denial_runtime_pool_required");
- async function inspect({expectedRole}={}){\n  if(typeof expectedRole!==\"string\"||!/^\\w[a-z0-9_]{0,62}$/.test(expectedRole))throw Error(\"notification_denial_expected_role_required\");
+ async function inspect({expectedRole}={}){
+  if(typeof expectedRole!==\"string\"||!/^\\w[a-z0-9_]{0,62}$/.test(expectedRole))throw Error(\"notification_denial_expected_role_required\");
   const identity=await pool.query("SELECT current_user AS username, current_setting('search_path') AS search_path");
   const username=identity.rows[0]?.username;
   const searchPath=identity.rows[0]?.search_path;
