@@ -1,0 +1,112 @@
+[gd_scene load_steps=10 format=3]
+
+[sub_resource type="BoxShape3D" id="Shape1"]
+size = Vector3(32,1.1,0.4)
+
+[sub_resource type="BoxMesh" id="Mesh1"]
+size = Vector3(32,1.1,0.4)
+
+[sub_resource type="BoxShape3D" id="Shape2"]
+size = Vector3(32,1.1,0.4)
+
+[sub_resource type="BoxMesh" id="Mesh2"]
+size = Vector3(32,1.1,0.4)
+
+[sub_resource type="BoxShape3D" id="Shape3"]
+size = Vector3(0.4,1.1,24)
+
+[sub_resource type="BoxMesh" id="Mesh3"]
+size = Vector3(0.4,1.1,24)
+
+[sub_resource type="BoxShape3D" id="Shape4"]
+size = Vector3(0.4,1.1,24)
+
+[sub_resource type="BoxMesh" id="Mesh4"]
+size = Vector3(0.4,1.1,24)
+
+[sub_resource type="StandardMaterial3D" id="WallMaterial"]
+albedo_color = Color(0.025, 0.045, 0.09, 1)
+roughness = 0.85
+
+[node name="Perimeter" type="Node3D"]
+
+[node name="North" type="StaticBody3D" parent="."]
+position = Vector3(0,0.55,-11.8)
+
+[node name="Collision" type="CollisionShape3D" parent="North"]
+shape = SubResource("Shape1")
+
+[node name="Wall" type="MeshInstance3D" parent="North"]
+mesh = SubResource("Mesh1")
+material_override = SubResource("WallMaterial")
+
+[node name="Brand" type="Label3D" parent="North"]
+position = Vector3(0,0,0.23)
+rotation = Vector3(0, 0, 0)
+text = "///  QUIN NATION  ///"
+font_size = 100
+pixel_size = 0.006
+modulate = Color(0.2, 1, 0.78, 1)
+outline_modulate = Color(0.02, 0.04, 0.1, 1)
+outline_size = 14
+
+[node name="South" type="StaticBody3D" parent="."]
+position = Vector3(0,0.55,11.8)
+
+[node name="Collision" type="CollisionShape3D" parent="South"]
+shape = SubResource("Shape2")
+
+[node name="Wall" type="MeshInstance3D" parent="South"]
+mesh = SubResource("Mesh2")
+material_override = SubResource("WallMaterial")
+
+[node name="Brand" type="Label3D" parent="South"]
+position = Vector3(2.816687638038912e-17,0,-0.23)
+rotation = Vector3(0, 3.141592653589793, 0)
+text = "///  QUIN NATION  ///"
+font_size = 100
+pixel_size = 0.006
+modulate = Color(0.2, 1, 0.78, 1)
+outline_modulate = Color(0.02, 0.04, 0.1, 1)
+outline_size = 14
+
+[node name="West" type="StaticBody3D" parent="."]
+position = Vector3(-15.8,0.55,0)
+
+[node name="Collision" type="CollisionShape3D" parent="West"]
+shape = SubResource("Shape3")
+
+[node name="Wall" type="MeshInstance3D" parent="West"]
+mesh = SubResource("Mesh3")
+material_override = SubResource("WallMaterial")
+
+[node name="Brand" type="Label3D" parent="West"]
+position = Vector3(0.23,0,1.408343819019456e-17)
+rotation = Vector3(0, 1.5707963267948966, 0)
+text = "///  QUIN NATION  ///"
+font_size = 100
+pixel_size = 0.006
+modulate = Color(0.2, 1, 0.78, 1)
+outline_modulate = Color(0.02, 0.04, 0.1, 1)
+outline_size = 14
+
+[node name="East" type="StaticBody3D" parent="."]
+position = Vector3(15.8,0.55,0)
+
+[node name="Collision" type="CollisionShape3D" parent="East"]
+shape = SubResource("Shape4")
+
+[node name="Wall" type="MeshInstance3D" parent="East"]
+mesh = SubResource("Mesh4")
+material_override = SubResource("WallMaterial")
+
+[node name="Brand" type="Label3D" parent="East"]
+position = Vector3(-0.23,0,1.408343819019456e-17)
+rotation = Vector3(0, -1.5707963267948966, 0)
+text = "///  QUIN NATION  ///"
+font_size = 100
+pixel_size = 0.006
+modulate = Color(0.2, 1, 0.78, 1)
+outline_modulate = Color(0.02, 0.04, 0.1, 1)
+outline_size = 14
+

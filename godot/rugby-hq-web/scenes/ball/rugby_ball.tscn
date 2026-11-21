@@ -1,0 +1,29 @@
+[gd_scene load_steps=4 format=3]
+
+[sub_resource type="SphereMesh" id="BallMesh"]
+radius = 0.22
+height = 0.44
+
+[sub_resource type="SphereShape3D" id="BallShape"]
+radius = 0.22
+
+[sub_resource type="StandardMaterial3D" id="BallMaterial"]
+albedo_color = Color(1, 0.83, 0.16, 1)
+roughness = 0.55
+emission_enabled = true
+emission = Color(0.22, 0.13, 0.01, 1)
+
+[node name="RugbyBall" type="RigidBody3D"]
+mass = 0.42
+gravity_scale = 1.0
+continuous_cd = true
+collision_layer = 2
+collision_mask = 1
+
+[node name="Visual" type="MeshInstance3D" parent="."]
+scale = Vector3(0.8, 0.8, 1.55)
+mesh = SubResource("BallMesh")
+material_override = SubResource("BallMaterial")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BallShape")

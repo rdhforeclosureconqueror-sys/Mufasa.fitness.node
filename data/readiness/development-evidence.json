@@ -6620,6 +6620,55 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-12T16:56:11.735Z"
+    },
+    {
+      "operationId": "8af4a839-1ef3-4643-b0eb-b8ac0bbade58",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Preserve Windows project; export independent GDScript 2v1 Web build, reuse Rugby HQ landing page, validate preview, deploy and request owner acceptance.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-21T17:40:41.784Z"
+    },
+    {
+      "operationId": "a03ce725-3e50-413a-8799-92fc394cacbb",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby.html",
+        "scripts/export-rugby-web.js",
+        "scripts/check-rugby-web-browser.js",
+        "godot/rugby-hq-web/project.godot",
+        "docs/rugby/web-validation/chrome-gameplay.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Standard Godot 4.5.1 Web export and frontend build pass. Headless Chrome browser input regression passes WASD/arrows, facing, sustained locomotion, rig animation, visible ball state, Space pass and support catch, HUD PASS click, reset, no scroll and no engine errors. Windows project untouched. Visual inspection, technical PR review, deployment and human acceptance remain pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-21T19:10:00.358Z"
+    },
+    {
+      "operationId": "57e66fea-8915-497a-97e2-5417d44e9210",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/rugby-hq-tests.yml",
+        "test/rugby-godot-web.test.js",
+        "docs/rugby/web-integration.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Eight package/navigation/existing rugby regression tests pass. Archive directory excludes editor plugins, MCP, GUT and native dependencies; UID cache references are not executable archive entries. CI now includes package integrity test. Rollback live frontend baseline recorded. Visual preview and deployment still pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-21T21:02:47.840Z"
     }
   ]
 }
