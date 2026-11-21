@@ -1,0 +1,16 @@
+name: Simba notification activation preflight
+on:
+  pull_request:
+    paths:
+      - 'src/business-os/organization/simba-notification-activation-preflight.js'
+      - 'test/simba-notification-activation-preflight.test.js'
+      - '.github/workflows/simba-notification-activation-preflight.yml'
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/simba-notification-activation-preflight.test.js test/simba-notification-runtime.test.js
