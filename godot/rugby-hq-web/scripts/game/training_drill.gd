@@ -25,6 +25,8 @@ var _diagnostics := false
 func _ready() -> void:
 	$HUD/PassButton.focus_mode = Control.FOCUS_NONE
 	$HUD/PassButton.pressed.connect(_pass_ball)
+	$HUD/RestartButton.focus_mode = Control.FOCUS_NONE
+	$HUD/RestartButton.pressed.connect(_reset_drill)
 	# Touch supplies a separate vector: it cannot release keyboard-held actions.
 	$HUD/VirtualJoystick.action_enabled = false
 	$HUD/VirtualJoystick.direction_changed.connect(func(value: Vector2): attacker.touch_direction = value)
@@ -101,7 +103,17 @@ func _update_ball(delta: float) -> void:
 		_end_play("Loose ball. R to restart")
 
 func _pass_ball() -> void:
-	if _game_over or possession == null or possession == defender or _pass_cooldown > 0.0:
+	if _game_over:
+		_update_status("Play ended. Tap RESTART to try again.")
+		return
+	if possession == null:
+		_update_status("Ball in flight. Wait for the catch.")
+		return
+	if possession == defender:
+		_update_status("Defender has the ball. Tap RESTART.")
+		return
+	if _pass_cooldown > 0.0:
+		_update_status("Pass recovering. Try again.")
 		return
 	pass_sender = possession
 	pass_target = support if possession == attacker else attacker
