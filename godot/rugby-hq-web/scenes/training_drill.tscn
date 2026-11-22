@@ -134,6 +134,16 @@ offset_right = -25.0
 offset_bottom = -35.0
 text = "PASS"
 
+[node name="RestartButton" type="Button" parent="HUD"]
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -148.0
+offset_top = 14.0
+offset_right = -24.0
+offset_bottom = 70.0
+mouse_filter = 0
+text = "RESTART"
+
 [node name="VirtualJoystick" parent="HUD" instance=ExtResource("4_joystick")]
 anchor_top = 1.0
 anchor_bottom = 1.0
