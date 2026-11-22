@@ -21,3 +21,11 @@ test('production package excludes editor-only tools and native dependencies',()=
  const b=fs.readFileSync(path.join(out,'index.pck'));assert.equal(b.readUInt32LE(4),3);let offset=Number(b.readBigUInt64LE(32));const count=b.readUInt32LE(offset);offset+=4;const paths=[];for(let i=0;i<count;i++){const length=b.readUInt32LE(offset);offset+=4;paths.push(b.subarray(offset,offset+length).toString('utf8').replaceAll(String.fromCharCode(0),''));offset+=length+36;}const pack=paths.join('\n');
  for(const unwanted of ['addons/gut/','addons/godot_mcp','virtual_joystick_cf_plugin.gd','.csproj','.backup-'])assert.ok(!pack.includes(unwanted),unwanted);
 });
+test('mobile restart is visible and wired; pass rejection explains why',()=>{
+ const scene=read('godot/rugby-hq-web/scenes/training_drill.tscn');
+ const logic=read('godot/rugby-hq-web/scripts/game/training_drill.gd');
+ assert.match(scene,/\[node name="RestartButton" type="Button" parent="HUD"\]/);
+ assert.match(logic,/\$HUD\/RestartButton\.pressed\.connect\(_reset_drill\)/);
+ assert.match(logic,/Play ended\. Tap RESTART/);
+ assert.match(logic,/Ball in flight\. Wait for the catch/);
+});
