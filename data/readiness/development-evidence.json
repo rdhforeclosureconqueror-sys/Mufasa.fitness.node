@@ -6705,6 +6705,72 @@
       "prNumber": 1392,
       "commitSha": null,
       "timestamp": "2026-11-21T23:26:28.620Z"
+    },
+    {
+      "operationId": "23db035d-5f04-4d5a-8a94-cbd99efa8f18",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Repair mobile controls; rollback f16de889b2fdbc2db56852bc2c384a4e901c488e dep-dc12sibtqb8s73a44h10; iPhone acceptance pending.",
+      "prNumber": 1400,
+      "commitSha": null,
+      "timestamp": "2026-11-23T18:35:01.599Z"
+    },
+    {
+      "operationId": "d2991402-88c7-494b-8e48-bd388f9c8a34",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "select recorded",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-23T18:35:02.253Z"
+    },
+    {
+      "operationId": "fcedb7ac-a8f3-4c61-98ce-db6fe9d6aea7",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "godot/rugby-hq-web/project.godot",
+        "godot/rugby-hq-web/scripts/game/training_drill.gd",
+        "godot/rugby-hq-web/scripts/game/web_status.gd",
+        "godot/rugby-hq-web/scenes/training_drill.tscn",
+        "public/game/rugby-hq/index.pck",
+        "public/game/rugby-hq/index.html",
+        "public/game/rugby-hq/build-manifest.json",
+        "scripts/check-rugby-multitouch.js",
+        "test/rugby-godot-web.test.js",
+        "docs/rugby/pr1400-mobile-controls.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Export and frontend build pass; full keyboard gameplay, desktop/mobile browser and simultaneous two-finger PASS/RESTART regressions pass. Windows baseline hashes unchanged. Physical iPhone Safari acceptance remains pending after production deployment.",
+      "prNumber": 1400,
+      "commitSha": null,
+      "timestamp": "2026-11-23T19:03:07.087Z"
+    },
+    {
+      "operationId": "98a90c64-b2ac-42b8-971e-80302c66cb47",
+      "board": "launch",
+      "cardId": "launch-development-rugby-hq-web",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "scripts/export-rugby-web.js",
+        "scripts/check-rugby-production.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Technical review: normalize exported HTML before hashing; artifact integrity and diff checks pass. Production verifier checks expected SHA, all package hashes, navigation and backend health; it will run after deploy. Physical iPhone acceptance pending.",
+      "prNumber": 1400,
+      "commitSha": null,
+      "timestamp": "2026-11-23T19:06:38.879Z"
     }
   ]
 }

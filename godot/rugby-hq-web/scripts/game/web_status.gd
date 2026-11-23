@@ -19,7 +19,10 @@ func _process(delta: float) -> void:
 	var skeleton = p.get_node("AvatarModel/Armature/Skeleton3D")
 	var leg = skeleton.get_bone_pose_rotation(skeleton.find_bone("LeftUpLeg"))
 	var button_screen = get_viewport().get_screen_transform() * drill.get_node("HUD/PassButton").get_global_rect().get_center()
+	var restart_screen = get_viewport().get_screen_transform() * drill.get_node("HUD/RestartButton").get_global_rect().get_center()
 	var state := {"position": [p.position.x,p.position.y,p.position.z],
+		"restart_screen": [restart_screen.x,restart_screen.y], "status": drill._message,
+		"last_touch": [drill.last_touch.x,drill.last_touch.y],
 		"forward": [p.visual.global_basis.z.x,p.visual.global_basis.z.z],
 		"speed": p.telemetry.get("actual_speed",0), "animation": String(ap.current_animation),
 		"animation_time": ap.current_animation_position, "leg": [leg.x,leg.y,leg.z,leg.w],
