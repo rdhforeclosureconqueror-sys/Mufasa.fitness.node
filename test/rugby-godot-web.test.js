@@ -28,4 +28,8 @@ test('mobile restart is visible and wired; pass rejection explains why',()=>{
  assert.match(logic,/\$HUD\/RestartButton\.pressed\.connect\(_reset_drill\)/);
  assert.match(logic,/Play ended\. Tap RESTART/);
  assert.match(logic,/Ball in flight\. Wait for the catch/);
+ assert.match(logic,/event is InputEventScreenTouch and event.pressed/);
+ assert.match(logic,/\$HUD\/PassButton.get_global_rect\(\).has_point\(event.position\)/);
+ assert.match(logic,/\$HUD\/RestartButton.get_global_rect\(\).has_point\(event.position\)/);
+ assert.match(read('godot/rugby-hq-web/project.godot'),/pointing\/emulate_mouse_from_touch=false/);
 });

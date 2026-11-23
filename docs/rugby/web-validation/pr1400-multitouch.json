@@ -1,0 +1,39 @@
+{
+  "base": "http://127.0.0.1:8781",
+  "results": [
+    {
+      "viewport": {
+        "width": 844,
+        "height": 390
+      },
+      "pass": true,
+      "checks": [
+        "simultaneous joystick/PASS",
+        "exactly one pass",
+        "support catch",
+        "second-finger RESTART",
+        "single-finger PASS",
+        "game-over feedback",
+        "restart possession and movement"
+      ],
+      "errors": []
+    },
+    {
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "pass": true,
+      "checks": [
+        "simultaneous joystick/PASS",
+        "exactly one pass",
+        "support catch",
+        "second-finger RESTART",
+        "single-finger PASS",
+        "game-over feedback",
+        "restart possession and movement"
+      ],
+      "errors": []
+    }
+  ]
+}

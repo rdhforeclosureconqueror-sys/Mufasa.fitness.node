@@ -1,0 +1,241 @@
+{
+  "pass": true,
+  "checks": [
+    {
+      "label": "3 Rashad players, original rig, 4 walls",
+      "pass": true
+    },
+    {
+      "label": "ball visible in scene",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "KeyW actual displacement",
+      "pass": true
+    },
+    {
+      "label": "KeyW run animation",
+      "pass": true
+    },
+    {
+      "label": "KeyW visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "ArrowUp actual displacement",
+      "pass": true
+    },
+    {
+      "label": "ArrowUp run animation",
+      "pass": true
+    },
+    {
+      "label": "ArrowUp visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "KeyS actual displacement",
+      "pass": true
+    },
+    {
+      "label": "KeyS run animation",
+      "pass": true
+    },
+    {
+      "label": "KeyS visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "ArrowDown actual displacement",
+      "pass": true
+    },
+    {
+      "label": "ArrowDown run animation",
+      "pass": true
+    },
+    {
+      "label": "ArrowDown visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "KeyA actual displacement",
+      "pass": true
+    },
+    {
+      "label": "KeyA run animation",
+      "pass": true
+    },
+    {
+      "label": "KeyA visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "ArrowLeft actual displacement",
+      "pass": true
+    },
+    {
+      "label": "ArrowLeft run animation",
+      "pass": true
+    },
+    {
+      "label": "ArrowLeft visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "KeyD actual displacement",
+      "pass": true
+    },
+    {
+      "label": "KeyD run animation",
+      "pass": true
+    },
+    {
+      "label": "KeyD visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "ArrowRight actual displacement",
+      "pass": true
+    },
+    {
+      "label": "ArrowRight run animation",
+      "pass": true
+    },
+    {
+      "label": "ArrowRight visual facing",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "sustained motion across animation loop",
+      "pass": true
+    },
+    {
+      "label": "avatar skeleton animates",
+      "pass": true
+    },
+    {
+      "label": "Space dispatch reaches game",
+      "pass": true
+    },
+    {
+      "label": "moving pass caught by support",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "HUD PASS click reaches same action",
+      "pass": true
+    },
+    {
+      "label": "reset restores possession",
+      "pass": true
+    },
+    {
+      "label": "arrows do not scroll page",
+      "pass": true
+    },
+    {
+      "label": "no browser/engine errors",
+      "pass": true
+    }
+  ],
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "final": {
+    "animation": "Walk",
+    "animation_time": 0.133333333333333,
+    "ball": [
+      -0.436033219099045,
+      1.12083733081818,
+      5.72302436828613
+    ],
+    "ball_visible": true,
+    "bones": 52,
+    "button_hover": true,
+    "button_screen": [
+      1064.5,
+      578
+    ],
+    "forward": [
+      0.409273236989975,
+      0.912411868572235
+    ],
+    "holder": "Attacker",
+    "joystick_visible": false,
+    "last_touch": [
+      0,
+      0
+    ],
+    "leg": [
+      0.000648778746835887,
+      0.0259752050042152,
+      0.998939037322998,
+      -0.0380231067538261
+    ],
+    "mouse": [
+      1064,
+      578
+    ],
+    "over": false,
+    "pass_center": [
+      1064.5,
+      578
+    ],
+    "passes": 2,
+    "players": 3,
+    "position": [
+      0,
+      0.000837359635625035,
+      5.22500038146973
+    ],
+    "restart_screen": [
+      1066,
+      42
+    ],
+    "speed": 2.70000457763672,
+    "status": "QUIN NATION | 2 v 1 | Attacker has possession",
+    "viewport": [
+      1152,
+      648
+    ],
+    "walls": 4
+  }
+}

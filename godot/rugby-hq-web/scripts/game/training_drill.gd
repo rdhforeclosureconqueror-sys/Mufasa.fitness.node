@@ -21,6 +21,7 @@ var _game_over := false
 var pass_count := 0
 var _message := ""
 var _diagnostics := false
+var last_touch := Vector2.ZERO
 
 func _ready() -> void:
 	$HUD/PassButton.focus_mode = Control.FOCUS_NONE
@@ -42,6 +43,18 @@ func _ready() -> void:
 	_reset_drill()
 
 func _input(event: InputEvent) -> void:
+	# GUI Buttons use one emulated mouse pointer; a second finger must be handled
+	# directly while the joystick owns the first. Mouse emulation is disabled.
+	if event is InputEventScreenTouch and event.pressed:
+		last_touch = event.position
+		if $HUD/PassButton.get_global_rect().has_point(event.position):
+			_pass_ball()
+			get_viewport().set_input_as_handled()
+			return
+		if $HUD/RestartButton.get_global_rect().has_point(event.position):
+			_reset_drill()
+			get_viewport().set_input_as_handled()
+			return
 	# Handle gameplay keys before GUI focus can consume Space as ui_accept.
 	if event.is_action_pressed("pass_ball") and not event.is_echo():
 		_pass_ball()
