@@ -15,7 +15,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Approve canonical master semantics and normalize unresolved triggers, actions, exceptions and tests.
 - [x] Archive twelve original knowledge documents (12/12 byte-exact verified).
 - [ ] Archive supporting batch narratives, protocols and references.
-- [ ] Transfer and reconcile Activate/Beast Mode (15/16 payload files byte-exact verified) and Backs Readiness archives.
+- [x] Transfer Activate/Beast Mode archive (16/16 payload files byte-exact verified).
+- [ ] Transfer Backs Readiness archive and reconcile both resources.
 - [ ] Audit candidate resource 04 and verify historical resources 01, 03, 05, 08 on main.
 - [ ] Independently verify evidence and course protocol claims; document unresolved gaps.
 
@@ -60,7 +61,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Activate archive: fifteen of sixteen payload files verified. Remaining original 51506-byte exercise seed JSON requires exact transfer. Schema preserved but not executed; runtime disabled.
+Activate archive payload complete: sixteen of sixteen files verified. Backs Readiness transfer and reconciliation pending; runtime disabled.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
