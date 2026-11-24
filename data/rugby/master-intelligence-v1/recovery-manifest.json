@@ -545,5 +545,71 @@
     ],
     "repository_runner_pending": true,
     "runtime_activation": false
+  },
+  "readiness_recovery": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/readiness-recovery-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/readiness-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/readiness-evaluator.test.cjs"
+    ],
+    "source_rule_count": 23,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "youth hold",
+        "pass": true
+      },
+      {
+        "name": "unknown age",
+        "pass": true
+      },
+      {
+        "name": "youth reviewed",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "persistent sleep",
+        "pass": true
+      },
+      {
+        "name": "persistent mental fatigue",
+        "pass": true
+      },
+      {
+        "name": "missing metric",
+        "pass": true
+      },
+      {
+        "name": "invalid hours",
+        "pass": true
+      },
+      {
+        "name": "trend",
+        "pass": true
+      },
+      {
+        "name": "different athlete",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": "Trusted privacy and safety checks, dated longitudinal history, intervention feedback persistence and programme integration pending."
   }
 }
