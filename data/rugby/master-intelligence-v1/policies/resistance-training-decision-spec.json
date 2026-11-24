@@ -1,0 +1,210 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "classification": "engineering interpretation of recovered rules",
+  "groups": [
+    {
+      "domain": "optional weightlifting derivatives",
+      "source_ids": [
+        "ACR-543",
+        "ACR-544",
+        "ACR-545",
+        "ACR-546",
+        "ACR-547",
+        "ACR-548",
+        "ACR-549",
+        "ACR-550",
+        "ACR-551",
+        "ACR-552",
+        "ACR-553",
+        "ACR-554",
+        "ACR-555",
+        "ACR-556",
+        "ACR-557",
+        "ACR-558"
+      ]
+    },
+    {
+      "domain": "competency based progression",
+      "source_ids": [
+        "ACR-559",
+        "ACR-560",
+        "ACR-561",
+        "ACR-562",
+        "ACR-563",
+        "ACR-564",
+        "ACR-565",
+        "ACR-566",
+        "ACR-567",
+        "ACR-568",
+        "ACR-569",
+        "ACR-570",
+        "ACR-571",
+        "ACR-572",
+        "ACR-573",
+        "ACR-574",
+        "ACR-575",
+        "ACR-576",
+        "ACR-577",
+        "ACR-578",
+        "ACR-579",
+        "ACR-580",
+        "ACR-581",
+        "ACR-582",
+        "ACR-583",
+        "ACR-584",
+        "ACR-585",
+        "ACR-586"
+      ]
+    },
+    {
+      "domain": "movement patterns and session design",
+      "source_ids": [
+        "ACR-587",
+        "ACR-588",
+        "ACR-589",
+        "ACR-590",
+        "ACR-591",
+        "ACR-592",
+        "ACR-593",
+        "ACR-594",
+        "ACR-595",
+        "ACR-596",
+        "ACR-597",
+        "ACR-598",
+        "ACR-599",
+        "ACR-600",
+        "ACR-601",
+        "ACR-602",
+        "ACR-603",
+        "ACR-604",
+        "ACR-605",
+        "ACR-606",
+        "ACR-607"
+      ]
+    },
+    {
+      "domain": "time and format",
+      "source_ids": [
+        "ACR-608",
+        "ACR-609",
+        "ACR-610",
+        "ACR-611",
+        "ACR-612",
+        "ACR-613",
+        "ACR-614",
+        "ACR-615",
+        "ACR-616",
+        "ACR-617",
+        "ACR-618",
+        "ACR-619",
+        "ACR-620",
+        "ACR-621",
+        "ACR-622",
+        "ACR-623"
+      ]
+    },
+    {
+      "domain": "selection order and complexity",
+      "source_ids": [
+        "ACR-624",
+        "ACR-625",
+        "ACR-626",
+        "ACR-627",
+        "ACR-628",
+        "ACR-629",
+        "ACR-630",
+        "ACR-631",
+        "ACR-632",
+        "ACR-633",
+        "ACR-634",
+        "ACR-635",
+        "ACR-636",
+        "ACR-637",
+        "ACR-638",
+        "ACR-639",
+        "ACR-640",
+        "ACR-641",
+        "ACR-642",
+        "ACR-643",
+        "ACR-644",
+        "ACR-645",
+        "ACR-646",
+        "ACR-647",
+        "ACR-648",
+        "ACR-649",
+        "ACR-650"
+      ]
+    },
+    {
+      "domain": "rest",
+      "source_ids": [
+        "ACR-651",
+        "ACR-652",
+        "ACR-653",
+        "ACR-654",
+        "ACR-655",
+        "ACR-656",
+        "ACR-657",
+        "ACR-658",
+        "ACR-659",
+        "ACR-660"
+      ]
+    },
+    {
+      "domain": "cueing",
+      "source_ids": [
+        "ACR-661",
+        "ACR-662",
+        "ACR-663",
+        "ACR-664",
+        "ACR-665",
+        "ACR-666",
+        "ACR-667",
+        "ACR-668",
+        "ACR-669",
+        "ACR-670"
+      ]
+    },
+    {
+      "domain": "strongman and integration",
+      "source_ids": [
+        "ACR-671",
+        "ACR-672",
+        "ACR-673",
+        "ACR-674",
+        "ACR-675",
+        "ACR-676",
+        "ACR-677",
+        "ACR-678",
+        "ACR-679",
+        "ACR-680",
+        "ACR-681",
+        "ACR-682",
+        "ACR-683",
+        "ACR-684",
+        "ACR-685",
+        "ACR-686",
+        "ACR-687",
+        "ACR-688",
+        "ACR-689",
+        "ACR-690"
+      ]
+    }
+  ],
+  "guardrails": [
+    "No mandatory Olympic lifting",
+    "Pain referral takes precedence",
+    "No automatic load progression",
+    "Preserve critical rest",
+    "Assess movement coverage across microcycle",
+    "No automatic transfer from exercise resemblance"
+  ],
+  "pending": [
+    "exercise library reconciliation",
+    "trusted competency and safety",
+    "force velocity protocols",
+    "coach-approved progression",
+    "station scheduling"
+  ]
+}
