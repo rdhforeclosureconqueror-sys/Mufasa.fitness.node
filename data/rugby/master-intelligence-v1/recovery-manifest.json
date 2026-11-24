@@ -262,5 +262,13 @@
     "original_coverage_manifest_preserved": true,
     "supporting_narrative_transfer_pending": true,
     "identifier_coverage_complete": true
+  },
+  "registry_index": {
+    "path": "data/rugby/master-intelligence-v1/registry-index.json",
+    "readback_verified": true,
+    "acr_count": 780,
+    "master_count": 20,
+    "structured_normalization_pending": 166,
+    "runtime_activation": false
   }
 }
