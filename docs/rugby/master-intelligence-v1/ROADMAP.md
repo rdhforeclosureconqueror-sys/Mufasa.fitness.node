@@ -23,7 +23,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Implement isolated Player Profile evaluator; 12 functional cases passed.
 - [ ] Run repository Player Profile suite and integrate trusted safety evaluation rather than caller-supplied clearance.
 - [x] Save Programme Management specification covering ACR-237–250.
-- [ ] Implement and test programme hierarchy, immutable planned versus actual load, and adaptation review.
+- [x] Implement and test isolated programme hierarchy, nonmutating planned versus actual load comparison, and adaptation review (12 functional cases passed).
+- [ ] Enforce persistent plan immutability, validate calendar/date constraints, and run repository programme tests with trusted safety integration.
 - [ ] Complete movement assessment, readiness, nutrition, injury, conditioning, resistance and gamespeed decision mapping.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
@@ -36,7 +37,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Programme Management specification saved; implementation pending. Runtime activation remains disabled. No production merge or deployment claimed. All original evidence classifications remain intact.
+Programme Management isolated evaluator saved and 12 functional cases passed; persistent storage, calendar validation and repository integration pending. Runtime activation remains disabled. No production merge or deployment claimed. All original evidence classifications remain intact.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
