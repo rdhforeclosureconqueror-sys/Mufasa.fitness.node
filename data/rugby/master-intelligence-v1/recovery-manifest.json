@@ -1041,5 +1041,15 @@
     "master_aligned": 1,
     "master_divergent": 19,
     "runtime_activation": false
+  },
+  "master_resolution": {
+    "path": "data/rugby/master-intelligence-v1/master-qualified-registry.json",
+    "qualified_records": 40,
+    "legacy_ids": 20,
+    "isolated_tests_passed": 6,
+    "readback_verified": true,
+    "canonical_semantics_approved": false,
+    "runtime_activation": false,
+    "repository_runner_pending": true
   }
 }
