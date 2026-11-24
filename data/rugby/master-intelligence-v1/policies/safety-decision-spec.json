@@ -1,0 +1,176 @@
+{
+  "version": "1.0.0",
+  "status": "design_spec_not_executable",
+  "runtime_activation": false,
+  "policy": "Proposed engineering interpretation of recovered wording. Unknown safety inputs hold for review; this is a proposed implementation safeguard, not a course quotation. Test vectors are specifications, not executed tests.",
+  "policies": [
+    {
+      "id": "screening-pain",
+      "sources": [
+        "ACR-128",
+        "ACR-132",
+        "ACR-133",
+        "ACR-151"
+      ],
+      "trigger": "pain during screening or concerning clinical finding",
+      "action": "block automated corrective programming; route to qualified medical review",
+      "exceptions": "No automatic clearance when pain is absent.",
+      "tests": [
+        [
+          "pain reported",
+          "block_and_refer"
+        ],
+        [
+          "pain unknown",
+          "hold_for_review"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "screening-interpretation",
+      "sources": [
+        "ACR-127",
+        "ACR-137",
+        "ACR-139",
+        "ACR-146",
+        "ACR-149"
+      ],
+      "trigger": "screening result or ROM reference comparison",
+      "action": "report contextual finding; prohibit standalone diagnosis or injury prediction",
+      "tests": [
+        [
+          "below course reference",
+          "contextual_flag_only"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "corrective-review",
+      "sources": [
+        "ACR-142",
+        "ACR-150",
+        "ACR-152"
+      ],
+      "trigger": "worsening symptoms, pain, or failure to improve",
+      "action": "review rather than increase corrective volume; pain routes to medical review",
+      "tests": [
+        [
+          "no improvement",
+          "review"
+        ],
+        [
+          "pain",
+          "block_and_refer"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "nutrition-scope",
+      "sources": [
+        "ACR-115",
+        "ACR-116"
+      ],
+      "trigger": "suspected clinical nutrition problem",
+      "action": "refer to qualified professional; restrict coach pathway to general education",
+      "tests": [
+        [
+          "clinical concern",
+          "refer"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "supplement-safety",
+      "sources": [
+        "ACR-117",
+        "ACR-118"
+      ],
+      "trigger": "supplement recommendation requested",
+      "action": "require anti-doping and contamination review; prioritize food-first where practical",
+      "tests": [
+        [
+          "verification missing",
+          "hold_recommendation"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "youth-privacy",
+      "sources": [
+        "ACR-100"
+      ],
+      "trigger": "youth digital or wellbeing data processing",
+      "action": "require privacy review before collection or disclosure",
+      "tests": [
+        [
+          "privacy controls unknown",
+          "hold_processing"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "sleep-followup",
+      "sources": [
+        "ACR-084",
+        "ACR-085",
+        "ACR-090"
+      ],
+      "trigger": "repeated inadequate sleep or persistent sleep problem",
+      "action": "flag for human follow-up; consider professional referral; prohibit automated diagnosis or injury prediction",
+      "tests": [
+        [
+          "persistent problem",
+          "human_followup"
+        ],
+        [
+          "single short sleep",
+          "no_standalone_injury_prediction"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "coach-scope",
+      "sources": [
+        "ACR-131",
+        "ACR-132",
+        "ACR-134"
+      ],
+      "trigger": "coach proposes screening or medical intervention",
+      "action": "allow screening only within training scope; route diagnosis, pain management and medical care to qualified professionals",
+      "tests": [
+        [
+          "medical diagnosis requested",
+          "refer"
+        ],
+        [
+          "scope unknown",
+          "hold_for_review"
+        ]
+      ],
+      "priority": "safety_before_performance",
+      "status": "proposed_review_required",
+      "runtime_activation": false
+    }
+  ]
+}
