@@ -1,0 +1,43 @@
+{
+  "athlete": {
+    "id": "string",
+    "name": "string",
+    "age": "number",
+    "position_group": "tight_forward|loose_forward|inside_back|outside_back|unknown",
+    "format": "fifteens|sevens|both",
+    "training_age_years": "number",
+    "notes": "string"
+  },
+  "wellness_checkin": {
+    "athlete_id": "string",
+    "date": "YYYY-MM-DD",
+    "fatigue": "1-5",
+    "sleep_quality": "1-5",
+    "muscle_soreness": "1-5",
+    "stress": "1-5",
+    "mood": "1-5",
+    "wellness_total": "number",
+    "notes": "string"
+  },
+  "session_log": {
+    "athlete_id": "string",
+    "date": "YYYY-MM-DD",
+    "session_type": "strength|speed|conditioning|integrated|skills|match|recovery",
+    "duration_minutes": "number",
+    "session_rpe": "number",
+    "session_load": "duration_minutes * session_rpe",
+    "contact_count": "number optional",
+    "sprint_exposures": "number optional",
+    "notes": "string"
+  },
+  "screening_result": {
+    "athlete_id": "string",
+    "date": "YYYY-MM-DD",
+    "screen_id": "string",
+    "result": "pass|monitor|flag|pain_referral",
+    "observations": "array",
+    "ai_metrics": "object optional",
+    "coach_notes": "string",
+    "recommended_focus": "array"
+  }
+}
