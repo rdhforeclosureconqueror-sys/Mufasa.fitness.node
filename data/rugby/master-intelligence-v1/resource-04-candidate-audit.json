@@ -90,7 +90,8 @@
     "Session RPE times minutes requires consistent scale and duration protocol",
     "Screening observations and MoveNet proxies are not diagnostic; validate protocols and pain referral before scoring.",
     "Contact drills require qualified supervision, competency progression and appropriate contact-load controls.",
-    "Energy systems overlap; work-rest ratios and loading ranges are contextual, not universal prescriptions."
+    "Energy systems overlap; work-rest ratios and loading ranges are contextual, not universal prescriptions.",
+    "Original manifest and source notes contain personal certificate holder information; defer public repository transfer pending privacy decision. Schema is descriptive, not a validated JSON Schema; reuse existing athlete identity. Prompt is archived, not active."
   ],
   "transferred": [
     {
@@ -114,6 +115,18 @@
       "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_knowledge_base.json",
       "expected": "fabae5a461302057f26a60f20448c9a3c63c4eb6",
       "actual": "fabae5a461302057f26a60f20448c9a3c63c4eb6",
+      "verified": true
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_data_schemas.json",
+      "expected": "13f4b6bc0892d2695837293a5b588455b3a10346",
+      "actual": "13f4b6bc0892d2695837293a5b588455b3a10346",
+      "verified": true
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/rugby_hq_bot_system_prompt.md",
+      "expected": "575de28af6f07d35cc698d8d7e017288aaf1e4ca",
+      "actual": "575de28af6f07d35cc698d8d7e017288aaf1e4ca",
       "verified": true
     }
   ]
