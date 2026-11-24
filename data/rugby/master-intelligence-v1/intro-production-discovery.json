@@ -1,5 +1,5 @@
 {
-  "status": "partial_production_discovery",
+  "status": "all_18_exact_searches_complete_semantic_review_pending",
   "runtime_activation": false,
   "evidence": [
     {
@@ -17,6 +17,10 @@
     {
       "path": "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
       "sha": "48c81c82d03328b843035336fd585218509c2bb4"
+    },
+    {
+      "path": "src/rugby/assessmentValidation.js",
+      "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
     }
   ],
   "findings": [
@@ -41,9 +45,98 @@
       "status": "related_concept_found",
       "target": "docs/rugby/rugby-hq-coaching-os-handoff.md",
       "requirement": "Concept match is not drill identity."
+    },
+    {
+      "source_id": "hands_behind_head_squat",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "lat_tightness_wall_test",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "heels_raised_overhead_squat",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "ankle_rom",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "thomas_test",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "glute_bridge_leg_extension",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "shoulder_mobility",
+      "status": "search_candidates_require_review",
+      "matches": [
+        {
+          "path": "src/youth-fitness/profiles/constants.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/youth-fitness/profiles/constants.js"
+        }
+      ],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "ground_fight_sprint_rotation",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "sand_cone_cod",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "sand_ladder",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "maul_ball",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "forward_drive",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "get_up",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "tackle_shuttle",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
     }
   ],
-  "remaining": "Inspect remaining 14 source IDs and aliases, compare production contracts, verify integration and permissions.",
+  "remaining": "Alias searches, exercise catalog inspection, protocol and permissions reconciliation.",
   "guardrails": [
     "No duplicate engine",
     "No runtime changes",
