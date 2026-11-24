@@ -1,0 +1,46 @@
+{
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "connections": {
+    "Rugby Passport": [
+      "attach evaluations to existing athlete development record",
+      "do not create second identity"
+    ],
+    "Position Intelligence for all 15 positions": [
+      "covers 10,12,13,11/14,15",
+      "reconcile with all-position taxonomy"
+    ],
+    "Professional performance benchmarks": [
+      "internal scores only; verified external benchmark sources required before pro claims"
+    ],
+    "Combine Assessment Engine": [
+      "use Backline Athletic Index as rugby-specific combine battery"
+    ],
+    "Athlete Attribute Engine": [
+      "map categories to attributes; Athletic Index cannot override hard gates"
+    ],
+    "Individual development programs": [
+      "generate next action from lowest category or hard gate"
+    ],
+    "Exercise Intelligence Library": [
+      "map drills/tests to exercise IDs"
+    ],
+    "Activate and Beast Mode": [
+      "Activate as prep; Beast Mode uses Athletic Index gaps; keep separate from Skill/IQ"
+    ],
+    "Rugby Ready competency tracking": [
+      "backs equivalent using evidence and coach verification"
+    ],
+    "Training periodization": [
+      "use gaps to drive training block focus"
+    ],
+    "Coach Headquarters": [
+      "show readiness, blockers, battles, next actions, evidence confidence"
+    ],
+    "Tactical simulator and digital athlete development": [
+      "simulate defensive spacing, edge decisions, attack timing, support lines"
+    ],
+    "Professional scouting and athlete pathways": [
+      "evidence-backed internal rating export; avoid unverified pro-level claims"
+    ]
+  }
+}
