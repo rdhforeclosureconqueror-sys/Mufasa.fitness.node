@@ -13,7 +13,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Preserve 40 qualified master source references and reject ambiguous legacy references (6 isolated cases passed).
 - [x] Group all 40 qualified master statements into 13 traceable proposed principles with safety precedence.
 - [ ] Approve canonical master semantics and normalize unresolved triggers, actions, exceptions and tests.
-- [ ] Archive twelve original knowledge documents (6/12 byte-exact verified) and supporting batch narratives, protocols and references.
+- [ ] Archive twelve original knowledge documents (9/12 byte-exact verified) and supporting batch narratives, protocols and references.
 - [ ] Transfer and reconcile Activate/Beast Mode and Backs Readiness archives.
 - [ ] Audit candidate resource 04 and verify historical resources 01, 03, 05, 08 on main.
 - [ ] Independently verify evidence and course protocol claims; document unresolved gaps.
@@ -59,7 +59,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Six of twelve original knowledge documents transferred and verified against archive Git blob hashes. Remaining six documents and supporting narratives pending. Runtime activation disabled.
+Nine of twelve original knowledge documents transferred and verified against archive Git blob hashes. Remaining three documents and supporting narratives pending. Runtime activation disabled.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
