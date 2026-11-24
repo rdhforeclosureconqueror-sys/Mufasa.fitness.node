@@ -1512,5 +1512,15 @@
       "execution": "isolated node --test; evaluator blob verified",
       "repository_ci_pending": true
     }
+  },
+  "beast_mode_progression": {
+    "path": "data/rugby/master-intelligence-v1/policies/beast-mode-progression-spec.json",
+    "prototype": "docs/rugby/master-intelligence-v1/prototypes/beast-mode-progression.cjs",
+    "stages": 7,
+    "quality_fields": 9,
+    "source_statuses": 8,
+    "readback_verified": true,
+    "tests_pending": true,
+    "runtime_activation": false
   }
 }
