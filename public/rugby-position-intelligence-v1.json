@@ -1,0 +1,508 @@
+{
+  "version": 1,
+  "notice": "Educational reference only. Not selection standards, individualized prescriptions, or verified athlete results. Position families are proposed coaching categories; group benchmarks must not be relabeled as specific position averages.",
+  "families": [
+    {
+      "id": "front-row",
+      "group": "forwards",
+      "name": "Front row",
+      "demands": "Scrum stability, close contact, repeated force production",
+      "priorities": [
+        "strength",
+        "power",
+        "acceleration"
+      ],
+      "drills": [
+        "Squat",
+        "Bench press",
+        "Sled push",
+        "Medicine ball chest throw"
+      ]
+    },
+    {
+      "id": "second-row",
+      "group": "forwards",
+      "name": "Second row",
+      "demands": "Lineout jumping, lifting, scrum drive and ruck support",
+      "priorities": [
+        "strength",
+        "vertical_power",
+        "endurance"
+      ],
+      "drills": [
+        "Squat",
+        "Countermovement jump",
+        "Rows",
+        "Controlled landing"
+      ]
+    },
+    {
+      "id": "back-row",
+      "group": "forwards",
+      "name": "Back row",
+      "demands": "Breakdown, defensive coverage and repeated carries",
+      "priorities": [
+        "acceleration",
+        "endurance",
+        "strength"
+      ],
+      "drills": [
+        "Resisted sprint",
+        "Split squat",
+        "Intermittent running",
+        "Deceleration drill"
+      ]
+    },
+    {
+      "id": "halfbacks",
+      "group": "backs",
+      "name": "Halfbacks",
+      "demands": "Distribution, scanning and tempo control",
+      "priorities": [
+        "passing",
+        "reaction",
+        "acceleration"
+      ],
+      "drills": [
+        "Bilateral target passing",
+        "Reactive movement",
+        "Short sprint"
+      ]
+    },
+    {
+      "id": "midfield",
+      "group": "backs",
+      "name": "Midfield",
+      "demands": "Line breaks, contact and defensive alignment",
+      "priorities": [
+        "acceleration",
+        "change_direction",
+        "power"
+      ],
+      "drills": [
+        "Resisted sprint",
+        "Broad jump",
+        "Deceleration drill",
+        "Medicine ball throw"
+      ]
+    },
+    {
+      "id": "back-three",
+      "group": "backs",
+      "name": "Back three",
+      "demands": "Finishing, aerial reception and backfield coverage",
+      "priorities": [
+        "speed",
+        "acceleration",
+        "change_direction"
+      ],
+      "drills": [
+        "Flying sprint",
+        "Broad jump",
+        "Reactive cutting",
+        "High ball reception"
+      ]
+    }
+  ],
+  "positions": [
+    {
+      "number": 1,
+      "name": "Loosehead prop",
+      "family": "front-row",
+      "role": "Scrum binding and stability on loosehead side"
+    },
+    {
+      "number": 2,
+      "name": "Hooker",
+      "family": "front-row",
+      "role": "Lineout throwing and hooking"
+    },
+    {
+      "number": 3,
+      "name": "Tighthead prop",
+      "family": "front-row",
+      "role": "Tighthead scrum stability"
+    },
+    {
+      "number": 4,
+      "name": "Lock",
+      "family": "second-row",
+      "role": "Lineout and scrum duties per team assignment"
+    },
+    {
+      "number": 5,
+      "name": "Lock",
+      "family": "second-row",
+      "role": "Lineout and scrum duties per team assignment"
+    },
+    {
+      "number": 6,
+      "name": "Blindside flanker",
+      "family": "back-row",
+      "role": "Close-side defense and contact support"
+    },
+    {
+      "number": 7,
+      "name": "Openside flanker",
+      "family": "back-row",
+      "role": "Breakdown and open-side coverage"
+    },
+    {
+      "number": 8,
+      "name": "Number eight",
+      "family": "back-row",
+      "role": "Scrum-base control and carrying"
+    },
+    {
+      "number": 9,
+      "name": "Scrum-half",
+      "family": "halfbacks",
+      "role": "Fast distribution from breakdown and scrum"
+    },
+    {
+      "number": 10,
+      "name": "Fly-half",
+      "family": "halfbacks",
+      "role": "Attack organization and tactical kicking"
+    },
+    {
+      "number": 11,
+      "name": "Left wing",
+      "family": "back-three",
+      "role": "Finishing and edge defense"
+    },
+    {
+      "number": 12,
+      "name": "Inside center",
+      "family": "midfield",
+      "role": "Distribution and contact carrying"
+    },
+    {
+      "number": 13,
+      "name": "Outside center",
+      "family": "midfield",
+      "role": "Outside defensive reads and line breaks"
+    },
+    {
+      "number": 14,
+      "name": "Right wing",
+      "family": "back-three",
+      "role": "Finishing and edge defense"
+    },
+    {
+      "number": 15,
+      "name": "Fullback",
+      "family": "back-three",
+      "role": "Aerial reception and backfield decisions"
+    }
+  ],
+  "tests": [
+    {
+      "id": "sprint_10m",
+      "name": "10 m sprint",
+      "unit": "s",
+      "attribute": "acceleration",
+      "direction": "lower",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "sprint_20m",
+      "name": "20 m sprint",
+      "unit": "s",
+      "attribute": "acceleration",
+      "direction": "lower",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "broad_jump",
+      "name": "Standing broad jump",
+      "unit": "cm",
+      "attribute": "power",
+      "direction": "higher",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "squat_1rm",
+      "name": "Back squat 1RM",
+      "unit": "kg",
+      "attribute": "strength",
+      "direction": "higher",
+      "setting": "optional_gym",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "bench_1rm",
+      "name": "Bench press 1RM",
+      "unit": "kg",
+      "attribute": "strength",
+      "direction": "higher",
+      "setting": "optional_gym",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "yoyo_ir1",
+      "name": "Yo-Yo IR1",
+      "unit": "m",
+      "attribute": "endurance",
+      "direction": "higher",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "flying_10m",
+      "name": "Flying 10 m",
+      "unit": "s",
+      "attribute": "speed",
+      "direction": "lower",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "agility_505_left",
+      "name": "505 left",
+      "unit": "s",
+      "attribute": "change_direction",
+      "direction": "lower",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "agility_505_right",
+      "name": "505 right",
+      "unit": "s",
+      "attribute": "change_direction",
+      "direction": "lower",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "medicine_ball_chest",
+      "name": "Seated medicine ball throw",
+      "unit": "m",
+      "attribute": "upper_power",
+      "direction": "higher",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "vertical_jump",
+      "name": "Vertical jump",
+      "unit": "cm",
+      "attribute": "vertical_power",
+      "direction": "higher",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "passing_accuracy",
+      "name": "Target passing",
+      "unit": "percent",
+      "attribute": "passing",
+      "direction": "higher",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "grip_strength",
+      "name": "Grip dynamometry",
+      "unit": "kgf",
+      "attribute": "grip",
+      "direction": "higher",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    },
+    {
+      "id": "reactive_agility",
+      "name": "Reactive movement time",
+      "unit": "s",
+      "attribute": "reaction",
+      "direction": "lower",
+      "setting": "field",
+      "protocolStatus": "requires_review_before_comparison"
+    }
+  ],
+  "sources": [
+    {
+      "id": "posthumus2020",
+      "url": "https://doi.org/10.3390/sports8060085",
+      "year": 2020,
+      "cohort": "New Zealand Super Rugby adult men",
+      "level": "professional",
+      "sample": 39
+    },
+    {
+      "id": "usa2026",
+      "url": "https://www.majorleague.rugby/news/eagles-partner-with-mlr-sandc-to-raise-athlete-standards",
+      "status": "numeric_results_not_located"
+    },
+    {
+      "id": "hawks2023",
+      "url": "https://usa.rugby/news/major-league-rugby-and-usa-rugby-collaborate-to-launch-hawks-program-a-centralized-squad-developed-to-elevate-usa-qualified-players-202331",
+      "status": "numeric_results_not_located"
+    },
+    {
+      "id": "woodhouse2022",
+      "url": "https://doi.org/10.1080/02640414.2021.1993656",
+      "sample": 68,
+      "status": "female_numeric_extraction_pending"
+    },
+    {
+      "id": "position-demands",
+      "url": "https://passport.world.rugby/conditioning-for-rugby/introduction-to-conditioning-adult/game-demands/game-demands/position-specific-demands/"
+    },
+    {
+      "id": "sprint2021",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/33927113/",
+      "sample": 176
+    }
+  ],
+  "benchmarks": [
+    {
+      "test": "squat_1rm",
+      "group": "forwards",
+      "mean": 197.2,
+      "sd": 26.5,
+      "n": 23,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "squat_1rm",
+      "group": "backs",
+      "mean": 178.1,
+      "sd": 18.3,
+      "n": 16,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "bench_1rm",
+      "group": "forwards",
+      "mean": 146.1,
+      "sd": 14.2,
+      "n": 23,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "bench_1rm",
+      "group": "backs",
+      "mean": 135,
+      "sd": 12.8,
+      "n": 16,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "broad_jump",
+      "group": "forwards",
+      "mean": 252.3,
+      "sd": 25.3,
+      "n": 23,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "broad_jump",
+      "group": "backs",
+      "mean": 269,
+      "sd": 13,
+      "n": 16,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "sprint_10m",
+      "group": "forwards",
+      "mean": 1.78,
+      "sd": 0.08,
+      "n": 23,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "sprint_10m",
+      "group": "backs",
+      "mean": 1.66,
+      "sd": 0.04,
+      "n": 16,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "sprint_20m",
+      "group": "forwards",
+      "mean": 3.11,
+      "sd": 0.15,
+      "n": 23,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "sprint_20m",
+      "group": "backs",
+      "mean": 2.88,
+      "sd": 0.07,
+      "n": 16,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "yoyo_ir1",
+      "group": "forwards",
+      "mean": 1516.5,
+      "sd": 291.9,
+      "n": 23,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    },
+    {
+      "test": "yoyo_ir1",
+      "group": "backs",
+      "mean": 2237.5,
+      "sd": 266.3,
+      "n": 16,
+      "sourceId": "posthumus2020",
+      "classification": "published_reference",
+      "population": "adult_men",
+      "protocolStatus": "review_required",
+      "selectionThreshold": false
+    }
+  ]
+}
