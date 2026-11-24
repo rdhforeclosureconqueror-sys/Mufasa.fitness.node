@@ -1,0 +1,52 @@
+{
+  "status": "partial_production_discovery",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "src/routes/rugbyProfileRoutes.js",
+      "sha": "163a5c9a1c20a1d043cc57dc97735ac60a935505"
+    },
+    {
+      "path": "public/motion/contracts/overhead-squat-assessment.v1.json",
+      "sha": "0940c09bf913637a0c1e13709c7f97d87ef6d297"
+    },
+    {
+      "path": "docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md",
+      "sha": "64f305436f3d069c13469fe851e093e1ffc271a1"
+    },
+    {
+      "path": "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
+      "sha": "48c81c82d03328b843035336fd585218509c2bb4"
+    }
+  ],
+  "findings": [
+    {
+      "source_id": "overhead_squat",
+      "status": "existing_assessment_contract_candidate",
+      "target": "public/motion/contracts/overhead-squat-assessment.v1.json",
+      "requirement": "Compare protocol and capture semantics before aliasing; exercise entry is not an assessment."
+    },
+    {
+      "source_id": "shoulder_clearance",
+      "status": "not_found_by_exact_search",
+      "requirement": "Search aliases and inspect full library before declaring missing."
+    },
+    {
+      "source_id": "sand_acceleration_sprints",
+      "status": "not_found_by_exact_search",
+      "requirement": "Search aliases and inspect exercise library before declaring missing."
+    },
+    {
+      "source_id": "beast_mode_3v2_transition",
+      "status": "related_concept_found",
+      "target": "docs/rugby/rugby-hq-coaching-os-handoff.md",
+      "requirement": "Concept match is not drill identity."
+    }
+  ],
+  "remaining": "Inspect remaining 14 source IDs and aliases, compare production contracts, verify integration and permissions.",
+  "guardrails": [
+    "No duplicate engine",
+    "No runtime changes",
+    "Search absence is not proof of missing functionality"
+  ]
+}
