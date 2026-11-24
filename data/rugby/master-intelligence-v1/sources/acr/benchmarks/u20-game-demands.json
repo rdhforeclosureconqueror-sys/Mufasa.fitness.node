@@ -1,0 +1,117 @@
+{
+  "source_context": "Course-preserved Flanagan U20 example. Contextual benchmark, not universal norm. Verify original study before production use.",
+  "units": {
+    "duration": "min",
+    "distance": "m",
+    "relative_distance": "m/min",
+    "HSR": "m",
+    "HMLD": "m",
+    "HMLD_percent": "%",
+    "sprints": "count",
+    "accelerations": "count"
+  },
+  "positions": [
+    {
+      "position": "Prop",
+      "duration": 68,
+      "distance": 3944,
+      "relative_distance": 58,
+      "HSR_absolute": 44,
+      "HSR_individualized": 100,
+      "HMLD": 372,
+      "HMLD_percent": 9.4,
+      "sprints": 3,
+      "accelerations": 11
+    },
+    {
+      "position": "Hooker",
+      "duration": 69,
+      "distance": 3984,
+      "relative_distance": 58,
+      "HSR_absolute": 88,
+      "HSR_individualized": 104,
+      "HMLD": 522,
+      "HMLD_percent": 12.9,
+      "sprints": 7,
+      "accelerations": 22
+    },
+    {
+      "position": "Second row",
+      "duration": 83,
+      "distance": 4712,
+      "relative_distance": 56,
+      "HSR_absolute": 55,
+      "HSR_individualized": 85,
+      "HMLD": 421,
+      "HMLD_percent": 8.7,
+      "sprints": 5,
+      "accelerations": 19
+    },
+    {
+      "position": "Back row",
+      "duration": 87,
+      "distance": 5224,
+      "relative_distance": 60,
+      "HSR_absolute": 153,
+      "HSR_individualized": 212,
+      "HMLD": 720,
+      "HMLD_percent": 13.9,
+      "sprints": 12,
+      "accelerations": 34
+    },
+    {
+      "position": "Scrum-half",
+      "duration": 77,
+      "distance": 5422,
+      "relative_distance": 71,
+      "HSR_absolute": 191,
+      "HSR_individualized": 318,
+      "HMLD": 810,
+      "HMLD_percent": 14.9,
+      "sprints": 15,
+      "accelerations": 26
+    },
+    {
+      "position": "Out-half",
+      "duration": 76,
+      "distance": 5250,
+      "relative_distance": 69,
+      "HSR_absolute": 123,
+      "HSR_individualized": 118,
+      "HMLD": 601,
+      "HMLD_percent": 11.4,
+      "sprints": 10,
+      "accelerations": 24
+    },
+    {
+      "position": "Centre",
+      "duration": 87,
+      "distance": 5791,
+      "relative_distance": 66,
+      "HSR_absolute": 363,
+      "HSR_individualized": 277,
+      "HMLD": 945,
+      "HMLD_percent": 16.4,
+      "sprints": 22,
+      "accelerations": 29
+    },
+    {
+      "position": "Back three",
+      "duration": 92,
+      "distance": 6209,
+      "relative_distance": 67,
+      "HSR_absolute": 514,
+      "HSR_individualized": 296,
+      "HMLD": 1040,
+      "HMLD_percent": 16.7,
+      "sprints": 27,
+      "accelerations": 28
+    }
+  ],
+  "guardrails": [
+    "Position data are contextual benchmarks, not prescriptions.",
+    "HSR absolute and individualized methods are different constructs.",
+    "Whole-match averages do not replace peak-passage analysis.",
+    "Team style, age, sex, format and level modify demand."
+  ]
+}
