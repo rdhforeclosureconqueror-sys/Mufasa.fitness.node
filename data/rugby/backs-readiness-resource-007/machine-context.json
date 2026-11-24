@@ -1,0 +1,71 @@
+{
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "resourceNumber": 7,
+  "resourceName": "Rugby HQ Backs Readiness Thread Harvest",
+  "version": "1.0.0",
+  "createdFrom": [
+    "Pocket PT Rugby Coaching OS uploaded prototype",
+    "Rugby HQ backs readiness conversation thread",
+    "Previously generated Rugby HQ resource pack in this conversation"
+  ],
+  "createdAt": "2026-11-24",
+  "publicRepoSafe": true,
+  "destinationRepository": "rdhforeclosureconqueror-sys/Mufasa.fitness.node",
+  "destinationPaths": {
+    "docs": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/",
+    "data": "data/rugby/backs-readiness-resource-007/"
+  },
+  "coreConcept": "Backs Rugby Ready is the backs equivalent of forwards rugby readiness, judging positions 10 through 15 on defensive IQ, tackling in space, attack IQ, ball skills, movement/evasion, and role-specific skill, with a separate Backline Athletic Index.",
+  "activationTriggers": [
+    "backs readiness",
+    "backline evaluation",
+    "fly-half assessment",
+    "inside center assessment",
+    "outside center assessment",
+    "wing assessment",
+    "fullback assessment",
+    "tackling in space",
+    "defensive IQ",
+    "offense without the ball",
+    "offense with the ball",
+    "Backline Athletic Index",
+    "rugby combine tests"
+  ],
+  "separationRules": [
+    "Skill/IQ readiness must remain separate from Athletic Index.",
+    "Performance/coaching notes must remain separate from medical/welfare records.",
+    "Safeguarding narratives must remain restricted and separate from normal coaching records.",
+    "Internal Pocket PT acknowledgments must not be represented as official governing-body credentials."
+  ],
+  "hardGates": [
+    {
+      "gate": "tackling_in_space_starter_minimum",
+      "value": 70,
+      "source": "thread-derived proposed software logic"
+    },
+    {
+      "gate": "medical_hold_blocks_affected_participation",
+      "value": true,
+      "source": "source-recovered prototype boundary and thread"
+    },
+    {
+      "gate": "safeguarding_hold_blocks_affected_participation",
+      "value": true,
+      "source": "source-recovered prototype boundary and thread"
+    },
+    {
+      "gate": "coach_approval_required_for_lineup",
+      "value": true,
+      "source": "thread-derived proposed software logic"
+    }
+  ],
+  "officialCertificationDisclaimer": "This resource does not create or replace USA Rugby, World Rugby, Rugby Xplorer, medical, SafeSport, safeguarding, or competition-specific authorization requirements.",
+  "counts": {
+    "skillIqCategories": 6,
+    "athleticCategories": 6,
+    "positionOverlayGroups": 5,
+    "evidenceTypes": 5,
+    "acrRulesRecovered": 0,
+    "realAthleteRecords": 0
+  }
+}
