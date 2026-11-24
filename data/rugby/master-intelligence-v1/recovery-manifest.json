@@ -372,5 +372,62 @@
     "path": "docs/rugby/master-intelligence-v1/ROADMAP.md",
     "readback_verified": true,
     "maintenance": "Update checklist and manifest with every milestone; require acceptance evidence."
+  },
+  "programme_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/programme-evaluator.cjs",
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "orphan",
+        "pass": true
+      },
+      {
+        "name": "missing objective",
+        "pass": true
+      },
+      {
+        "name": "missing actual",
+        "pass": true
+      },
+      {
+        "name": "unit mismatch",
+        "pass": true
+      },
+      {
+        "name": "calendar change",
+        "pass": true
+      },
+      {
+        "name": "referral",
+        "pass": true
+      },
+      {
+        "name": "modified approved",
+        "pass": true
+      },
+      {
+        "name": "modified unapproved",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "zero actual",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": "In-memory nonmutation only; persistent plan immutability and trusted safety integration pending."
   }
 }
