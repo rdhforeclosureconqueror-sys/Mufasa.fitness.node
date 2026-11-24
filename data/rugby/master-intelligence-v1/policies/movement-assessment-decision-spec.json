@@ -1,0 +1,214 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "status": "review_required",
+  "classification": "engineering interpretation of recovered sources",
+  "groups": [
+    {
+      "domain": "general_screening",
+      "source_ids": [
+        "ACR-119",
+        "ACR-120",
+        "ACR-121",
+        "ACR-122",
+        "ACR-123",
+        "ACR-124",
+        "ACR-125",
+        "ACR-126",
+        "ACR-127",
+        "ACR-128",
+        "ACR-129",
+        "ACR-130",
+        "ACR-131",
+        "ACR-132",
+        "ACR-133",
+        "ACR-134"
+      ]
+    },
+    {
+      "domain": "hip_rom",
+      "source_ids": [
+        "ACR-135",
+        "ACR-136",
+        "ACR-137",
+        "ACR-138",
+        "ACR-139",
+        "ACR-140",
+        "ACR-141",
+        "ACR-142"
+      ]
+    },
+    {
+      "domain": "hamstring_rom",
+      "source_ids": [
+        "ACR-143",
+        "ACR-144",
+        "ACR-145",
+        "ACR-146",
+        "ACR-147",
+        "ACR-148",
+        "ACR-149",
+        "ACR-150",
+        "ACR-151",
+        "ACR-152"
+      ]
+    },
+    {
+      "domain": "reasoning_and_capture",
+      "source_ids": [
+        "ACR-153",
+        "ACR-154",
+        "ACR-155",
+        "ACR-156",
+        "ACR-157",
+        "ACR-158",
+        "ACR-159",
+        "ACR-160",
+        "ACR-161",
+        "ACR-162",
+        "ACR-163",
+        "ACR-164",
+        "ACR-165",
+        "ACR-166"
+      ]
+    },
+    {
+      "domain": "hip_protocol",
+      "source_ids": [
+        "ACR-167",
+        "ACR-168",
+        "ACR-169",
+        "ACR-170"
+      ]
+    },
+    {
+      "domain": "hamstring_protocol",
+      "source_ids": [
+        "ACR-171",
+        "ACR-172",
+        "ACR-173",
+        "ACR-174",
+        "ACR-175"
+      ]
+    },
+    {
+      "domain": "tuck_jump",
+      "source_ids": [
+        "ACR-176",
+        "ACR-177",
+        "ACR-178",
+        "ACR-179",
+        "ACR-180",
+        "ACR-181",
+        "ACR-182",
+        "ACR-183"
+      ]
+    },
+    {
+      "domain": "ckcuest",
+      "source_ids": [
+        "ACR-184",
+        "ACR-185",
+        "ACR-186",
+        "ACR-187",
+        "ACR-188",
+        "ACR-189"
+      ]
+    },
+    {
+      "domain": "asymmetry",
+      "source_ids": [
+        "ACR-190"
+      ]
+    }
+  ],
+  "workflow": [
+    "observe",
+    "hypothesize",
+    "secondary_test",
+    "review_converging_and_conflicting_evidence",
+    "coach_review",
+    "intervention",
+    "retest"
+  ],
+  "tests": [
+    {
+      "id": "hip_rotation",
+      "type": "local_rom",
+      "capture": [
+        "left_ir",
+        "right_ir",
+        "left_er",
+        "right_er",
+        "angle_unit",
+        "protocol_version"
+      ]
+    },
+    {
+      "id": "hamstring_popliteal",
+      "type": "local_rom",
+      "capture": [
+        "left_angle",
+        "right_angle",
+        "angle_convention",
+        "pelvic_control",
+        "non_test_leg_control",
+        "protocol_version"
+      ]
+    },
+    {
+      "id": "tuck_jump",
+      "type": "dynamic",
+      "capture": [
+        "individual_faults",
+        "front_side_view",
+        "protocol_version"
+      ],
+      "protocol_status": "verify duration versus repetition convention before scoring"
+    },
+    {
+      "id": "ckcuest",
+      "type": "dynamic",
+      "capture": [
+        "three_trial_touches",
+        "duration",
+        "tape_distance",
+        "position",
+        "rest",
+        "protocol_version"
+      ],
+      "protocol_status": "verify course protocol before scoring"
+    }
+  ],
+  "common_fields": [
+    "athlete_id",
+    "date",
+    "assessor",
+    "pain",
+    "valid_technique",
+    "protocol_version",
+    "measurement_method",
+    "units",
+    "side_where_applicable",
+    "intervention",
+    "retest_date"
+  ],
+  "guardrails": [
+    "Pain or concerning findings route to medical review",
+    "Unknown safety or invalid technique holds interpretation",
+    "No standalone injury prediction or muscle activation inference from video",
+    "Do not compare different protocols or angle conventions",
+    "Do not activate scoring until protocol verified",
+    "Preserve conflicting evidence and original measurements"
+  ],
+  "acceptance_cases": [
+    "pain overrides score",
+    "unknown pain holds",
+    "invalid technique holds",
+    "unverified protocol holds",
+    "different retest protocol blocks comparison",
+    "conflicting findings retained",
+    "missing trial not zero",
+    "no automated corrective prescription"
+  ]
+}
