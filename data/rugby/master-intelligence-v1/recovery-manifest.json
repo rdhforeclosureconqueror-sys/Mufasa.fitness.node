@@ -812,5 +812,73 @@
       "RHIE and limiting-factor inference not implemented",
       "Trusted safety and benchmark integration pending"
     ]
+  },
+  "resistance_training": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/resistance-training-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/resistance-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/resistance-evaluator.test.cjs"
+    ],
+    "source_rule_count": 148,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "duration",
+        "pass": true
+      },
+      {
+        "name": "time overrun",
+        "pass": true
+      },
+      {
+        "name": "complex lift",
+        "pass": true
+      },
+      {
+        "name": "order",
+        "pass": true
+      },
+      {
+        "name": "relative strength",
+        "pass": true
+      },
+      {
+        "name": "invalid mass",
+        "pass": true
+      },
+      {
+        "name": "pain",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "unsupported format",
+        "pass": true
+      },
+      {
+        "name": "negative rest",
+        "pass": true
+      },
+      {
+        "name": "coverage",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "exercise library reconciliation",
+      "trusted competency and safety",
+      "force velocity protocols",
+      "coach-approved progression",
+      "station scheduling"
+    ]
   }
 }
