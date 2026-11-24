@@ -1,0 +1,88 @@
+{
+  "version": 1,
+  "status": "proposed_nonproduction",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "data/rugby/master-intelligence-v1/policies/unified-assessment-contract.json",
+      "sha": "c807f038d30c0cb9df8ebcab7b49ed6bc38ad958"
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/policies/beast-mode-progression-spec.json",
+      "sha": "01856edd9dc8cfa577d92a61fc3867acbcf23aaf"
+    },
+    {
+      "path": "src/routes/rugbyProfileRoutes.js",
+      "sha": "163a5c9a1c20a1d043cc57dc97735ac60a935505"
+    }
+  ],
+  "events": [
+    "assessment",
+    "movement_quality",
+    "session_completed",
+    "attendance",
+    "coach_observation",
+    "progression_review",
+    "stage_change",
+    "correction"
+  ],
+  "commonRequired": [
+    "eventId",
+    "athleteId",
+    "occurredAt",
+    "recordedAt",
+    "actorId",
+    "source",
+    "verificationStatus",
+    "visibilityDomain"
+  ],
+  "serverOwned": [
+    "eventId",
+    "recordedAt",
+    "actorId",
+    "verificationStatus",
+    "visibilityDomain"
+  ],
+  "progressionReview": {
+    "required": [
+      "currentStage",
+      "criteriaVersion",
+      "evidenceEventIds",
+      "coachActorId",
+      "decision",
+      "reason"
+    ],
+    "checks": [
+      "same athlete",
+      "authorized actor",
+      "valid timestamps",
+      "approved criteria",
+      "not superseded",
+      "verified evidence",
+      "safety and eligibility rechecked"
+    ],
+    "automaticStageChange": false
+  },
+  "history": {
+    "appendOnly": true,
+    "correction": "superseding event with reason; original retained",
+    "plannedActualSeparate": true,
+    "missingAttendance": "unknown, not absence",
+    "freshnessThreshold": null
+  },
+  "acceptance": [
+    "reject cross-athlete evidence",
+    "reject future evidence",
+    "reject superseded evidence",
+    "reject unauthorized actor",
+    "reject unverified evidence",
+    "reject unknown criteria",
+    "preserve corrections",
+    "no automatic stage change"
+  ],
+  "limitations": [
+    "No approved freshness thresholds",
+    "No trusted authorization implementation",
+    "No database migration or live activation"
+  ]
+}
