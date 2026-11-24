@@ -1438,5 +1438,16 @@
     "readback_verified": true,
     "name_overlap_groups": 22,
     "runtime_activation": false
+  },
+  "exercise_variant_audit": {
+    "path": "data/rugby/master-intelligence-v1/exercise-variant-audit.json",
+    "groups": 22,
+    "records": 82,
+    "distinct": 22,
+    "identicalExceptId": 0,
+    "doseDifferences": 14,
+    "source_pointer_checks": 123,
+    "readback_verified": true,
+    "runtime_activation": false
   }
 }
