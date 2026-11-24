@@ -1,0 +1,895 @@
+{
+  "version": 1,
+  "status": "exact_catalog_matching_complete_semantic_review_pending",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "data/exercise.json",
+      "sha": "99d414913b62e96263f31d1babe5bb50d13444f5"
+    },
+    {
+      "path": "src/exercise-intelligence/exerciseCatalog.js",
+      "sha": "0c6b9c939c8fb2d8e17163832e1e572bd346d634"
+    }
+  ],
+  "catalogCount": 884,
+  "uniqueCatalogIds": 884,
+  "rows": [
+    {
+      "key": "activate:AD-MD-A-001",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-B-001",
+      "name": "Squat Stand with Twist",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-B-002",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-B-003",
+      "name": "Single Leg Balance with Push to Unbalance",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-B-004",
+      "name": "Resisted Arm Side Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-B-005",
+      "name": "Resisted Arm Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-B-006",
+      "name": "Single Leg Arabesque",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-C-001",
+      "name": "Mountain Climber",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-C-002",
+      "name": "Forward Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-C-003",
+      "name": "Pop Press Up – Alternate",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-C-004",
+      "name": "Jogging High Ball Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-C-005",
+      "name": "Diagonal Shuffle to Lunge",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-C-006",
+      "name": "Shoulder Workout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-MD-D-001",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-B-003",
+      "name": "Squat Stand",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-B-004",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-B-005",
+      "name": "Single Leg Balance Back Slaps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-B-006",
+      "name": "Resisted Arm Side Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-B-007",
+      "name": "Resisted Arm Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-B-008",
+      "name": "Single Leg Arabesque",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-C-009",
+      "name": "Mountain Climber",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-C-010",
+      "name": "Forward Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-C-011",
+      "name": "Pop Press Up – Wide to Narrow",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-C-012",
+      "name": "Jogging High Ball Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-C-013",
+      "name": "Shoulder Workout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-C-014",
+      "name": "Diagonal Shuffle to Lunge",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-D-015",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L1-D-016",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-B-003",
+      "name": "Squat Stand with Twist",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-B-004",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-B-005",
+      "name": "Single Leg Balance Arm Circles",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-B-006",
+      "name": "Resisted Arm Side Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-B-007",
+      "name": "Resisted Arm Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-B-008",
+      "name": "Bent Hip Nordic Hamstring Curl",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-C-009",
+      "name": "Partner Resisted Quick Steps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-C-010",
+      "name": "Diagonal Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-C-011",
+      "name": "Pop Press Up – Alternate",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-C-012",
+      "name": "Jogging High Ball Jump and Turn",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-C-013",
+      "name": "Partner Mirroring",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-C-014",
+      "name": "Shoulder Workout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-D-015",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L2-D-016",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-B-003",
+      "name": "Forward Lunge and Reach",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-B-004",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-B-005",
+      "name": "Single Leg Balance with Eyes Closed",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-B-006",
+      "name": "Resisted Arm Side Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-B-007",
+      "name": "Resisted Arm Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-B-008",
+      "name": "Static Nordic Hamstring Hold",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-C-009",
+      "name": "Forward Pogo Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-C-010",
+      "name": "Forward Double Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-C-011",
+      "name": "Pop Press Up – Near to Far",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-C-012",
+      "name": "Forward Lunge Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-C-013",
+      "name": "Shoulder Walkout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-C-014",
+      "name": "Figure of 8",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-D-015",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L3-D-016",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-B-003",
+      "name": "Forward Lunge and Side Bend",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-B-004",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-B-005",
+      "name": "Single Leg Balance with Push to Unbalance",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-B-006",
+      "name": "Resisted Arm Side Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-B-007",
+      "name": "Resisted Arm Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-B-008",
+      "name": "Static Nordic Hamstring Hold",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-C-009",
+      "name": "Maximum Height Pogo Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-C-010",
+      "name": "Diagonal Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-C-011",
+      "name": "Plyo Press Up",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-C-012",
+      "name": "Forward Bounding",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-C-013",
+      "name": "Shoulder Walkout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-C-014",
+      "name": "Figure of 8",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-D-015",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L4-D-016",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-B-003",
+      "name": "Dead Leg Sprint",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-B-004",
+      "name": "Kneeling Drop Catch",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-B-005",
+      "name": "Forward Triple Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-B-006",
+      "name": "Backtrack Pivot and Sprint",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-B-007",
+      "name": "Alternating Single Leg Bounds",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-B-008",
+      "name": "Shoulder Workout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-D-009",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L5-D-010",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-B-003",
+      "name": "Single Leg Pogo Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-B-004",
+      "name": "Diagonal Triple Hop and Stick",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-B-005",
+      "name": "Forward Tuck Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-B-006",
+      "name": "Run Set Cut",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-B-007",
+      "name": "Kneeling Drop Catch – Press Up",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-B-008",
+      "name": "Shoulder Workout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-D-009",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L6-D-010",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-A-001",
+      "name": "Small-sided Games",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-A-002",
+      "name": "Snake Run",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-B-003",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-B-004",
+      "name": "Mountain Climber and Twist",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-B-005",
+      "name": "Single Leg Balance with Eyes Closed and Push to Unbalance",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-B-006",
+      "name": "Nordic Hamstring Curl",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-B-007",
+      "name": "Resisted Arm Side Raise",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-B-008",
+      "name": "Resisted Arm Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-C-009",
+      "name": "Forward Hop and Stick with Shallow Squat",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-C-010",
+      "name": "Single Leg Pogo Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-C-011",
+      "name": "Run Set Cut",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-C-012",
+      "name": "Kneeling Drop Catch – Plyometric Press Up",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-C-013",
+      "name": "Weaving Tuck Jumps",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-C-014",
+      "name": "Shoulder Workout",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-D-015",
+      "name": "Static Neck Contractions",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "activate:AD-L7-D-016",
+      "name": "Repeated Sprint Conditioning",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:ground_fight_sprint_rotation",
+      "name": "Ground Fight Sprint Rotation",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:beast_mode_3v2_transition",
+      "name": "Beast Mode 3v2 Transition Game",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:sand_acceleration_sprints",
+      "name": "Sand Acceleration Sprints",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:sand_cone_cod",
+      "name": "Sand Cone Change-of-Direction",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:sand_ladder",
+      "name": "Sand Ladder Footwork",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:maul_ball",
+      "name": "Maul Ball",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:forward_drive",
+      "name": "Forward Drive",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:get_up",
+      "name": "Get Up",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    },
+    {
+      "key": "intro:tackle_shuttle",
+      "name": "Tackle Shuttle",
+      "candidates": [],
+      "status": "no_exact_name_match",
+      "approvedCanonicalId": null
+    }
+  ],
+  "summary": {
+    "matched": 0,
+    "unmatched": 123
+  },
+  "relationshipContract": {
+    "canonicalExerciseId": "Existing catalog ID after review",
+    "sourceVariantKey": "Immutable qualified source key",
+    "variantApproval": "Separate from exercise identity and dose approval",
+    "multiplayer": "Session block references, not forced exercise alias"
+  },
+  "limitations": [
+    "Exact normalized name and source aliases only; override aliases not fully applied",
+    "No semantic equivalence established",
+    "Unmatched is not proof of new exercise"
+  ]
+}
