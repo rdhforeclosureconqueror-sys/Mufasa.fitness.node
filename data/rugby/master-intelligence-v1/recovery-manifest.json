@@ -1138,5 +1138,38 @@
     ],
     "runtime_activation": false,
     "complete": true
+  },
+  "activate_archive_transfer": {
+    "source": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
+    "payload_files": 16,
+    "verified_count": 4,
+    "files": [
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COACH_TRACKING_SPEC.md",
+        "expected": "30c51a3847d19819941a8545818cd0118da9df92",
+        "actual": "30c51a3847d19819941a8545818cd0118da9df92",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/ACR_RULE_REGISTRY_STATUS.md",
+        "expected": "c77f052de02a065f141b12ccb86d85bb5b296bf6",
+        "actual": "c77f052de02a065f141b12ccb86d85bb5b296bf6",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/BOT_CONTEXT.md",
+        "expected": "30792f6ae4dbb1623d5fca58cde862f5a3c1c9df",
+        "actual": "30792f6ae4dbb1623d5fca58cde862f5a3c1c9df",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/BEAST_MODE_FRAMEWORK.md",
+        "expected": "bcac1065472c2b447120521bf5fe240309734a46",
+        "actual": "bcac1065472c2b447120521bf5fe240309734a46",
+        "verified": true
+      }
+    ],
+    "runtime_activation": false,
+    "installer_executed": false
   }
 }
