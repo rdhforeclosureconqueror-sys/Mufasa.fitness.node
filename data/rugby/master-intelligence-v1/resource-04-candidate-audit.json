@@ -91,7 +91,8 @@
     "Screening observations and MoveNet proxies are not diagnostic; validate protocols and pain referral before scoring.",
     "Contact drills require qualified supervision, competency progression and appropriate contact-load controls.",
     "Energy systems overlap; work-rest ratios and loading ranges are contextual, not universal prescriptions.",
-    "Original manifest and source notes contain personal certificate holder information; defer public repository transfer pending privacy decision. Schema is descriptive, not a validated JSON Schema; reuse existing athlete identity. Prompt is archived, not active."
+    "Original manifest and source notes contain personal certificate holder information; defer public repository transfer pending privacy decision. Schema is descriptive, not a validated JSON Schema; reuse existing athlete identity. Prompt is archived, not active.",
+    "Archived loader renamed index.js.txt to prevent runtime use. Original readiness thresholds 21/16 unvalidated; mixed scale directions and Number coercion can misclassify missing/invalid inputs. Do not use loader or README installation commands. Reconcile proposed routes with existing live routes."
   ],
   "transferred": [
     {
@@ -127,6 +128,24 @@
       "path": "docs/rugby/master-intelligence-v1/intro-conditioning/rugby_hq_bot_system_prompt.md",
       "expected": "575de28af6f07d35cc698d8d7e017288aaf1e4ca",
       "actual": "575de28af6f07d35cc698d8d7e017288aaf1e4ca",
+      "verified": true
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/RUGBY_HQ_IMPLEMENTATION_NOTES.md",
+      "expected": "e46b2195247119583f5f3d0265408f55dae5859d",
+      "actual": "e46b2195247119583f5f3d0265408f55dae5859d",
+      "verified": true
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/index.js.txt",
+      "expected": "bc6c4180229d93d4f498700e090eef98cd2fe6b0",
+      "actual": "bc6c4180229d93d4f498700e090eef98cd2fe6b0",
+      "verified": true
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/README.md",
+      "expected": "615a602360051400e7be803661f6653f0b90c7de",
+      "actual": "615a602360051400e7be803661f6653f0b90c7de",
       "verified": true
     }
   ]
