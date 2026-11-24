@@ -1259,7 +1259,7 @@
     "source": "rugby-hq-resource-007-transfer-package.zip",
     "archive_entries": 23,
     "payload_files": 22,
-    "verified_count": 8,
+    "verified_count": 10,
     "files": [
       {
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
@@ -1308,8 +1308,24 @@
         "expected": "0f9523f3af66f83e72c5bf115b383a8da8f0e6ef",
         "actual": "0f9523f3af66f83e72c5bf115b383a8da8f0e6ef",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/backs-rugby-ready.md",
+        "expected": "552968eac0a13650fbebf8fcb5a07e444621a8da",
+        "actual": "552968eac0a13650fbebf8fcb5a07e444621a8da",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/sample-evaluation-record.json",
+        "expected": "2b94d46c214eea16199bf5d553091c3a5bc53e2a",
+        "actual": "2b94d46c214eea16199bf5d553091c3a5bc53e2a",
+        "verified": true
       }
     ],
-    "runtime_activation": false
+    "runtime_activation": false,
+    "reconciliation_notes": [
+      "Narrative example uses scrimmage, timestamp, evaluator and date; schema uses controlled_scrimmage, clipTimestamp, evaluatorId/evaluatorName and evaluatedAt. Preserve originals; normalize only in integration.",
+      "Narrative score 64 is described as close to match-ready; rubric classifies 60–69 as developmental."
+    ]
   }
 }
