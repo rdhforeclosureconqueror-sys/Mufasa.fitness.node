@@ -154,6 +154,34 @@
       "expected": "cb7b3879e6aa83b5f452ac489bb95b7c159f22d0",
       "actual": "cb7b3879e6aa83b5f452ac489bb95b7c159f22d0",
       "verified": true
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/RUGBY_HQ_BOT_HANDOFF.md",
+      "expected": "068937df0397c8cb368e79670e7804c92972b85d",
+      "actual": "068937df0397c8cb368e79670e7804c92972b85d",
+      "verified": true,
+      "redacted": false
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/SOURCE_NOTES.redacted.md",
+      "expected": "86e73dcf99e4b3e4a3388c579c87430694631b53",
+      "actual": "85d26d65ee4f23c30f7b4a03ba2c0db1cdc24be5",
+      "verified": true,
+      "redacted": true
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_manifest.redacted.json",
+      "expected": "607d6d3309b5db8c31a38b3d05112d0e7e306a1e",
+      "actual": "0a4cd8ef7225e32b48bacf85f61c2ae7691ffdc0",
+      "verified": true,
+      "redacted": true
     }
+  ],
+  "exact_count": 11,
+  "redacted_count": 2,
+  "archive_accounted_for": true,
+  "privacy_redactions": [
+    "certificate holder",
+    "certificate completion date"
   ]
 }
