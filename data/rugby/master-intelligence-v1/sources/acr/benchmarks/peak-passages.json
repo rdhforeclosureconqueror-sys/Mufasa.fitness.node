@@ -1,0 +1,36 @@
+{
+  "source_context": "Course-preserved examples; original papers should be verified before publication.",
+  "examples": [
+    {
+      "label": "Read 2019 inside backs",
+      "window": "15 s",
+      "relative_distance_m_min": 297
+    },
+    {
+      "label": "Read 2019 inside backs",
+      "window": "30 s",
+      "relative_distance_m_min": 245
+    },
+    {
+      "label": "Read 2019 inside backs",
+      "window": "10 min",
+      "relative_distance_m_min": 92
+    },
+    {
+      "label": "Flanagan 5-min peak",
+      "metric": "relative distance",
+      "comparison": "about 33\u201348% above whole-game average"
+    },
+    {
+      "label": "Flanagan 5-min peak",
+      "metric": "HMLD time",
+      "comparison": "about 70\u201390% above whole-game average"
+    }
+  ],
+  "rules": [
+    "Peak intensity falls as analysis window length increases.",
+    "Prefer rolling windows to arbitrary fixed chunks when raw data permit.",
+    "Keep locomotor peak, contact peak and combined peak separate where possible.",
+    "Peak match values are reference ceilings, not automatic daily training doses."
+  ]
+}
