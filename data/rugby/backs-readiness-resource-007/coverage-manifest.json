@@ -1,0 +1,88 @@
+{
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "coverage": {
+    "positionsCovered": [
+      "10",
+      "12",
+      "13",
+      "11",
+      "14",
+      "15",
+      "wing"
+    ],
+    "skillIqCategories": [
+      "defensive_iq",
+      "tackling_in_space",
+      "attack_iq",
+      "ball_skills",
+      "movement_evasion",
+      "role_specific_skill"
+    ],
+    "athleticCategories": [
+      "speed",
+      "agility",
+      "repeat_effort",
+      "endurance",
+      "power",
+      "strength"
+    ],
+    "evidenceTypes": [
+      "drill",
+      "controlled_scrimmage",
+      "match",
+      "video_clip",
+      "coach_review"
+    ],
+    "hardGates": [
+      {
+        "gate": "tackling_in_space_starter_minimum",
+        "value": 70,
+        "source": "thread-derived proposed software logic"
+      },
+      {
+        "gate": "medical_hold_blocks_affected_participation",
+        "value": true,
+        "source": "source-recovered prototype boundary and thread"
+      },
+      {
+        "gate": "safeguarding_hold_blocks_affected_participation",
+        "value": true,
+        "source": "source-recovered prototype boundary and thread"
+      },
+      {
+        "gate": "coach_approval_required_for_lineup",
+        "value": true,
+        "source": "thread-derived proposed software logic"
+      }
+    ],
+    "knowledgeDomains": [
+      "backs readiness",
+      "defensive IQ",
+      "tackling in space",
+      "attack IQ",
+      "off-ball attack",
+      "with-ball attack",
+      "ball skills",
+      "movement and evasion",
+      "position-specific backline skill",
+      "rugby-specific athletic testing",
+      "coach observation evidence",
+      "readiness gating",
+      "public-repo safety boundaries",
+      "Rugby HQ integration"
+    ]
+  },
+  "counts": {
+    "rulesRecovered": 0,
+    "assessmentsRecovered": 2,
+    "assessmentCategoriesRecovered": 12,
+    "exercisesOrTestsRecovered": 15,
+    "knowledgeDomainsRecovered": 14,
+    "realAthleteRecordsTransferred": 0
+  },
+  "notes": {
+    "rulesRecovered": "No ACR registry or complete rule registry was present in this thread. Hard gates are proposed software logic, not ACR rules.",
+    "assessmentsRecovered": "Backline Skill/IQ Rating and Backline Athletic Index.",
+    "exercisesOrTestsRecovered": "Includes combine tests and drills named in the thread/resource pack."
+  }
+}
