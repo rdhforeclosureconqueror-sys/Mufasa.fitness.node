@@ -1,0 +1,41 @@
+{
+  "warning": "Course ranges are contextual guides, not universal cutoffs.",
+  "hypertrophy": {
+    "reps": "~6\u201315",
+    "weekly_sets_per_muscle": "~10\u201320",
+    "intensity": "~60\u201385% 1RM",
+    "effort": "often near failure / ~RPE 7\u20139"
+  },
+  "rest": {
+    "strength_endurance": "~30\u201360 s",
+    "hypertrophy": "~90 s\u20133 min",
+    "strength": "~3\u20135 min",
+    "power": "~2\u20134 min"
+  },
+  "clean_skill": {
+    "beginner": "steps 1\u20135, ~3\u20136 reps, 2\u20133 sets",
+    "intermediate_1": "add steps 6\u20137, ~3\u20136 reps, 2\u20134 sets",
+    "intermediate_2": "add steps 8\u201310, ~3\u20136 reps, 3\u20134 sets",
+    "principle": "competency- and quality-gated, not time-gated"
+  },
+  "movement_families": [
+    "squat",
+    "hinge",
+    "lunge",
+    "push",
+    "pull",
+    "carry",
+    "jump/land"
+  ],
+  "default_order": "power/skill \u2192 primary strength \u2192 accessory \u2192 isolation",
+  "session_design": [
+    "timing",
+    "format",
+    "exercise selection",
+    "exercise order",
+    "exercise number",
+    "rest",
+    "cueing",
+    "logistics"
+  ]
+}
