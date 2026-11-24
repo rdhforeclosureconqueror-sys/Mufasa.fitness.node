@@ -9,7 +9,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Preserve eight recovered batches and original registry; verify complete ACR identifier union.
 - [x] Create unified registry index and link 20 master wording variants.
 - [x] Align fields of 166 recovered records without inventing missing semantics.
-- [ ] Reconcile master wording variants and normalize all unresolved triggers, actions, exceptions and tests.
+- [x] Audit 20 master source pointers and preserve 19 divergent identifier meanings without overwriting originals.
+- [ ] Resolve master identifier semantic divergence and normalize all unresolved triggers, actions, exceptions and tests.
 - [ ] Archive twelve original knowledge documents and supporting batch narratives, protocols and references.
 - [ ] Transfer and reconcile Activate/Beast Mode and Backs Readiness archives.
 - [ ] Audit candidate resource 04 and verify historical resources 01, 03, 05, 08 on main.
@@ -43,7 +44,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Map gamespeed ACR-691–780 and implement isolated assessment evaluator (13 functional cases passed).
 - [ ] Reconcile SAQ, exposure tracking, phase planning and simulator interfaces; run repository gamespeed tests.
 - [x] Map ACR-251–434 programme management, periodisation, female athlete and monitoring rules; implement isolated monitoring evaluator (14 functional cases passed).
-- [ ] Verify complete domain mapping union and reconcile advanced programme semantics, trusted authorization and longitudinal monitoring; run repository tests.
+- [x] Verify complete ACR domain mapping union and all 780 source pointers.
+- [ ] Reconcile advanced programme semantics, trusted authorization and longitudinal monitoring; run repository tests.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
 ## Production acceptance
@@ -55,7 +57,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Advanced programme mapping and isolated monitoring evaluator saved; 14 functional cases passed. Complete mapping union audit and integration pending. Runtime activation remains disabled; no production merge or deployment claimed.
+All 780 ACR source pointers and 20 master archive pointers verified. Master audit found 19 divergent identifier meanings requiring reconciliation. Runtime activation disabled.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
