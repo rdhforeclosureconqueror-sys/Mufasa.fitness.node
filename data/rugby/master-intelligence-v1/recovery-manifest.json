@@ -1421,5 +1421,13 @@
       "verified": true,
       "status": "preliminary_domain_crosswalk"
     }
+  },
+  "assessment_protocol_registry": {
+    "path": "data/rugby/master-intelligence-v1/policies/assessment-protocol-registry.json",
+    "count": 18,
+    "legacy": 5,
+    "candidates": 13,
+    "readback_verified": true,
+    "runtime_activation": false
   }
 }
