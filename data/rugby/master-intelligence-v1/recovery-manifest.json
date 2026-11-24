@@ -952,5 +952,80 @@
       "trusted safety",
       "simulator integration"
     ]
+  },
+  "advanced_programme": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/advanced-programme-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/monitoring-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/monitoring-evaluator.test.cjs"
+    ],
+    "source_rule_count": 184,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "velocity loss",
+        "pass": true
+      },
+      {
+        "name": "invalid rep",
+        "pass": true
+      },
+      {
+        "name": "metric",
+        "pass": true
+      },
+      {
+        "name": "device",
+        "pass": true
+      },
+      {
+        "name": "load delta",
+        "pass": true
+      },
+      {
+        "name": "missing actual",
+        "pass": true
+      },
+      {
+        "name": "zero actual",
+        "pass": true
+      },
+      {
+        "name": "negative load",
+        "pass": true
+      },
+      {
+        "name": "privacy",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "unknown privacy",
+        "pass": true
+      },
+      {
+        "name": "empty",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "trusted safety and authorization",
+      "longitudinal measurement reliability",
+      "calendar and team variation integration",
+      "existing programme engine reconciliation"
+    ]
   }
 }
