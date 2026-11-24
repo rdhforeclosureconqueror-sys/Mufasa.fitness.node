@@ -1142,7 +1142,7 @@
   "activate_archive_transfer": {
     "source": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
     "payload_files": 16,
-    "verified_count": 7,
+    "verified_count": 10,
     "files": [
       {
         "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COACH_TRACKING_SPEC.md",
@@ -1185,10 +1185,29 @@
         "expected": "7aac4f33b65acca28ab0af076afb150c1385214a",
         "actual": "7aac4f33b65acca28ab0af076afb150c1385214a",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/README.md",
+        "expected": "be2109848c101fde6b5d27a05a6b0b26e44bba0a",
+        "actual": "be2109848c101fde6b5d27a05a6b0b26e44bba0a",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COVERAGE_MANIFEST.md",
+        "expected": "fa5882394c4e1b66629c7805d3925fd165220864",
+        "actual": "fa5882394c4e1b66629c7805d3925fd165220864",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_context.json",
+        "expected": "e1d928c6c82885b7503a73c69634189b70c428ae",
+        "actual": "e1d928c6c82885b7503a73c69634189b70c428ae",
+        "verified": true
       }
     ],
     "runtime_activation": false,
     "installer_executed": false,
-    "inventory_note": "ZIP contains 11 docs and 5 data files, plus transfer manifest and installer; original inventory omits BOT_CONTEXT.md."
+    "inventory_note": "ZIP contains 11 docs and 5 data files, plus transfer manifest and installer; original inventory omits BOT_CONTEXT.md.",
+    "coverage_discrepancy": "Coverage manifest reports seven progression statuses; inventory and coach tracking list eight. Preserve both pending reconciliation."
   }
 }
