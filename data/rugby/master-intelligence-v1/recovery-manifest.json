@@ -611,5 +611,71 @@
     "repository_runner_pending": true,
     "runtime_activation": false,
     "limitations": "Trusted privacy and safety checks, dated longitudinal history, intervention feedback persistence and programme integration pending."
+  },
+  "nutrition": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/nutrition-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/nutrition-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/nutrition-evaluator.test.cjs"
+    ],
+    "source_rule_count": 18,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown clinical",
+        "pass": true
+      },
+      {
+        "name": "youth",
+        "pass": true
+      },
+      {
+        "name": "supplement",
+        "pass": true
+      },
+      {
+        "name": "unknown supplement",
+        "pass": true
+      },
+      {
+        "name": "missing context",
+        "pass": true
+      },
+      {
+        "name": "invalid mass",
+        "pass": true
+      },
+      {
+        "name": "trend",
+        "pass": true
+      },
+      {
+        "name": "different protocol",
+        "pass": true
+      },
+      {
+        "name": "different athlete",
+        "pass": true
+      },
+      {
+        "name": "reverse dates",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": "Existing Nutrition Lab interface discovery, trusted safety, performance/body composition review and fueling education integration pending."
   }
 }
