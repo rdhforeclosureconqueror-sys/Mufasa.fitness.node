@@ -1,0 +1,142 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "classification": "engineering interpretation of recovered rules",
+  "groups": [
+    {
+      "domain": "gamespeed and perception action",
+      "source_ids": [
+        "ACR-691",
+        "ACR-692",
+        "ACR-693",
+        "ACR-694",
+        "ACR-695",
+        "ACR-696",
+        "ACR-697",
+        "ACR-698",
+        "ACR-699",
+        "ACR-700",
+        "ACR-701",
+        "ACR-702",
+        "ACR-703",
+        "ACR-704",
+        "ACR-705",
+        "ACR-706",
+        "ACR-707",
+        "ACR-708",
+        "ACR-709",
+        "ACR-710",
+        "ACR-711",
+        "ACR-712",
+        "ACR-713",
+        "ACR-714"
+      ]
+    },
+    {
+      "domain": "linear speed and exposure",
+      "source_ids": [
+        "ACR-715",
+        "ACR-716",
+        "ACR-717",
+        "ACR-718",
+        "ACR-719",
+        "ACR-720",
+        "ACR-721",
+        "ACR-722",
+        "ACR-723",
+        "ACR-724",
+        "ACR-725",
+        "ACR-726",
+        "ACR-727",
+        "ACR-728",
+        "ACR-729",
+        "ACR-730",
+        "ACR-731",
+        "ACR-732",
+        "ACR-733",
+        "ACR-734",
+        "ACR-735",
+        "ACR-736",
+        "ACR-737"
+      ]
+    },
+    {
+      "domain": "phase planning",
+      "source_ids": [
+        "ACR-738",
+        "ACR-739",
+        "ACR-740",
+        "ACR-741",
+        "ACR-742",
+        "ACR-743",
+        "ACR-744",
+        "ACR-745",
+        "ACR-746",
+        "ACR-747"
+      ]
+    },
+    {
+      "domain": "acceleration",
+      "source_ids": [
+        "ACR-748",
+        "ACR-749",
+        "ACR-750",
+        "ACR-751",
+        "ACR-752",
+        "ACR-753",
+        "ACR-754",
+        "ACR-755",
+        "ACR-756",
+        "ACR-757",
+        "ACR-758"
+      ]
+    },
+    {
+      "domain": "maximum velocity",
+      "source_ids": [
+        "ACR-759",
+        "ACR-760",
+        "ACR-761",
+        "ACR-762",
+        "ACR-763",
+        "ACR-764",
+        "ACR-765",
+        "ACR-766",
+        "ACR-767",
+        "ACR-768",
+        "ACR-769"
+      ]
+    },
+    {
+      "domain": "reactive agility and games",
+      "source_ids": [
+        "ACR-770",
+        "ACR-771",
+        "ACR-772",
+        "ACR-773",
+        "ACR-774",
+        "ACR-775",
+        "ACR-776",
+        "ACR-777",
+        "ACR-778",
+        "ACR-779",
+        "ACR-780"
+      ]
+    }
+  ],
+  "guardrails": [
+    "Closed change of direction is not reactive agility",
+    "Flying zone average is not measured peak velocity",
+    "No automatic limitation diagnosis",
+    "No universal speed dose or progression",
+    "Preserve stimulus and decision outcome",
+    "No simulator calibration without validation"
+  ],
+  "pending": [
+    "SAQ library reconciliation",
+    "longitudinal exposure and phase planning",
+    "validated peak speed protocols",
+    "trusted safety",
+    "simulator integration"
+  ]
+}
