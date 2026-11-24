@@ -19,7 +19,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Transfer Backs Readiness archive (22/22 payload files byte-exact verified).
 - [ ] Reconcile Activate/Beast Mode and Backs Readiness with existing production architecture; preserve archive transfer manifests.
 - [x] Verify historical resources 01, 03, 05, 08 on main (13/13 PR paths present; current hashes recorded).
-- [ ] Audit candidate resource 04 and confirm original archive identity.
+- [x] Preserve introductory conditioning candidate archive (11 exact originals and 2 verified privacy-redacted copies; 13/13 accounted for).
+- [ ] Confirm Resource 04 numbering and reconcile introductory conditioning content against ACR and production architecture.
 - [ ] Independently verify evidence and course protocol claims; document unresolved gaps.
 
 ## Decision intelligence
@@ -63,7 +64,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Historical resources 01, 03, 05, 08: 13/13 paths present on main. Resource 04 identity audit pending.
+Historical resources 01, 03, 05, 08: 13/13 paths present on main. Introductory conditioning candidate archive: 13/13 accounted for; numbering and overlap review pending.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
