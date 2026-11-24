@@ -1,0 +1,121 @@
+{
+  "version": 1,
+  "status": "proposed_nonproduction",
+  "runtime_activation": false,
+  "source": {
+    "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_seed_data.json",
+    "sha": "2986f635bd49d613676e1d62abd475e5046f3442"
+  },
+  "stages": [
+    {
+      "id": "BM-01",
+      "name": "Functional Stability",
+      "definition": "Athlete can hold clean positions and perform basic movement patterns with control.",
+      "gate": "Own basic position before speed, load or chaos."
+    },
+    {
+      "id": "BM-02",
+      "name": "Maximum Stability",
+      "definition": "Athlete can maintain clean positions under perturbation, instability, fatigue or contact-like challenge.",
+      "gate": "Stay organized when stability is challenged."
+    },
+    {
+      "id": "BM-03",
+      "name": "Strength Stabilization",
+      "definition": "Athlete can produce force while maintaining alignment and control.",
+      "gate": "Be strong without losing shape."
+    },
+    {
+      "id": "BM-04",
+      "name": "Maximum Strength",
+      "definition": "Athlete can produce high force without losing structure.",
+      "gate": "High force with clean mechanics."
+    },
+    {
+      "id": "BM-05",
+      "name": "Power",
+      "definition": "Athlete can produce force quickly.",
+      "gate": "Fast force without losing Activate standards."
+    },
+    {
+      "id": "BM-06",
+      "name": "Maximum Power",
+      "definition": "Athlete can repeatedly produce explosive outputs while preserving movement quality.",
+      "gate": "Repeat explosive outputs with quality."
+    },
+    {
+      "id": "BM-07",
+      "name": "Beast Mode",
+      "definition": "Repeated controlled violence with clean mechanics under fatigue, chaos, instability and contact-like demands.",
+      "gate": "High rugby power repeatedly without posture, balance, alignment or decision-making breakdown."
+    }
+  ],
+  "quality": {
+    "scale": [
+      {
+        "value": 1,
+        "label": "poor / unsafe"
+      },
+      {
+        "value": 2,
+        "label": "inconsistent / needs regression"
+      },
+      {
+        "value": 3,
+        "label": "acceptable but not ready to progress"
+      },
+      {
+        "value": 4,
+        "label": "good / progression-ready standard"
+      },
+      {
+        "value": 5,
+        "label": "excellent / advanced standard"
+      }
+    ],
+    "fields": [
+      "control",
+      "balance",
+      "technique",
+      "trunk_stability",
+      "lower_limb_alignment",
+      "landing_quality",
+      "change_of_direction_quality",
+      "neck_control",
+      "fatigue_breakdown"
+    ]
+  },
+  "sourceStatuses": [
+    "Not assessed",
+    "Learning",
+    "Needs regression",
+    "Hold current level",
+    "Ready with reduced volume",
+    "Ready to progress",
+    "Advanced",
+    "Beast Mode candidate"
+  ],
+  "policy": {
+    "thresholdsApproved": false,
+    "automaticProgression": false,
+    "stageSkipping": false,
+    "requiredEvidence": [
+      "athlete identity",
+      "current stage",
+      "dated same-athlete quality evidence",
+      "approved stage criteria",
+      "trusted eligibility",
+      "coach review"
+    ],
+    "fatigueBreakdownDirection": "unresolved; do not aggregate",
+    "decisions": [
+      "REFER",
+      "HOLD",
+      "REVIEW_REQUIRED",
+      "MAINTAIN_REVIEW",
+      "REGRESSION_REVIEW",
+      "PROGRESSION_REVIEW"
+    ],
+    "note": "Review direction is not an authorization; no numerical thresholds or training dose inferred."
+  }
+}
