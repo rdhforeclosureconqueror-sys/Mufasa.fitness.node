@@ -1533,9 +1533,9 @@
     }
   },
   "longitudinal_athlete_evidence": {
-    "path": "data/rugby/master-intelligence-v1/policies/longitudinal-athlete-evidence-spec.json",
+    "path": "data/rugby/master-intelligence-v1/policies/longitudinal-athlete-evidence-contract.json",
     "readback_verified": true,
     "runtime_activation": false,
-    "tests_pending": true
+    "implementation_pending": true
   }
 }
