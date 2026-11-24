@@ -304,5 +304,61 @@
     "domains": 7,
     "status": "proposed_review_required",
     "runtime_activation": false
+  },
+  "player_profile_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/player-profile-evaluator.cjs",
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "missing",
+        "pass": true
+      },
+      {
+        "name": "referral",
+        "pass": true
+      },
+      {
+        "name": "hold",
+        "pass": true
+      },
+      {
+        "name": "format mismatch",
+        "pass": true
+      },
+      {
+        "name": "protocol mismatch",
+        "pass": true
+      },
+      {
+        "name": "unreviewed",
+        "pass": true
+      },
+      {
+        "name": "no coach priority",
+        "pass": true
+      },
+      {
+        "name": "invalid value",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      },
+      {
+        "name": "trend",
+        "pass": true
+      },
+      {
+        "name": "incompatible trend",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false
   }
 }
