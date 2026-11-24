@@ -1,0 +1,321 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "canonical_semantics_approved": false,
+  "classification": "proposed semantic grouping; clauses retained verbatim, not independently course verified",
+  "precedence": [
+    "pain-referral",
+    "privacy",
+    "hypothesis-not-diagnosis",
+    "measurement-quality",
+    "profile-first",
+    "coach_review_before_prescription"
+  ],
+  "precedence_note": "Proposed engineering safeguard; referral does not authorize disclosure of restricted data. No group overrides medical or authorization requirements.",
+  "records": [
+    {
+      "id": "CP-profile-first",
+      "source_keys": [
+        "archive:M1-01",
+        "thread:M1-01"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M1-01",
+          "wording": "Profile before prescription: create a multidimensional athlete profile before generating training."
+        },
+        {
+          "key": "thread:M1-01",
+          "wording": "Profile before prescription."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-functional-mass",
+      "source_keys": [
+        "archive:M1-02",
+        "thread:M1-05"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M1-02",
+          "wording": "Treat body mass as functional mass relative to role; track it with composition and performance rather than assuming bigger is better."
+        },
+        {
+          "key": "thread:M1-05",
+          "wording": "Bigger, stronger, or leaner is not automatically better; physical development must remain functional."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-distinct-physical-qualities",
+      "source_keys": [
+        "archive:M1-03",
+        "archive:M1-04",
+        "archive:M1-05",
+        "archive:M1-06",
+        "thread:M1-02",
+        "thread:M1-06"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M1-03",
+          "wording": "Store absolute and relative strength because both can matter in rugby."
+        },
+        {
+          "key": "archive:M1-04",
+          "wording": "Store power as a distinct quality; power reflects force expressed at velocity."
+        },
+        {
+          "key": "archive:M1-05",
+          "wording": "Separate acceleration from maximal sprint speed and preserve split/test context."
+        },
+        {
+          "key": "archive:M1-06",
+          "wording": "Separate aerobic fitness, RSA, and RHIE instead of one generic endurance score."
+        },
+        {
+          "key": "thread:M1-02",
+          "wording": "Rugby performance depends on multiple physical qualities, not one fitness quality."
+        },
+        {
+          "key": "thread:M1-06",
+          "wording": "Strength, power, speed, and endurance must be assessed separately even though they interact."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-individual-requirements",
+      "source_keys": [
+        "thread:M1-03",
+        "thread:M1-04",
+        "thread:M1-07"
+      ],
+      "clauses": [
+        {
+          "key": "thread:M1-03",
+          "wording": "Physical requirements vary by position and playing level."
+        },
+        {
+          "key": "thread:M1-04",
+          "wording": "Training should target gaps between the player’s current profile and required profile."
+        },
+        {
+          "key": "thread:M1-07",
+          "wording": "Training decisions should consider both team requirements and individual requirements."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-readiness-context",
+      "source_keys": [
+        "archive:M1-07",
+        "thread:M1-08",
+        "thread:M1-09"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M1-07",
+          "wording": "Readiness is contextual and longitudinal: sleep, fatigue, soreness, stress, mental fatigue, mood, fueling and hydration inform but do not diagnose."
+        },
+        {
+          "key": "thread:M1-08",
+          "wording": "Lifestyle factors influence readiness, recovery, and adaptation."
+        },
+        {
+          "key": "thread:M1-09",
+          "wording": "Lifestyle monitoring should guide conversation and coaching decisions, not diagnose or judge the athlete."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-privacy",
+      "source_keys": [
+        "archive:M1-08",
+        "archive:M1-10"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M1-08",
+          "wording": "Treat social-media/cognitive-load information as optional context, never surveillance."
+        },
+        {
+          "key": "archive:M1-10",
+          "wording": "Use privacy-by-design, especially for minors and sensitive health information."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-individual-nutrition-recovery",
+      "source_keys": [
+        "archive:M1-09",
+        "thread:M1-10"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M1-09",
+          "wording": "Individualize nutrition; use food-first practice, carb periodization where useful, and anti-doping/supplement-contamination safeguards. Do not hard-code a 45-minute anabolic window."
+        },
+        {
+          "key": "thread:M1-10",
+          "wording": "Nutrition, recovery, and conditioning should all be individualized where practical."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-screening-sequence",
+      "source_keys": [
+        "archive:M2-01",
+        "thread:M2-01",
+        "thread:M2-02",
+        "thread:M2-03"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M2-01",
+          "wording": "Distinguish global movement screens, local joint ROM, and dynamic control under speed/load/repetition."
+        },
+        {
+          "key": "thread:M2-01",
+          "wording": "Screening should progress from broad observation toward more specific testing."
+        },
+        {
+          "key": "thread:M2-02",
+          "wording": "ROM tests provide local joint-level information."
+        },
+        {
+          "key": "thread:M2-03",
+          "wording": "Dynamic tests show how the athlete controls movement under more demanding conditions."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-hypothesis-not-diagnosis",
+      "source_keys": [
+        "archive:M2-02",
+        "archive:M2-07",
+        "archive:M2-09",
+        "thread:M2-04"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M2-02",
+          "wording": "Screening produces observations and hypotheses, not medical diagnosis."
+        },
+        {
+          "key": "archive:M2-07",
+          "wording": "Use 'possible contributor', 'suggests', 'may contribute' and 'consistent with'; do not assert unmeasured causal muscle diagnoses."
+        },
+        {
+          "key": "archive:M2-09",
+          "wording": "Treat 'overactive/underactive' labels as hypotheses only; video observes movement, not muscle activation."
+        },
+        {
+          "key": "thread:M2-04",
+          "wording": "A movement finding generates hypotheses; it does not prove a muscular cause."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-pain-referral",
+      "source_keys": [
+        "archive:M2-03",
+        "thread:M2-08"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M2-03",
+          "wording": "Pain is a hard gate: stop the automated corrective pathway and refer appropriately."
+        },
+        {
+          "key": "thread:M2-08",
+          "wording": "Pain changes the pathway from coaching/correction to medical review."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-measurement-quality",
+      "source_keys": [
+        "archive:M2-04",
+        "archive:M2-05",
+        "archive:M2-06",
+        "thread:M2-09"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M2-04",
+          "wording": "Store protocol, side, result, units, pain, asymmetry, date, assessor, intervention and retest date."
+        },
+        {
+          "key": "archive:M2-05",
+          "wording": "Standardize camera position, height, distance, athlete orientation, landmarks, repetition/frame, surface and footwear."
+        },
+        {
+          "key": "archive:M2-06",
+          "wording": "Store vision-derived measures with confidence and image-quality flags."
+        },
+        {
+          "key": "thread:M2-09",
+          "wording": "Every assessment must be standardized enough to allow reliable longitudinal comparison."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-converging-evidence",
+      "source_keys": [
+        "archive:M2-08",
+        "thread:M2-05",
+        "thread:M2-06"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M2-08",
+          "wording": "Repeated consistent findings increase hypothesis confidence; conflicting findings reduce it."
+        },
+        {
+          "key": "thread:M2-05",
+          "wording": "Repeated findings across different assessments strengthen a working hypothesis."
+        },
+        {
+          "key": "thread:M2-06",
+          "wording": "Secondary isolation tests should be used to confirm or challenge suspected contributors."
+        }
+      ],
+      "status": "proposed_review_required"
+    },
+    {
+      "id": "CP-matched-intervention-retest",
+      "source_keys": [
+        "archive:M2-10",
+        "thread:M2-07",
+        "thread:M2-10"
+      ],
+      "clauses": [
+        {
+          "key": "archive:M2-10",
+          "wording": "Match intervention to the identified limitation; stretching alone does not solve strength/control deficits."
+        },
+        {
+          "key": "thread:M2-07",
+          "wording": "Corrective interventions should match the actual limitation: mobility, strength, stability/control, or technique."
+        },
+        {
+          "key": "thread:M2-10",
+          "wording": "The original test should be repeated after intervention to verify whether the athlete actually improved."
+        }
+      ],
+      "status": "proposed_review_required"
+    }
+  ]
+}
