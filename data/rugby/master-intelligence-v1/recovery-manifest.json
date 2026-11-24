@@ -101,6 +101,23 @@
         "required_fields": true,
         "provenance": true
       }
+    },
+    "master_rules_transfer": {
+      "status": "branch_readback_verified",
+      "count": 20,
+      "path": "sources/acr/master-rules.json"
+    },
+    "supporting_sources": {
+      "status": "branch_readback_verified",
+      "files": [
+        "sources/acr/schemas/athlete-state.schema.json",
+        "sources/acr/schemas/recommendation.schema.json",
+        "sources/acr/benchmarks/gym-course-guides.json",
+        "sources/acr/benchmarks/peak-passages.json",
+        "sources/acr/benchmarks/conditioning-templates.json",
+        "sources/acr/benchmarks/u20-game-demands.json"
+      ],
+      "knowledge_documents_pending": 12
     }
   },
   "deduplication": {
