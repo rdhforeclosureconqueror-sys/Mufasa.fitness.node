@@ -1,0 +1,145 @@
+{
+  "source": "User-supplied batch 4",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-078",
+      "plain_language_rule": "Lifestyle behaviors outside formal training can materially influence recovery, adaptation, and performance.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-079",
+      "plain_language_rule": "Sleep is a central recovery behavior and should be monitored when practical.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-080",
+      "plain_language_rule": "Higher training and competition demands increase the importance of adequate recovery opportunity.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-081",
+      "plain_language_rule": "Sleep monitoring should consider both quantity and perceived quality.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-082",
+      "plain_language_rule": "Sleep data should be interpreted as trends rather than relying only on individual nights.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-083",
+      "plain_language_rule": "Sleep and wellness information provides context for performance but should not be treated as proof of causation.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-084",
+      "plain_language_rule": "Repeated inadequate sleep should generate a coaching/recovery flag rather than an automatic diagnosis.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-085",
+      "plain_language_rule": "Short sleep has been associated with increased injury occurrence in some athlete populations, but sleep duration alone should not be used to predict injury.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-086",
+      "plain_language_rule": "Sleep extension and appropriately timed naps may support athlete recovery and performance.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-087",
+      "plain_language_rule": "The platform should contain practical sleep-hygiene education.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-088",
+      "plain_language_rule": "Recovery interventions should be matched to the athlete’s identified issue rather than prescribed identically to everyone.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-089",
+      "plain_language_rule": "Post-intervention feedback should be recorded so the system can learn which recovery strategies are useful for the individual athlete.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-090",
+      "plain_language_rule": "Persistent sleep problems should trigger appropriate human follow-up and potentially professional referral, not automated medical diagnosis.",
+      "source_module": "Player Profile",
+      "domain": "Sleep and Recovery"
+    },
+    {
+      "rule_id": "ACR-091",
+      "plain_language_rule": "Cognitive demands outside rugby can influence training and match readiness.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-092",
+      "plain_language_rule": "Mental fatigue may impair decision-making speed, decision accuracy, technical execution, or physical performance in some contexts.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-093",
+      "plain_language_rule": "Digital activity should be considered one potential contributor to cognitive load rather than assumed to be its sole cause.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-094",
+      "plain_language_rule": "Social-media use should be interpreted alongside sleep, stress, school/work demands, and general wellbeing.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-095",
+      "plain_language_rule": "The system should monitor perceived mental fatigue rather than unnecessarily surveilling an athlete’s device use.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-096",
+      "plain_language_rule": "Persistent high mental fatigue should create a coaching flag and conversation opportunity.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-097",
+      "plain_language_rule": "Digital habits that interfere with sleep or preparation can become targets for education and behavior modification.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-098",
+      "plain_language_rule": "Mental-fatigue and psychological-wellbeing measures should remain separate variables.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-099",
+      "plain_language_rule": "Recovery interventions such as breathing, meditation, relaxation, or low-intensity movement may be offered when appropriate, with athlete feedback recorded afterward.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    },
+    {
+      "rule_id": "ACR-100",
+      "plain_language_rule": "Youth athlete digital and wellbeing data should be handled with heightened privacy protections.",
+      "source_module": "Player Profile",
+      "domain": "Cognitive Load"
+    }
+  ]
+}
