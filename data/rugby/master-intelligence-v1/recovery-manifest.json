@@ -270,5 +270,12 @@
     "master_count": 20,
     "structured_normalization_pending": 166,
     "runtime_activation": false
+  },
+  "normalization": {
+    "path": "data/rugby/master-intelligence-v1/normalized/recovered-acr-166.json",
+    "count": 166,
+    "readback_verified": true,
+    "status": "field_alignment_complete_semantic_review_pending",
+    "runtime_activation": false
   }
 }
