@@ -1,0 +1,505 @@
+{
+  "version": 1,
+  "status": "source_variant_comparison_complete_catalog_matching_pending",
+  "runtime_activation": false,
+  "sourcePointerChecks": 123,
+  "sourceRegistry": {
+    "path": "data/rugby/master-intelligence-v1/policies/exercise-drill-registry.json",
+    "sha": "1380f07662972c31a08a2c6a734e64bf270aff69"
+  },
+  "groups": [
+    {
+      "name": "snakerun",
+      "keys": [
+        "activate:AD-MD-A-001",
+        "activate:AD-L1-A-002",
+        "activate:AD-L2-A-002",
+        "activate:AD-L3-A-002",
+        "activate:AD-L4-A-002",
+        "activate:AD-L5-A-002",
+        "activate:AD-L6-A-002",
+        "activate:AD-L7-A-002"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "distance_meters",
+        "duration_seconds",
+        "intensity_percent",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "distance_meters",
+        "duration_seconds",
+        "intensity_percent"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "squatstandwithtwist",
+      "keys": [
+        "activate:AD-MD-B-001",
+        "activate:AD-L2-B-003"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "heeltotoewalkwithkneeraise",
+      "keys": [
+        "activate:AD-MD-B-002",
+        "activate:AD-L1-B-004",
+        "activate:AD-L2-B-004",
+        "activate:AD-L3-B-004",
+        "activate:AD-L4-B-004",
+        "activate:AD-L7-B-003"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "distance_meters",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "distance_meters"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "singlelegbalancewithpushtounbalance",
+      "keys": [
+        "activate:AD-MD-B-003",
+        "activate:AD-L4-B-005"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "duration_seconds",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "duration_seconds"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "resistedarmsideraise",
+      "keys": [
+        "activate:AD-MD-B-004",
+        "activate:AD-L1-B-006",
+        "activate:AD-L2-B-006",
+        "activate:AD-L3-B-006",
+        "activate:AD-L4-B-006",
+        "activate:AD-L7-B-007"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "duration_seconds",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "duration_seconds"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "resistedarmrotation",
+      "keys": [
+        "activate:AD-MD-B-005",
+        "activate:AD-L1-B-007",
+        "activate:AD-L2-B-007",
+        "activate:AD-L3-B-007",
+        "activate:AD-L4-B-007",
+        "activate:AD-L7-B-008"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "duration_seconds",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "duration_seconds"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "singlelegarabesque",
+      "keys": [
+        "activate:AD-MD-B-006",
+        "activate:AD-L1-B-008"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "mountainclimber",
+      "keys": [
+        "activate:AD-MD-C-001",
+        "activate:AD-L1-C-009"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "forwardhopandstick",
+      "keys": [
+        "activate:AD-MD-C-002",
+        "activate:AD-L1-C-010"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "poppressupalternate",
+      "keys": [
+        "activate:AD-MD-C-003",
+        "activate:AD-L2-C-011"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "jogginghighballjumps",
+      "keys": [
+        "activate:AD-MD-C-004",
+        "activate:AD-L1-C-012"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "diagonalshuffletolunge",
+      "keys": [
+        "activate:AD-MD-C-005",
+        "activate:AD-L1-C-014"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "intensity_percent",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "intensity_percent"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "shoulderworkout",
+      "keys": [
+        "activate:AD-MD-C-006",
+        "activate:AD-L1-C-013",
+        "activate:AD-L2-C-014",
+        "activate:AD-L5-B-008",
+        "activate:AD-L6-B-008",
+        "activate:AD-L7-C-014"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "part",
+        "category",
+        "sets",
+        "reps",
+        "duration_seconds",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "duration_seconds"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "staticneckcontractions",
+      "keys": [
+        "activate:AD-MD-D-001",
+        "activate:AD-L1-D-015",
+        "activate:AD-L2-D-015",
+        "activate:AD-L3-D-015",
+        "activate:AD-L4-D-015",
+        "activate:AD-L5-D-009",
+        "activate:AD-L6-D-009",
+        "activate:AD-L7-D-015"
+      ],
+      "differingFields": [
+        "programme",
+        "level",
+        "category",
+        "sets",
+        "reps",
+        "duration_seconds",
+        "source_basis",
+        "redistribution_note"
+      ],
+      "doseFields": [
+        "sets",
+        "reps",
+        "duration_seconds"
+      ],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "smallsidedgames",
+      "keys": [
+        "activate:AD-L1-A-001",
+        "activate:AD-L2-A-001",
+        "activate:AD-L3-A-001",
+        "activate:AD-L4-A-001",
+        "activate:AD-L5-A-001",
+        "activate:AD-L6-A-001",
+        "activate:AD-L7-A-001"
+      ],
+      "differingFields": [
+        "level",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "repeatedsprintconditioning",
+      "keys": [
+        "activate:AD-L1-D-016",
+        "activate:AD-L2-D-016",
+        "activate:AD-L3-D-016",
+        "activate:AD-L4-D-016",
+        "activate:AD-L5-D-010",
+        "activate:AD-L6-D-010",
+        "activate:AD-L7-D-016"
+      ],
+      "differingFields": [
+        "level",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "diagonalhopandstick",
+      "keys": [
+        "activate:AD-L2-C-010",
+        "activate:AD-L4-C-010"
+      ],
+      "differingFields": [
+        "level",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "staticnordichamstringhold",
+      "keys": [
+        "activate:AD-L3-B-008",
+        "activate:AD-L4-B-008"
+      ],
+      "differingFields": [
+        "level",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "shoulderwalkout",
+      "keys": [
+        "activate:AD-L3-C-013",
+        "activate:AD-L4-C-013"
+      ],
+      "differingFields": [
+        "level",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "figureof8",
+      "keys": [
+        "activate:AD-L3-C-014",
+        "activate:AD-L4-C-014"
+      ],
+      "differingFields": [
+        "level",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "singlelegpogojumps",
+      "keys": [
+        "activate:AD-L6-B-003",
+        "activate:AD-L7-C-010"
+      ],
+      "differingFields": [
+        "level",
+        "part",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    },
+    {
+      "name": "runsetcut",
+      "keys": [
+        "activate:AD-L6-B-006",
+        "activate:AD-L7-C-011"
+      ],
+      "differingFields": [
+        "level",
+        "part",
+        "source_basis"
+      ],
+      "doseFields": [],
+      "status": "distinct_source_variants_preserve",
+      "canonicalMergeApproved": false
+    }
+  ],
+  "summary": {
+    "groups": 22,
+    "records": 82,
+    "distinct": 22,
+    "identicalExceptId": 0,
+    "doseDifferences": 14
+  },
+  "limitations": [
+    "Name normalization only; differently named semantic duplicates not assessed",
+    "Source variants do not establish approved exercise identity or dose",
+    "Production canonical matching pending"
+  ]
+}
