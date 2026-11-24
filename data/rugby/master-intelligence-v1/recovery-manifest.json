@@ -1449,5 +1449,13 @@
     "source_pointer_checks": 123,
     "readback_verified": true,
     "runtime_activation": false
+  },
+  "exercise_catalog_match": {
+    "path": "data/rugby/master-intelligence-v1/exercise-catalog-match-audit.json",
+    "matched": 0,
+    "unmatched": 123,
+    "catalog_count": 884,
+    "readback_verified": true,
+    "runtime_activation": false
   }
 }
