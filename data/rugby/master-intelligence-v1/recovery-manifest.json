@@ -1259,7 +1259,7 @@
     "source": "rugby-hq-resource-007-transfer-package.zip",
     "archive_entries": 23,
     "payload_files": 22,
-    "verified_count": 6,
+    "verified_count": 8,
     "files": [
       {
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
@@ -1295,6 +1295,18 @@
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/athletic-index.md",
         "expected": "0155c33f581d2e4371df749d567f84fe05ba5039",
         "actual": "0155c33f581d2e4371df749d567f84fe05ba5039",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/source-boundaries.md",
+        "expected": "1ca33e2eb884d7e398176f8e3bf91e2ba7bbff31",
+        "actual": "1ca33e2eb884d7e398176f8e3bf91e2ba7bbff31",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/backs-rugby-ready.schema.json",
+        "expected": "0f9523f3af66f83e72c5bf115b383a8da8f0e6ef",
+        "actual": "0f9523f3af66f83e72c5bf115b383a8da8f0e6ef",
         "verified": true
       }
     ],
