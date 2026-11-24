@@ -1,0 +1,175 @@
+[
+  {
+    "id": "ground_fight_sprint_rotation",
+    "name": "Ground Fight Sprint Rotation",
+    "category": [
+      "GRHITT",
+      "contact_conditioning",
+      "wrestling",
+      "repeated_high_intensity_effort"
+    ],
+    "players": "12 ideal; 6 pairs",
+    "instructions": [
+      "Pairs start on ground.",
+      "On whistle, fight for safe top/control position.",
+      "Winner stays.",
+      "Loser sprints 10 yards, drops to ground, rotates.",
+      "Continue until each player completes 6 bouts."
+    ],
+    "safety": [
+      "no throws",
+      "no slams",
+      "no joint locks",
+      "no neck cranks",
+      "no twisting knees"
+    ],
+    "coaching_points": [
+      "win body position",
+      "brace trunk",
+      "leg drive",
+      "get up fast",
+      "sprint with intent"
+    ]
+  },
+  {
+    "id": "beast_mode_3v2_transition",
+    "name": "Beast Mode 3v2 Transition Game",
+    "category": [
+      "small_sided_game",
+      "fatigue_decision_making",
+      "integrated_conditioning"
+    ],
+    "players": "10 ideal; two groups of 5",
+    "instructions": [
+      "All 5 start on ground.",
+      "Pop up, sprint 5 yards, drop, change direction, return.",
+      "Repeat twice.",
+      "First 3 finishers attack; last 2 defend.",
+      "Immediately play 3v2."
+    ],
+    "coaching_points": [
+      "straighten before pass",
+      "fix defender",
+      "hold width",
+      "communicate",
+      "support inside/outside",
+      "defense presses together"
+    ],
+    "progressions": [
+      "touch finish",
+      "two-hand touch and reload",
+      "controlled wrap tackle",
+      "add breakdown",
+      "play back opposite direction"
+    ]
+  },
+  {
+    "id": "sand_acceleration_sprints",
+    "name": "Sand Acceleration Sprints",
+    "category": [
+      "surface_resisted_sprint",
+      "acceleration",
+      "stability"
+    ],
+    "instructions": [
+      "6-10 reps of 5-15 meters",
+      "full recovery",
+      "violent arm drive",
+      "knee punch",
+      "forward lean",
+      "push ground away"
+    ],
+    "notes": "Complement to sled/hill sprinting. Resistance varies by sand depth, wetness, and firmness."
+  },
+  {
+    "id": "sand_cone_cod",
+    "name": "Sand Cone Change-of-Direction",
+    "category": [
+      "COD",
+      "deceleration",
+      "stability",
+      "conditioning"
+    ],
+    "instructions": [
+      "Use short 5-10-5 or cone patterns",
+      "Focus on braking mechanics",
+      "Start with low volume"
+    ],
+    "notes": "Great for control, but grass/turf cutting is still needed for transfer."
+  },
+  {
+    "id": "sand_ladder",
+    "name": "Sand Ladder Footwork",
+    "category": [
+      "footwork",
+      "coordination",
+      "ankle_stability",
+      "warmup"
+    ],
+    "notes": "Accessory, not a main speed builder."
+  },
+  {
+    "id": "maul_ball",
+    "name": "Maul Ball",
+    "category": [
+      "rugby_specific_circuit",
+      "contact_conditioning"
+    ],
+    "instructions": [
+      "Player 1 protects rugby ball in crouched position.",
+      "Player 2 attempts to maul/fight for ball.",
+      "Work 15 seconds, switch roles."
+    ],
+    "purpose": "Ball protection, grip, body position, contact endurance."
+  },
+  {
+    "id": "forward_drive",
+    "name": "Forward Drive",
+    "category": [
+      "rugby_specific_circuit",
+      "contact_power"
+    ],
+    "instructions": [
+      "Player 1 holds pad.",
+      "Player 2 drives pad 5m within 5 seconds.",
+      "Backpedal to start and repeat four drives.",
+      "Rest 10 seconds, switch roles."
+    ],
+    "purpose": "Leg drive, contact power, repeated effort."
+  },
+  {
+    "id": "get_up",
+    "name": "Get Up",
+    "category": [
+      "rugby_specific_circuit",
+      "ground_recovery",
+      "wrestling"
+    ],
+    "instructions": [
+      "Player 1 starts face down.",
+      "Player 2 stands above.",
+      "Player 1 tries to get up while Player 2 keeps them down.",
+      "Work 15 seconds, switch roles."
+    ],
+    "safety": [
+      "Player 2 stays on feet",
+      "Do not lie on partner"
+    ]
+  },
+  {
+    "id": "tackle_shuttle",
+    "name": "Tackle Shuttle",
+    "category": [
+      "rugby_specific_circuit",
+      "tackle_conditioning"
+    ],
+    "instructions": [
+      "Player lies face down 3m from tackle bag/pad.",
+      "Get up, stay low, tackle bag/pad.",
+      "Alternate leading shoulders.",
+      "Backpedal to start after each tackle.",
+      "Perform four tackles, switch roles."
+    ],
+    "purpose": "Get-up speed, tackle mechanics, repeated effort."
+  }
+]
