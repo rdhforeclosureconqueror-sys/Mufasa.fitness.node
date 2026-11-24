@@ -1,0 +1,42 @@
+// Rugby HQ resource entrypoint for Mufasa Fit Node repo.
+// Drop into src/rugby-hq/index.js
+
+const path = require('path');
+const fs = require('fs');
+
+function loadJson(relativePath) {
+  const fullPath = path.join(__dirname, relativePath);
+  return JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+}
+
+function calculateSessionLoad(sessionRpe, durationMinutes) {
+  return Number(sessionRpe) * Number(durationMinutes);
+}
+
+function calculateWellnessTotal({ fatigue, sleep_quality, muscle_soreness, stress, mood }) {
+  return [fatigue, sleep_quality, muscle_soreness, stress, mood]
+    .map(Number)
+    .reduce((sum, value) => sum + value, 0);
+}
+
+function classifyReadiness(wellnessTotal) {
+  if (wellnessTotal >= 21) return 'green';
+  if (wellnessTotal >= 16) return 'yellow';
+  return 'red';
+}
+
+function getRugbyHqResources() {
+  return {
+    knowledgeBase: loadJson('./data/rugby_hq_knowledge_base.json'),
+    drills: loadJson('./data/rugby_hq_drills.json'),
+    screeningTests: loadJson('./data/rugby_hq_screening_tests.json'),
+    programmingRules: loadJson('./data/rugby_hq_programming_rules.json')
+  };
+}
+
+module.exports = {
+  getRugbyHqResources,
+  calculateSessionLoad,
+  calculateWellnessTotal,
+  classifyReadiness
+};
