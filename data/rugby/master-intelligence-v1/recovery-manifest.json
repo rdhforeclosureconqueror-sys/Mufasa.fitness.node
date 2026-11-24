@@ -296,5 +296,13 @@
     "repository_test_runner_execution": "pending",
     "defect_fixed": "null and non-object input handling",
     "runtime_activation": false
+  },
+  "player_profile_decision_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/player-profile-decision-spec.json",
+    "readback_verified": true,
+    "source_rule_count": 77,
+    "domains": 7,
+    "status": "proposed_review_required",
+    "runtime_activation": false
   }
 }
