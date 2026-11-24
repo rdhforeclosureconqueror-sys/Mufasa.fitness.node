@@ -16,7 +16,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Archive twelve original knowledge documents (12/12 byte-exact verified).
 - [ ] Archive supporting batch narratives, protocols and references.
 - [x] Transfer Activate/Beast Mode archive (16/16 payload files byte-exact verified).
-- [ ] Transfer Backs Readiness archive and reconcile both resources.
+- [ ] Transfer Backs Readiness archive (4/22 payload files byte-exact verified) and reconcile both resources.
 - [ ] Audit candidate resource 04 and verify historical resources 01, 03, 05, 08 on main.
 - [ ] Independently verify evidence and course protocol claims; document unresolved gaps.
 
@@ -61,7 +61,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Activate archive payload complete: sixteen of sixteen files verified. Backs Readiness transfer and reconciliation pending; runtime disabled.
+Resource 007 transfer started: four of twenty-two payload files verified. Original archive has 23 entries including transfer manifest. Runtime activation disabled.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
