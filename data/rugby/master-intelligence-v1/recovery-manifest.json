@@ -1142,7 +1142,7 @@
   "activate_archive_transfer": {
     "source": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
     "payload_files": 16,
-    "verified_count": 4,
+    "verified_count": 7,
     "files": [
       {
         "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COACH_TRACKING_SPEC.md",
@@ -1167,9 +1167,28 @@
         "expected": "bcac1065472c2b447120521bf5fe240309734a46",
         "actual": "bcac1065472c2b447120521bf5fe240309734a46",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/ENGINE_ARCHITECTURE.md",
+        "expected": "34f68dab86b6575586ae36149235661232ead761",
+        "actual": "34f68dab86b6575586ae36149235661232ead761",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/SOURCE_SEPARATION.md",
+        "expected": "1a0bcf57783d3fb70c288199883db4a5f5e6a03a",
+        "actual": "1a0bcf57783d3fb70c288199883db4a5f5e6a03a",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/RESOURCE_INVENTORY.md",
+        "expected": "7aac4f33b65acca28ab0af076afb150c1385214a",
+        "actual": "7aac4f33b65acca28ab0af076afb150c1385214a",
+        "verified": true
       }
     ],
     "runtime_activation": false,
-    "installer_executed": false
+    "installer_executed": false,
+    "inventory_note": "ZIP contains 11 docs and 5 data files, plus transfer manifest and installer; original inventory omits BOT_CONTEXT.md."
   }
 }
