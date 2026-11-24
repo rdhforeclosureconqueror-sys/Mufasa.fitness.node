@@ -1,0 +1,92 @@
+{
+  "archive": "rugby_hq_resource_pack.zip",
+  "candidate_resource_number": "04",
+  "number_confirmed": false,
+  "course": "World Rugby Introduction to Conditioning - Adults - Pre-Level 1 (Online)",
+  "course_identity": "archive_manifest_confirmed_not_independently_verified",
+  "modules": [
+    "Game demands",
+    "Functional screening",
+    "General conditioning",
+    "Integrated conditioning",
+    "Managing the training plan"
+  ],
+  "files": [
+    {
+      "path": "rugby_hq_manifest.json",
+      "bytes": 800,
+      "archive_blob_sha": "607d6d3309b5db8c31a38b3d05112d0e7e306a1e"
+    },
+    {
+      "path": "README.md",
+      "bytes": 879,
+      "archive_blob_sha": "615a602360051400e7be803661f6653f0b90c7de"
+    },
+    {
+      "path": "docs/RUGBY_HQ_BOT_HANDOFF.md",
+      "bytes": 9986,
+      "archive_blob_sha": "068937df0397c8cb368e79670e7804c92972b85d"
+    },
+    {
+      "path": "docs/SOURCE_NOTES.md",
+      "bytes": 1659,
+      "archive_blob_sha": "86e73dcf99e4b3e4a3388c579c87430694631b53"
+    },
+    {
+      "path": "docs/RUGBY_HQ_IMPLEMENTATION_NOTES.md",
+      "bytes": 1493,
+      "archive_blob_sha": "e46b2195247119583f5f3d0265408f55dae5859d"
+    },
+    {
+      "path": "data/rugby_hq_drills.json",
+      "bytes": 4465,
+      "archive_blob_sha": "4108bab9de6c5a6f68da6a7cdb92f9d83b21c061"
+    },
+    {
+      "path": "data/rugby_hq_knowledge_base.json",
+      "bytes": 3414,
+      "archive_blob_sha": "fabae5a461302057f26a60f20448c9a3c63c4eb6"
+    },
+    {
+      "path": "data/rugby_hq_screening_tests.json",
+      "bytes": 4013,
+      "archive_blob_sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+    },
+    {
+      "path": "data/rugby_hq_programming_rules.json",
+      "bytes": 1659,
+      "archive_blob_sha": "24732586f856e89e5eeb3410e0c9bf979881832d"
+    },
+    {
+      "path": "scripts/install_into_repo.sh",
+      "bytes": 612,
+      "archive_blob_sha": "cb7b3879e6aa83b5f452ac489bb95b7c159f22d0"
+    },
+    {
+      "path": "schemas/rugby_hq_data_schemas.json",
+      "bytes": 1195,
+      "archive_blob_sha": "13f4b6bc0892d2695837293a5b588455b3a10346"
+    },
+    {
+      "path": "prompts/rugby_hq_bot_system_prompt.md",
+      "bytes": 1677,
+      "archive_blob_sha": "575de28af6f07d35cc698d8d7e017288aaf1e4ca"
+    },
+    {
+      "path": "src/rugby-hq/index.js",
+      "bytes": 1222,
+      "archive_blob_sha": "bc6c4180229d93d4f498700e090eef98cd2fe6b0"
+    }
+  ],
+  "classification": "thread_harvest_awareness_course_and_custom_coaching_ideas",
+  "runtime_activation": false,
+  "overlap_audit_pending": true,
+  "guardrails": [
+    "Do not execute installer or introduce second runtime loader",
+    "Awareness certificate does not accredit coach, official or medic",
+    "Verify references before publication",
+    "Wellness sum requires scale direction reconciliation",
+    "Three loading weeks plus one unload is a common pattern not universal prescription",
+    "Session RPE times minutes requires consistent scale and duration protocol"
+  ]
+}
