@@ -1,0 +1,40 @@
+{
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "loadOrder": [
+    "machine-context.json",
+    "evaluation-rubric.json",
+    "backs-rugby-ready.schema.json",
+    "../../docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/source-boundaries.md",
+    "../../docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/backs-rugby-ready.md",
+    "../../docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/athletic-index.md"
+  ],
+  "triggers": [
+    "backs readiness",
+    "backline evaluation",
+    "fly-half assessment",
+    "inside center assessment",
+    "outside center assessment",
+    "wing assessment",
+    "fullback assessment",
+    "tackling in space",
+    "defensive IQ",
+    "offense without the ball",
+    "offense with the ball",
+    "Backline Athletic Index",
+    "rugby combine tests"
+  ],
+  "do": [
+    "separate Skill/IQ readiness from Athletic Index",
+    "apply hard gates before starter eligibility",
+    "provide evidence and next action",
+    "identify source category when making official or safety-related statements",
+    "use existing athlete identity and Rugby HQ architecture"
+  ],
+  "doNot": [
+    "create a second athlete identity",
+    "merge medical/safeguarding narratives into coaching notes",
+    "claim internal ratings are official certifications",
+    "invent ACR rules or professional benchmarks",
+    "publish private athlete or team data"
+  ]
+}
