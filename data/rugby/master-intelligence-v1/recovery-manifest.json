@@ -1405,5 +1405,15 @@
       "Final specification algorithm omits explicit coach approval, registration, role-specific restrictions and unknown safety handling; proposed SQL not executed. Reconcile with existing identity and permissions before activation."
     ],
     "complete": true
+  },
+  "intro_conditioning_archive": {
+    "audit_path": "data/rugby/master-intelligence-v1/resource-04-candidate-audit.json",
+    "accounted_for": 13,
+    "exact_verified": 11,
+    "redacted_verified": 2,
+    "resource_number_confirmed": false,
+    "course_identity_archive_confirmed": true,
+    "overlap_audit_pending": true,
+    "runtime_activation": false
   }
 }
