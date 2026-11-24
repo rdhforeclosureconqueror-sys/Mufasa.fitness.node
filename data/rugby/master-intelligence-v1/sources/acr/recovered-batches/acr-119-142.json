@@ -1,0 +1,152 @@
+{
+  "source": "User-supplied Lost retrieve part 3, batch 6",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-119",
+      "plain_language_rule": "Functional screening is used to observe broader movement capability.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-120",
+      "plain_language_rule": "Local ROM testing is used to investigate more specific joint-level movement limitations.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-121",
+      "plain_language_rule": "Dynamic testing assesses movement control and joint performance under more demanding conditions.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-122",
+      "plain_language_rule": "Screening findings should guide targeted exercise selection rather than generic corrective programmes.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-123",
+      "plain_language_rule": "The system should distinguish mobility, stability/control, strength, asymmetry, and pain-related findings where possible.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-124",
+      "plain_language_rule": "Left and right sides should be recorded separately when the test permits.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-125",
+      "plain_language_rule": "Corrective exercises should be linked directly to the limitation they are intended to address.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-126",
+      "plain_language_rule": "Every corrective intervention should have a planned reassessment point.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-127",
+      "plain_language_rule": "Screening results are decision-support information, not medical diagnoses.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-128",
+      "plain_language_rule": "Pain or concerning clinical findings should trigger referral rather than automated corrective programming.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-129",
+      "plain_language_rule": "Tuck-jump and shoulder-stabilisation testing should be stored as dynamic movement assessments, separate from static ROM measures.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-130",
+      "plain_language_rule": "The system should track whether movement quality changes over time, not merely whether a player once passed or failed a screen.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Movement Screening"
+    },
+    {
+      "rule_id": "ACR-131",
+      "plain_language_rule": "Coaches may administer functional and ROM tests within their training scope.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-132",
+      "plain_language_rule": "Medical care, injury diagnosis, and pain management remain the responsibility of qualified medical professionals.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-133",
+      "plain_language_rule": "Pain during screening should exit the automated corrective pathway and trigger appropriate referral.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-134",
+      "plain_language_rule": "A multidisciplinary approach between coaching and medical staff is preferred where available.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-135",
+      "plain_language_rule": "Hip internal and external rotation should be assessed separately and bilaterally.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-136",
+      "plain_language_rule": "Hip ROM should be measured with a standardized protocol; goniometric measurement is preferable to rough visual estimation.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-137",
+      "plain_language_rule": "Course reference values for hip rotation should be treated as contextual reference ranges, not universal diagnostic thresholds.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-138",
+      "plain_language_rule": "Hip ROM findings should be interpreted alongside pain, asymmetry, sport demands, and athlete history.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-139",
+      "plain_language_rule": "Restricted hip rotation may influence movement quality and may be associated with groin, low-back, or adductor problems, but it does not by itself diagnose or predict injury.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-140",
+      "plain_language_rule": "Corrective exercises should be matched to the specific direction of restriction.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-141",
+      "plain_language_rule": "Corrective exercise should be followed by reassessment to determine whether ROM or movement quality has improved.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    },
+    {
+      "rule_id": "ACR-142",
+      "plain_language_rule": "Failure to improve, worsening symptoms, or pain should trigger review rather than simply increasing corrective volume.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hip ROM and Scope of Practice"
+    }
+  ],
+  "source_tail_truncated": true
+}
