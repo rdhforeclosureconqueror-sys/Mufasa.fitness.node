@@ -1,0 +1,253 @@
+{
+  "resource_id": "rugby_hq_resources_3",
+  "title": "Elite Player Development, Professional Pathway & Scout Network",
+  "status": "DESIGN_RESOURCE_ACTIVATION_READY_NOT_IMPLEMENTED",
+  "harvested_at": "2026-11-24",
+  "activation_policy": {
+    "reuse_existing_identity": true,
+    "reuse_existing_rugby_coaching_os": true,
+    "duplicate_scoring_engine": false,
+    "preserve_historical_tests": true,
+    "separate_self_reported_and_verified": true,
+    "separate_simulation_training_scrimmage_match_evidence": true,
+    "player_consent_required_for_external_share": true,
+    "agent_activity_enabled": false,
+    "verify_current_team_contacts_before_outreach": true
+  },
+  "product_thesis": "Build Rugby HQ into an elite player-development, performance-intelligence and placement pathway that earns trusted professional coach relationships through evidence, progression and selective referrals.",
+  "core_loop": [
+    "Develop",
+    "Measure",
+    "Compete",
+    "Verify",
+    "Place",
+    "Learn"
+  ],
+  "canonical_pathway": [
+    "ATHLETE_ENTRY",
+    "BASELINE_EVALUATION",
+    "INDIVIDUAL_DEVELOPMENT_PLAN",
+    "DEVELOPMENT_BLOCK",
+    "REASSESSMENT",
+    "COMPETITION_EVIDENCE",
+    "VERIFIED_PROSPECT_PROFILE",
+    "SCOUT_REVIEW",
+    "TRIAL_OR_HIGHER_OPPORTUNITY",
+    "OUTCOME_FEEDBACK"
+  ],
+  "profile_domains": [
+    "identity_and_playing_history",
+    "athletic_testing",
+    "movement_observations",
+    "strength_power_speed_conditioning",
+    "technical_skills",
+    "position_competencies",
+    "tackle_contact_set_piece",
+    "rugby_iq_decision_quality",
+    "live_match_evidence",
+    "video",
+    "development_history",
+    "coach_report"
+  ],
+  "verification_states": [
+    "SELF_REPORTED",
+    "COACH_OBSERVED",
+    "TESTER_VERIFIED",
+    "VIDEO_SUPPORTED",
+    "MATCH_EVIDENCE",
+    "THIRD_PARTY_VERIFIED"
+  ],
+  "scout_view": {
+    "tabs": [
+      "Overview",
+      "Athletic",
+      "Rugby",
+      "Development",
+      "Video",
+      "Coach Report"
+    ],
+    "controls": [
+      "player_consent",
+      "recipient",
+      "purpose",
+      "expiration",
+      "revocation",
+      "field_projection",
+      "access_log",
+      "version_viewed"
+    ],
+    "prohibited_data": [
+      "medical_narratives",
+      "safeguarding_information",
+      "private_welfare_notes",
+      "restricted_team_tactics",
+      "other_player_data"
+    ]
+  },
+  "game_integration": {
+    "evidence_type": "SIMULATION",
+    "allowed_uses": [
+      "decision_quality",
+      "support_depth",
+      "pass_selection",
+      "space_recognition",
+      "pressure_response",
+      "tactical_role_recognition",
+      "decision_latency",
+      "simulation_execution"
+    ],
+    "cannot_replace": [
+      "live_training",
+      "scrimmage",
+      "match_evidence"
+    ]
+  },
+  "relationship_strategy": {
+    "first_goal": "learn what next-level coaches actually want to see before asking them to take players",
+    "golden_question": "When you evaluate a developmental player, what information would you actually want to see before you spend time scouting them?",
+    "priority_first_contact_roles": [
+      "Academy Director",
+      "Director of Player Development",
+      "Talent Identification"
+    ],
+    "network_levels": [
+      "Texas/regional",
+      "US high performance",
+      "Professional",
+      "International",
+      "Accredited agents"
+    ],
+    "prefer_warm_introductions": true
+  },
+  "recruiter_requirements_research": [
+    "trusted_data",
+    "preferred_testing_protocols",
+    "position_specific_metrics",
+    "film_requirements",
+    "competition_level",
+    "minimums_vs_differentiators",
+    "late_convert_evaluation",
+    "disqualifiers",
+    "coachability_evidence",
+    "missing_information_in_typical_profiles"
+  ],
+  "placement_states": [
+    "NOT_SENT",
+    "PLAYER_CONSENT_PENDING",
+    "READY_TO_SEND",
+    "SENT",
+    "VIEWED",
+    "COACH_INTEREST",
+    "MORE_EVIDENCE_REQUESTED",
+    "TRIAL_INVITED",
+    "TRIAL_COMPLETED",
+    "OFFERED",
+    "PLACED",
+    "NOT_SELECTED",
+    "DEFERRED",
+    "WITHDRAWN"
+  ],
+  "business_lines": [
+    {
+      "id": "development",
+      "status": "allowed_concept",
+      "pays_for": [
+        "training",
+        "assessment",
+        "speed_agility",
+        "strength_power",
+        "conditioning",
+        "technical_tactical_development",
+        "video_review",
+        "reassessment"
+      ]
+    },
+    {
+      "id": "prospect_profile",
+      "status": "allowed_concept",
+      "note": "Thread floated $250-$500 as proposal only; not approved pricing."
+    },
+    {
+      "id": "representation",
+      "status": "blocked_until_compliance_gate",
+      "includes": [
+        "employment_representation",
+        "contract_negotiation",
+        "commission",
+        "agency_contracts"
+      ]
+    }
+  ],
+  "agent_compliance": {
+    "source": "World Rugby Regulation 5",
+    "allowed_default": [
+      "development",
+      "testing",
+      "evidence_collection",
+      "profile_generation",
+      "video_packaging",
+      "player_controlled_sharing",
+      "introductions",
+      "factual_coach_to_coach_communication",
+      "recruiting_interest_tracking",
+      "referral_to_accredited_representation"
+    ],
+    "blocked_until_approved": [
+      "employment_term_negotiation",
+      "contract_negotiation",
+      "employment_transaction_representation",
+      "agent_commission",
+      "unaccredited_agent_claims",
+      "agency_contracts"
+    ],
+    "verify_before_enable": [
+      "current_World_Rugby_Regulation_5",
+      "USA_Rugby_or_union_rules",
+      "approved_national_scheme",
+      "US_state_federal_athlete_agent_law",
+      "Texas_requirements",
+      "insurance",
+      "agency_contract",
+      "commission",
+      "conflicts"
+    ]
+  },
+  "existing_repo_links": [
+    "docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md",
+    "exercise-generation/COACH_OPERATIONS_GUIDE.md",
+    "exercise-generation/SYSTEM_DATA_ENTRY_SPEC.md",
+    "exercise-generation/ACTIVATE_ADULT_HANDOFF_V1.md",
+    "public/rugby.html",
+    "public/rugby-player.html",
+    "docs/rugby/attack-intelligence/",
+    "godot/rugby-hq-web/"
+  ],
+  "proposed_new_concepts": [
+    "prospect_profile_projection",
+    "prospect_profile_version",
+    "scout_share",
+    "scout_share_access_event",
+    "recruiter_requirement",
+    "recruiting_contact",
+    "player_introduction",
+    "placement_opportunity",
+    "placement_outcome",
+    "prospect_level_policy",
+    "external_profile_export"
+  ],
+  "activation_phases": [
+    "R3-0_RESOURCE_REGISTRATION",
+    "R3-1_PROSPECT_DATA_CONTRACT",
+    "R3-2_PLAYER_PROFESSIONAL_PROFILE",
+    "R3-3_SCOUT_VIEW",
+    "R3-4_PROFESSIONAL_NETWORK_CRM",
+    "R3-5_PLACEMENT_WORKFLOW",
+    "R3-6_AGENT_MODULE_AFTER_COMPLIANCE"
+  ],
+  "primary_sources": [
+    "https://www.world.rugby/organisation/governance/regulations/reg-5",
+    "https://passport.world.rugby/rugby-agents/",
+    "https://passport.world.rugby/rugby-agents/resources/",
+    "https://www.majorleague.rugby/news/major-league-rugby-announces-full-2026-schedule"
+  ]
+}
