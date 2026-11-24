@@ -33,6 +33,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Validate injury case definitions, cohort/exposure completeness, privacy, availability and medical workflow; run repository tests.
 - [x] Save readiness and recovery specification ACR-078–100 and isolated evaluator (13 functional cases passed).
 - [ ] Integrate trusted privacy/safety, dated trends, recovery feedback and programme review; run repository readiness tests.
+- [x] Save nutrition specification ACR-101–118 and isolated context/scope evaluator (13 functional cases passed).
+- [ ] Inspect and reconcile existing Nutrition Lab interface, trusted safety, fueling education and performance feedback; run repository nutrition tests.
 - [ ] Complete remaining movement assessment, readiness, nutrition, injury, conditioning, resistance and gamespeed decision mapping.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
@@ -45,7 +47,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Readiness and recovery specification and isolated evaluator saved; 13 functional cases passed. Runtime activation remains disabled; no production merge or deployment claimed.
+Nutrition specification and isolated context/scope evaluator saved; 13 functional cases passed. Existing Nutrition Lab integration pending. Runtime activation remains disabled; no production merge or deployment claimed.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
