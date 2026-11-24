@@ -1,0 +1,57 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "source_ids": [
+    "ACR-101",
+    "ACR-102",
+    "ACR-103",
+    "ACR-104",
+    "ACR-105",
+    "ACR-106",
+    "ACR-107",
+    "ACR-108",
+    "ACR-109",
+    "ACR-110",
+    "ACR-111",
+    "ACR-112",
+    "ACR-113",
+    "ACR-114",
+    "ACR-115",
+    "ACR-116",
+    "ACR-117",
+    "ACR-118"
+  ],
+  "classification": "engineering interpretation of recovered prior-thread rules",
+  "integration": "Existing Nutrition Lab owns energy and macro targets; interface discovery and reconciliation pending",
+  "context": [
+    "position",
+    "format",
+    "bodyMass",
+    "bodyComposition",
+    "goal",
+    "trainingLoad",
+    "sessionSchedule",
+    "foodTolerance",
+    "hydration",
+    "performanceTrend"
+  ],
+  "education": [
+    "energy balance over time",
+    "carbohydrate availability matched to demand",
+    "daily protein adequacy",
+    "adequate dietary fat",
+    "food quality",
+    "individualized hydration",
+    "pre/during/post session fueling",
+    "short turnaround recovery",
+    "food first"
+  ],
+  "guardrails": [
+    "No automated calorie or macro prescription",
+    "No weight change interpreted as tissue change",
+    "Clinical concerns require qualified referral",
+    "Youth weight manipulation requires qualified review",
+    "Supplement requests require anti-doping and contamination review; no guarantee of safety",
+    "No rigid anabolic window or fixed hydration volume"
+  ]
+}
