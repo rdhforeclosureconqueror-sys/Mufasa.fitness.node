@@ -1027,5 +1027,19 @@
       "calendar and team variation integration",
       "existing programme engine reconciliation"
     ]
+  },
+  "mapping_audit": {
+    "unique_acr": 780,
+    "missing": [],
+    "policy_count": 11,
+    "overlap_count": 22,
+    "source_pointer_audit": "data/rugby/master-intelligence-v1/source-pointer-audit.json",
+    "verified_source_pointers": 780,
+    "broken_source_pointers": 0,
+    "master_audit": "data/rugby/master-intelligence-v1/master-reconciliation-audit.json",
+    "master_pointers_verified": 20,
+    "master_aligned": 1,
+    "master_divergent": 19,
+    "runtime_activation": false
   }
 }
