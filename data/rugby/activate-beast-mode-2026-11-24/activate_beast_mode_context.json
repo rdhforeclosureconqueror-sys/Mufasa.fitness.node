@@ -1,0 +1,22 @@
+{
+  "resource_id": "RUGBY-HQ-RESOURCE-ACTIVATE-BEAST-MODE-2026-11-24",
+  "bot_context_summary": "Adult Activate-aligned foundation plus Beast Mode extension for Rugby HQ.",
+  "audience": "adult rugby athletes, preferred minimum age 20+",
+  "core_philosophy": [
+    "Activate is the floor",
+    "Beast Mode is the ceiling",
+    "Movement quality decides progression"
+  ],
+  "do_not": [
+    "publish official cue-card instructions without permission",
+    "create youth-facing programming from this resource",
+    "represent Pocket PT methodology as official certification",
+    "invent pro benchmarks or ACR rules"
+  ],
+  "use_files": {
+    "seed_data": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_seed_data.json",
+    "schema": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_schema.sql",
+    "activation_map": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_system_activation_map.json",
+    "coverage": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_coverage_manifest.json"
+  }
+}
