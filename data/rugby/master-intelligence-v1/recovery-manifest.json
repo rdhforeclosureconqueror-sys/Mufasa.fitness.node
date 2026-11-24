@@ -277,5 +277,14 @@
     "readback_verified": true,
     "status": "field_alignment_complete_semantic_review_pending",
     "runtime_activation": false
+  },
+  "safety_decision_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/safety-decision-spec.json",
+    "readback_verified": true,
+    "policy_count": 8,
+    "source_rule_count": 22,
+    "test_vector_count": 12,
+    "status": "review_pending_not_executed",
+    "runtime_activation": false
   }
 }
