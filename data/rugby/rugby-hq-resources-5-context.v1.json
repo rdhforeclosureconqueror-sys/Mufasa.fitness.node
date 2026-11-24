@@ -1,0 +1,165 @@
+{
+  "resourceId": "rugby-hq-resources-5",
+  "version": 1,
+  "harvestedAt": "2026-11-24",
+  "title": "Coaching, Welfare, Readiness & Club Operations",
+  "status": "thread-harvest",
+  "purpose": "Durable agent context for Rugby HQ coaching-system implementation and operations.",
+  "knowledgeLabels": [
+    "COURSE-DERIVED",
+    "THREAD-CONFIRMED",
+    "CURRENT-RULE-VERIFY",
+    "POCKET-PT-STANDARD",
+    "SAFETY-BOUNDARY",
+    "IMPLEMENTATION-DEPENDENCY"
+  ],
+  "corePrinciple": "Coach records evidence; Pocket PT derives status; safety restrictions override performance; official/recommended/internal standards remain distinct.",
+  "modules": {
+    "commandCenter": true,
+    "playerProfile": true,
+    "evidenceCompetencyEngine": true,
+    "rugbyReady": true,
+    "movementReady": true,
+    "conditioningReady": true,
+    "tackleReady": true,
+    "scrumReady": true,
+    "ruckReady": true,
+    "maulReady": true,
+    "lineoutReady": true,
+    "backsRugbyReady": true,
+    "backlineAthleticIndex": true,
+    "activateAdultFoundation": true,
+    "beastMode": true,
+    "concussion": true,
+    "injuryWelfare": true,
+    "safeguarding": true,
+    "coachReady": true,
+    "coachGuide": true,
+    "sessions": true,
+    "matchSelection": true,
+    "simulatorIntegration": "future"
+  },
+  "competencyLadder": [
+    "Not Assessed",
+    "Introduced",
+    "Assisted",
+    "Independent in Controlled Environment",
+    "Independent in Live Play",
+    "Repeatable Under Pressure",
+    "Verified / Current"
+  ],
+  "backsRugbyReady": {
+    "weights": {
+      "defensiveIQ": 0.2,
+      "tacklingInSpace": 0.15,
+      "attackIQ": 0.2,
+      "ballSkills": 0.15,
+      "movementAndEvasion": 0.15,
+      "roleSpecificSkill": 0.15
+    },
+    "internalStarterGate": {
+      "tacklingInSpaceMinimum": 70,
+      "label": "POCKET-PT-STANDARD",
+      "note": "Internal program rule, not an official governing-body threshold."
+    },
+    "positions": [
+      "10 Fly-half",
+      "12 Inside Centre",
+      "13 Outside Centre",
+      "11/14 Wings",
+      "15 Fullback"
+    ]
+  },
+  "backlineAthleticIndex": {
+    "weights": {
+      "speed": 0.25,
+      "agility": 0.25,
+      "repeatEffort": 0.2,
+      "endurance": 0.15,
+      "power": 0.1,
+      "strength": 0.05
+    }
+  },
+  "activate": {
+    "officialLayerName": "Activate-Aligned Adult Foundation",
+    "proprietaryExtensionName": "Pocket PT Beast Mode Rugby Performance System",
+    "cues": [
+      "Head neutral / lifted",
+      "Chest up",
+      "Pinch shoulders together",
+      "Shoulders level with hips",
+      "Brace through the trunk",
+      "Soft knees",
+      "Hip, knee, ankle in line",
+      "Knee over toes"
+    ],
+    "internalProgressionProposal": {
+      "attendanceRateMinimum": 0.75,
+      "controlMinimum": 4,
+      "balanceMinimum": 4,
+      "techniqueMinimum": 4,
+      "coachApprovalRequired": true,
+      "activePainOrInjuryBlocksProgression": true,
+      "label": "POCKET-PT-STANDARD"
+    }
+  },
+  "scrumReadyStages": [
+    "Solo kneeling",
+    "Solo standing",
+    "Machine/shield",
+    "1v1",
+    "3v3",
+    "Prop + support vs machine",
+    "Second-row/flanker support vs machine",
+    "Five-player unit vs machine",
+    "5v5",
+    "8v8 / appropriate full opposition or machine"
+  ],
+  "safeguarding": {
+    "operatingRule": "Recognize, listen, protect immediate safety, record facts, report.",
+    "noInvestigationByCoachOrAI": true,
+    "protectedDataDomain": true,
+    "lowerLevelPoorPracticeTracked": true,
+    "multipleIntakePaths": true
+  },
+  "concussion": {
+    "operatingRule": "Recognise and Remove; no same-day return; document and route to qualified healthcare.",
+    "aiDiagnosisAllowed": false,
+    "aiClearanceAllowed": false,
+    "protocolVersionRequired": true
+  },
+  "clubStandardsLabels": [
+    "REQUIRED — GOVERNING BODY / CLUB COMPLIANCE",
+    "REQUIRED — LAW / COMPETITION",
+    "RECOMMENDED — GOVERNING BODY BEST PRACTICE",
+    "POCKET PT INTERNAL STANDARD",
+    "CURRENT-RULE-VERIFY"
+  ],
+  "productionArchitecture": {
+    "productionFirst": true,
+    "restrictedWhileUnfinished": true,
+    "noPilotDatastore": true,
+    "noLocalStorageAsAuthority": true,
+    "durableRelationalPersistenceDirection": "managed PostgreSQL",
+    "backendDatabaseEnvKey": "DATABASE_URL",
+    "nodeDriverDirection": "pg/node-postgres",
+    "externalPackageInstallWasBlockedInCodexByOutboundProxy403": true
+  },
+  "authoritativeCompanionPaths": [
+    "docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md",
+    "exercise-generation/COACH_OPERATIONS_GUIDE.md",
+    "exercise-generation/SYSTEM_DATA_ENTRY_SPEC.md",
+    "exercise-generation/ACTIVATE_ADULT_HANDOFF_V1.md",
+    "docs/rugby/conditioning",
+    "docs/rugby/attack-intelligence"
+  ],
+  "botRules": [
+    "Do not claim Pocket PT internal badges are official credentials.",
+    "Verify current governing-body/competition requirements before labeling an item mandatory.",
+    "Preserve evidence history and protocol/version metadata.",
+    "Safety gates override performance scores.",
+    "Medical and safeguarding data require stricter access than ordinary coaching data.",
+    "AI may document, summarize, route and explain; it may not diagnose, medically clear or determine guilt.",
+    "Reuse Pocket PT production systems instead of creating duplicate athlete/auth/exercise stacks."
+  ]
+}
