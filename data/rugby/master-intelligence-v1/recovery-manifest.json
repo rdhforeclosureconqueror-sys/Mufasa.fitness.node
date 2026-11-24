@@ -1064,7 +1064,7 @@
   "knowledge_archive_transfer": {
     "source": "Rugby_HQ_Resources_DropIn.zip",
     "expected_count": 12,
-    "verified_count": 3,
+    "verified_count": 6,
     "files": [
       {
         "path": "docs/rugby/master-intelligence-v1/knowledge/11-course-completion-context.md",
@@ -1080,6 +1080,24 @@
         "path": "docs/rugby/master-intelligence-v1/knowledge/09-integration-map.md",
         "archive_blob_sha": "eb779aeddff13108275230bfbce22fbd510fce84",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/03-injury-health-safety.md",
+        "archive_blob_sha": "568e2e5f9515f95e7e8e9d54a6bf421d1d2bca67",
+        "verified": true,
+        "actual": "568e2e5f9515f95e7e8e9d54a6bf421d1d2bca67"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/02-movement-screening.md",
+        "archive_blob_sha": "58ec6361cb099c03b119db3f267c715a90b40daf",
+        "verified": true,
+        "actual": "58ec6361cb099c03b119db3f267c715a90b40daf"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/01-player-profile-readiness.md",
+        "archive_blob_sha": "56531ab3a7997ee0ffdd406e5acb4b608cd27afe",
+        "verified": true,
+        "actual": "56531ab3a7997ee0ffdd406e5acb4b608cd27afe"
       }
     ],
     "runtime_activation": false
