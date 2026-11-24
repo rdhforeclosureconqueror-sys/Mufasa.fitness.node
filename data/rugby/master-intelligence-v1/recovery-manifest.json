@@ -429,5 +429,13 @@
     "repository_runner_pending": true,
     "runtime_activation": false,
     "limitations": "In-memory nonmutation only; persistent plan immutability and trusted safety integration pending."
+  },
+  "movement_assessment_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/movement-assessment-decision-spec.json",
+    "readback_verified": true,
+    "source_rule_count": 72,
+    "assessment_count": 4,
+    "status": "review_required",
+    "runtime_activation": false
   }
 }
