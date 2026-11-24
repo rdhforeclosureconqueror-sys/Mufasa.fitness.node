@@ -1,0 +1,51 @@
+{
+  "scope": "ACR source pointer verification",
+  "results": [
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-001-027.json",
+      "count": 27,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-028-047.json",
+      "count": 20,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-048-077.json",
+      "count": 30,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-078-100.json",
+      "count": 23,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+      "count": 18,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-119-142.json",
+      "count": 24,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-143-152.json",
+      "count": 10,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/acr-recoverable-153-780.json",
+      "count": 614,
+      "broken": []
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+      "count": 14,
+      "broken": []
+    }
+  ],
+  "runtime_activation": false
+}
