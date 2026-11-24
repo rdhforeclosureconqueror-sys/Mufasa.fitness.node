@@ -1,0 +1,134 @@
+{
+  "source": "User-supplied Lost retrieve 11, batch 8",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-237",
+      "plain_language_rule": "Periodisation organizes training into planned blocks to produce specific physical adaptations.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-238",
+      "plain_language_rule": "Training variables should be manipulated according to the desired adaptation rather than changed randomly.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-239",
+      "plain_language_rule": "A microcycle is generally a weekly training block containing the individual sessions performed during that week.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-240",
+      "plain_language_rule": "A mesocycle contains multiple microcycles and generally targets a broader training objective over approximately 2–8 weeks.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-241",
+      "plain_language_rule": "Every microcycle should serve the objective of the larger mesocycle.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-242",
+      "plain_language_rule": "Microcycles must remain flexible enough to respond to readiness, match demands, injury status, and unexpected changes.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-243",
+      "plain_language_rule": "The system must preserve both planned training and actual completed training.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-244",
+      "plain_language_rule": "Daily modifications should preserve the larger training objective whenever practical.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-245",
+      "plain_language_rule": "Physical qualities may be developed, maintained, restored, or de-emphasized depending on the current block.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-246",
+      "plain_language_rule": "Training sessions should be nested within microcycles, microcycles within mesocycles, and mesocycles within the larger season plan.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-247",
+      "plain_language_rule": "Every exercise or drill should be traceable to a session objective, microcycle objective, mesocycle objective, and athlete need.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-248",
+      "plain_language_rule": "Rugby periodisation must account for frequent competition and cannot rely on perfectly rigid linear planning.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-249",
+      "plain_language_rule": "Match schedule, recovery, travel, and training constraints should influence weekly planning.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    },
+    {
+      "rule_id": "ACR-250",
+      "plain_language_rule": "Planned workload and actual workload should be recorded separately so future programming can respond to what the athlete actually experienced.",
+      "source_module": "Programme Management and Player Monitoring",
+      "domain": "Periodisation"
+    }
+  ],
+  "master_rule_source_variants": [
+    {
+      "rule_id": "M2-01",
+      "plain_language_rule": "Screening should progress from broad observation toward more specific testing."
+    },
+    {
+      "rule_id": "M2-02",
+      "plain_language_rule": "ROM tests provide local joint-level information."
+    },
+    {
+      "rule_id": "M2-03",
+      "plain_language_rule": "Dynamic tests show how the athlete controls movement under more demanding conditions."
+    },
+    {
+      "rule_id": "M2-04",
+      "plain_language_rule": "A movement finding generates hypotheses; it does not prove a muscular cause."
+    },
+    {
+      "rule_id": "M2-05",
+      "plain_language_rule": "Repeated findings across different assessments strengthen a working hypothesis."
+    },
+    {
+      "rule_id": "M2-06",
+      "plain_language_rule": "Secondary isolation tests should be used to confirm or challenge suspected contributors."
+    },
+    {
+      "rule_id": "M2-07",
+      "plain_language_rule": "Corrective interventions should match the actual limitation: mobility, strength, stability/control, or technique."
+    },
+    {
+      "rule_id": "M2-08",
+      "plain_language_rule": "Pain changes the pathway from coaching/correction to medical review."
+    },
+    {
+      "rule_id": "M2-09",
+      "plain_language_rule": "Every assessment must be standardized enough to allow reliable longitudinal comparison."
+    },
+    {
+      "rule_id": "M2-10",
+      "plain_language_rule": "The original test should be repeated after intervention to verify whether the athlete actually improved."
+    }
+  ],
+  "master_rule_policy": "Preserve supplied wording for reconciliation; do not count as additional unique master identifiers."
+}
