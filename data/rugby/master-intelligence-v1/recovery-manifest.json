@@ -1498,5 +1498,12 @@
     },
     "readback_verified": true,
     "runtime_activation": false
+  },
+  "exercise_eligibility": {
+    "path": "data/rugby/master-intelligence-v1/policies/exercise-eligibility-decision-spec.json",
+    "prototype": "docs/rugby/master-intelligence-v1/prototypes/exercise-eligibility.cjs",
+    "readback_verified": true,
+    "tests_pending": true,
+    "runtime_activation": false
   }
 }
