@@ -15,7 +15,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Approve canonical master semantics and normalize unresolved triggers, actions, exceptions and tests.
 - [x] Archive twelve original knowledge documents (12/12 byte-exact verified).
 - [ ] Archive supporting batch narratives, protocols and references.
-- [ ] Transfer and reconcile Activate/Beast Mode (7/16 payload files byte-exact verified) and Backs Readiness archives.
+- [ ] Transfer and reconcile Activate/Beast Mode (10/16 payload files byte-exact verified) and Backs Readiness archives.
 - [ ] Audit candidate resource 04 and verify historical resources 01, 03, 05, 08 on main.
 - [ ] Independently verify evidence and course protocol claims; document unresolved gaps.
 
@@ -60,7 +60,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Activate/Beast Mode archive: seven of sixteen payload files verified byte-exact. Original inventory omits BOT_CONTEXT.md; actual ZIP inventory retained. Installer not executed; runtime activation disabled.
+Activate archive: ten of sixteen payload files verified. Progression status count discrepancy pending reconciliation; runtime disabled.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
