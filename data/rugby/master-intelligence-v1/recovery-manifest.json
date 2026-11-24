@@ -247,14 +247,20 @@
         "count": 10,
         "range": "ACR-143–152",
         "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "count": 14,
+        "range": "ACR-237–250",
+        "readback_verified": true,
+        "master_rule_source_variants": 10
       }
     ],
-    "total_recovered_identifiers": 766,
-    "remaining": 14,
-    "missing_ranges": [
-      "ACR-237–250"
-    ],
+    "total_recovered_identifiers": 780,
+    "remaining": 0,
+    "missing_ranges": [],
     "original_coverage_manifest_preserved": true,
-    "supporting_narrative_transfer_pending": true
+    "supporting_narrative_transfer_pending": true,
+    "identifier_coverage_complete": true
   }
 }
