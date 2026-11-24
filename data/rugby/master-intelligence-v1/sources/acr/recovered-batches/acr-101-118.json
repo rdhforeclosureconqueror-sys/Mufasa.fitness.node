@@ -1,0 +1,158 @@
+{
+  "source": "User-supplied Lost retrieval 4, batch 5",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-101",
+      "plain_language_rule": "Nutrition is a major determinant of training adaptation, recovery, body composition, and performance.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-102",
+      "plain_language_rule": "Nutrition should be individualized according to athlete characteristics, training load, position, goals, and schedule.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-103",
+      "plain_language_rule": "Sustained energy balance influences body-mass direction, but short-term bodyweight fluctuations should not be interpreted as pure tissue change.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-104",
+      "plain_language_rule": "Carbohydrate availability should be matched to training and competition demands.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-105",
+      "plain_language_rule": "Protein supports training adaptation and tissue remodeling and should be adequate across the entire day.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-106",
+      "plain_language_rule": "Dietary fat is essential and should not be unnecessarily minimized.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-107",
+      "plain_language_rule": "Sports nutrition prescriptions should preferentially use body-mass-relative targets where appropriate rather than relying solely on percentages of calories.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-108",
+      "plain_language_rule": "Pre-exercise nutrition should support fuel availability, hydration, and gastrointestinal comfort.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-109",
+      "plain_language_rule": "During-exercise carbohydrate should depend on duration, intensity, fueling status, and individual tolerance.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-110",
+      "plain_language_rule": "Hydration should be individualized rather than prescribed with one fixed volume for all athletes.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-111",
+      "plain_language_rule": "Post-exercise nutrition should begin within a practical recovery period; there is no rigid 45-minute anabolic deadline.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-112",
+      "plain_language_rule": "Rapid post-exercise carbohydrate replenishment becomes more important when recovery time before the next demanding session is short.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-113",
+      "plain_language_rule": "Nutrition interventions should be evaluated against body composition and actual performance, not bodyweight alone.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-114",
+      "plain_language_rule": "Food quality and micronutrient adequacy matter alongside calories and macronutrients.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-115",
+      "plain_language_rule": "Coaches may provide general nutrition education but should remain within their professional scope.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-116",
+      "plain_language_rule": "Suspected clinical nutrition problems should be referred to appropriately qualified professionals.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-117",
+      "plain_language_rule": "Supplement recommendations require anti-doping and contamination safeguards.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    },
+    {
+      "rule_id": "ACR-118",
+      "plain_language_rule": "The platform should prioritize food-first strategies where practical.",
+      "source_module": "Player Profile",
+      "domain": "Nutrition and Fueling"
+    }
+  ],
+  "master_rule_source_variants": [
+    {
+      "rule_id": "M1-01",
+      "plain_language_rule": "Profile before prescription."
+    },
+    {
+      "rule_id": "M1-02",
+      "plain_language_rule": "Rugby performance depends on multiple physical qualities, not one fitness quality."
+    },
+    {
+      "rule_id": "M1-03",
+      "plain_language_rule": "Physical requirements vary by position and playing level."
+    },
+    {
+      "rule_id": "M1-04",
+      "plain_language_rule": "Training should target gaps between the player’s current profile and required profile."
+    },
+    {
+      "rule_id": "M1-05",
+      "plain_language_rule": "Bigger, stronger, or leaner is not automatically better; physical development must remain functional."
+    },
+    {
+      "rule_id": "M1-06",
+      "plain_language_rule": "Strength, power, speed, and endurance must be assessed separately even though they interact."
+    },
+    {
+      "rule_id": "M1-07",
+      "plain_language_rule": "Training decisions should consider both team requirements and individual requirements."
+    },
+    {
+      "rule_id": "M1-08",
+      "plain_language_rule": "Lifestyle factors influence readiness, recovery, and adaptation."
+    },
+    {
+      "rule_id": "M1-09",
+      "plain_language_rule": "Lifestyle monitoring should guide conversation and coaching decisions, not diagnose or judge the athlete."
+    },
+    {
+      "rule_id": "M1-10",
+      "plain_language_rule": "Nutrition, recovery, and conditioning should all be individualized where practical."
+    }
+  ],
+  "master_rule_policy": "Preserve supplied wording for reconciliation; do not count as additional unique master identifiers."
+}
