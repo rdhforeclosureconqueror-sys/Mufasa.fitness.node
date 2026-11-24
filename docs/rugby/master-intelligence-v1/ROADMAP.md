@@ -40,7 +40,9 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Validate RHIE, contact classification, limiting-factor and progression logic; reconcile existing conditioning engine and run repository tests.
 - [x] Map resistance training ACR-543–690 and implement isolated gym review evaluator (12 functional cases passed).
 - [ ] Reconcile exercise library, competency, force velocity, microcycle coverage and progression; run repository resistance tests.
-- [ ] Complete remaining movement assessment, readiness, nutrition, injury, conditioning, resistance and gamespeed decision mapping.
+- [x] Map gamespeed ACR-691–780 and implement isolated assessment evaluator (13 functional cases passed).
+- [ ] Reconcile SAQ, exposure tracking, phase planning and simulator interfaces; run repository gamespeed tests.
+- [ ] Complete remaining decision mapping, including ACR-251–434 programme management, periodisation, female athlete and monitoring rules.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
 ## Production acceptance
@@ -52,7 +54,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Resistance training mapping and isolated gym review evaluator saved; 12 functional cases passed. Runtime activation remains disabled; no production merge or deployment claimed.
+Gamespeed mapping and isolated assessment evaluator saved; 13 functional cases passed. Remaining programme/monitoring mapping and integration pending. Runtime activation remains disabled; no production merge or deployment claimed.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
