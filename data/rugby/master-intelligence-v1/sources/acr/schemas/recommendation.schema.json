@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rugby HQ Recommendation",
+  "type": "object",
+  "required": [
+    "athlete_id",
+    "quality",
+    "state",
+    "confidence",
+    "evidence",
+    "rules_fired",
+    "action"
+  ],
+  "properties": {
+    "athlete_id": {
+      "type": "string"
+    },
+    "quality": {
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "DEVELOP",
+        "MAINTAIN",
+        "RESTORE",
+        "DE-EMPHASIZE"
+      ]
+    },
+    "confidence": {
+      "enum": [
+        "low",
+        "moderate",
+        "moderate_high",
+        "high"
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rules_fired": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "action": {
+      "type": "object"
+    },
+    "rationale": {
+      "type": "string"
+    },
+    "coach_override": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  }
+}
