@@ -286,5 +286,15 @@
     "test_vector_count": 12,
     "status": "review_pending_not_executed",
     "runtime_activation": false
+  },
+  "safety_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/safety-evaluator.cjs",
+    "tested_blob_sha": "c9e8f9d648046ef4ecef732ba4943fc2f878f945",
+    "node_version": "22.16.0",
+    "local_equivalent_cases_passed": 22,
+    "local_equivalent_cases_total": 22,
+    "repository_test_runner_execution": "pending",
+    "defect_fixed": "null and non-object input handling",
+    "runtime_activation": false
   }
 }
