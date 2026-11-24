@@ -1051,5 +1051,14 @@
     "canonical_semantics_approved": false,
     "runtime_activation": false,
     "repository_runner_pending": true
+  },
+  "canonical_principles": {
+    "path": "data/rugby/master-intelligence-v1/canonical-principles-proposal.json",
+    "groups": 13,
+    "source_clauses": 40,
+    "unique_source_references": 40,
+    "readback_verified": true,
+    "canonical_semantics_approved": false,
+    "runtime_activation": false
   }
 }
