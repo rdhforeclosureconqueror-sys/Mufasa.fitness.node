@@ -1259,7 +1259,7 @@
     "source": "rugby-hq-resource-007-transfer-package.zip",
     "archive_entries": 23,
     "payload_files": 22,
-    "verified_count": 20,
+    "verified_count": 21,
     "files": [
       {
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
@@ -1380,6 +1380,12 @@
         "expected": "8c68cd376a0fbe86303173f4d75ad427cc6fcf9d",
         "actual": "8c68cd376a0fbe86303173f4d75ad427cc6fcf9d",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/handoff.md",
+        "expected": "0adfd287be091028bde49034488ffdcacfcbc7a6",
+        "actual": "0adfd287be091028bde49034488ffdcacfcbc7a6",
+        "verified": true
       }
     ],
     "runtime_activation": false,
@@ -1388,7 +1394,8 @@
       "Narrative score 64 is described as close to match-ready; rubric classifies 60–69 as developmental.",
       "Coverage and machine context include explicit coach approval gate; evaluation rubric instead lists defensive IQ review gate. Preserve both; reconcile before runtime. Inventory dataFiles omits resource-inventory.json itself.",
       "Original bot prompt and contractor tasks reference legacy resources/rugby-hq paths; resolve to consolidated paths before activation. Original pilot-store option is not approved for production architecture.",
-      "Activation map relative paths ../../docs resolve under data, not repo root; use verified root-relative paths in future loader."
+      "Activation map relative paths ../../docs resolve under data, not repo root; use verified root-relative paths in future loader.",
+      "Original handoff example labels 76 starter eligible despite rubric 70–79 rotation. Handoff adds registration, unresolved return-to-play and position-specific high-ball/last-line tackle restrictions; reconcile with trusted safety and competition eligibility."
     ]
   }
 }
