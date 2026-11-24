@@ -677,5 +677,66 @@
     "repository_runner_pending": true,
     "runtime_activation": false,
     "limitations": "Existing Nutrition Lab interface discovery, trusted safety, performance/body composition review and fueling education integration pending."
+  },
+  "conditioning": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/conditioning-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/conditioning-math.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/conditioning-math.test.cjs"
+    ],
+    "source_rule_count": 108,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "MAS",
+        "pass": true
+      },
+      {
+        "name": "interval",
+        "pass": true
+      },
+      {
+        "name": "zero time",
+        "pass": true
+      },
+      {
+        "name": "negative distance",
+        "pass": true
+      },
+      {
+        "name": "missing protocol",
+        "pass": true
+      },
+      {
+        "name": "lab distinction",
+        "pass": true
+      },
+      {
+        "name": "invalid interval",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "test_correction": "Floating point comparison uses tolerance rather than exact equality.",
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "rolling-window implementation",
+      "RSA/RHIE protocol and decrement conventions",
+      "contact validation",
+      "position benchmarks",
+      "programme and safety integration"
+    ]
   }
 }
