@@ -880,5 +880,77 @@
       "coach-approved progression",
       "station scheduling"
     ]
+  },
+  "gamespeed": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/gamespeed-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/gamespeed-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/gamespeed-evaluator.test.cjs"
+    ],
+    "source_rule_count": 90,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "acceleration",
+        "pass": true
+      },
+      {
+        "name": "fly average",
+        "pass": true
+      },
+      {
+        "name": "fly missing buildup",
+        "pass": true
+      },
+      {
+        "name": "measured peak",
+        "pass": true
+      },
+      {
+        "name": "average mislabeled",
+        "pass": true
+      },
+      {
+        "name": "closed COD",
+        "pass": true
+      },
+      {
+        "name": "reactive incorrect",
+        "pass": true
+      },
+      {
+        "name": "missing stimulus",
+        "pass": true
+      },
+      {
+        "name": "invalid initiation",
+        "pass": true
+      },
+      {
+        "name": "zero time",
+        "pass": true
+      },
+      {
+        "name": "pain",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "SAQ library reconciliation",
+      "longitudinal exposure and phase planning",
+      "validated peak speed protocols",
+      "trusted safety",
+      "simulator integration"
+    ]
   }
 }
