@@ -136,7 +136,7 @@
       "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
     }
   ],
-  "remaining": "Inspect exercise catalog and candidate matches; verify protocol identity and permissions.",
+  "remaining": "Full catalog inventory, semantic alias review, protocol and permissions validation.",
   "guardrails": [
     "No duplicate engine",
     "No runtime changes",
@@ -467,5 +467,20 @@
       "no observation array"
     ],
     "ankle_rom": "Related existing test; fixed four-inch source setup differs from scalar cm recording; do not alias without protocol comparison."
+  },
+  "catalog_inspection": {
+    "evidence": [
+      {
+        "path": "src/exercise-intelligence/exerciseCatalog.js",
+        "sha": "0c6b9c939c8fb2d8e17163832e1e572bd346d634"
+      },
+      {
+        "path": "src/exercise-intelligence/exerciseSchema.js",
+        "sha": "f44d88c021c017c2a95e01bdbdb30ca98005295a"
+      }
+    ],
+    "status": "catalog_implementation_and_schema_inspected",
+    "contract": "data/rugby/master-intelligence-v1/policies/unified-assessment-contract.json",
+    "full_inventory_pending": true
   }
 }
