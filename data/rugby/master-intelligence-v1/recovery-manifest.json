@@ -1060,5 +1060,28 @@
     "readback_verified": true,
     "canonical_semantics_approved": false,
     "runtime_activation": false
+  },
+  "knowledge_archive_transfer": {
+    "source": "Rugby_HQ_Resources_DropIn.zip",
+    "expected_count": 12,
+    "verified_count": 3,
+    "files": [
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/11-course-completion-context.md",
+        "archive_blob_sha": "eefe8eecdf2b1c98700c4edce022fd65e4eb1a66",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/00-system-philosophy.md",
+        "archive_blob_sha": "c0d2eddb68a764074f66f71614ffaaf9bf81a270",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/09-integration-map.md",
+        "archive_blob_sha": "eb779aeddff13108275230bfbce22fbd510fce84",
+        "verified": true
+      }
+    ],
+    "runtime_activation": false
   }
 }
