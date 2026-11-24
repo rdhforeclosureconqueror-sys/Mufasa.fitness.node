@@ -92,7 +92,8 @@
     "Contact drills require qualified supervision, competency progression and appropriate contact-load controls.",
     "Energy systems overlap; work-rest ratios and loading ranges are contextual, not universal prescriptions.",
     "Original manifest and source notes contain personal certificate holder information; defer public repository transfer pending privacy decision. Schema is descriptive, not a validated JSON Schema; reuse existing athlete identity. Prompt is archived, not active.",
-    "Archived loader renamed index.js.txt to prevent runtime use. Original readiness thresholds 21/16 unvalidated; mixed scale directions and Number coercion can misclassify missing/invalid inputs. Do not use loader or README installation commands. Reconcile proposed routes with existing live routes."
+    "Archived loader renamed index.js.txt to prevent runtime use. Original readiness thresholds 21/16 unvalidated; mixed scale directions and Number coercion can misclassify missing/invalid inputs. Do not use loader or README installation commands. Reconcile proposed routes with existing live routes.",
+    "Installer archived as text, not executed. Original handoff uses example RPE values 14 and 12, incompatible with CR10 unless scale explicitly identified; assisted sprint prescriptions and resisted sprint ranking are unverified thread claims."
   ],
   "transferred": [
     {
@@ -146,6 +147,12 @@
       "path": "docs/rugby/master-intelligence-v1/intro-conditioning/README.md",
       "expected": "615a602360051400e7be803661f6653f0b90c7de",
       "actual": "615a602360051400e7be803661f6653f0b90c7de",
+      "verified": true
+    },
+    {
+      "path": "docs/rugby/master-intelligence-v1/intro-conditioning/install_into_repo.sh.txt",
+      "expected": "cb7b3879e6aa83b5f452ac489bb95b7c159f22d0",
+      "actual": "cb7b3879e6aa83b5f452ac489bb95b7c159f22d0",
       "verified": true
     }
   ]
