@@ -1,0 +1,157 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "classification": "engineering_interpretation_not_course_verified",
+  "policies": [
+    {
+      "domain": "profile_context",
+      "source_ids": [
+        "ACR-001",
+        "ACR-002",
+        "ACR-003",
+        "ACR-004",
+        "ACR-005",
+        "ACR-006",
+        "ACR-007",
+        "ACR-008",
+        "ACR-009",
+        "ACR-010",
+        "ACR-011",
+        "ACR-012",
+        "ACR-013",
+        "ACR-014",
+        "ACR-015",
+        "ACR-016"
+      ],
+      "action": "Require position, format, current level, target level and relevant assessment context; compare only compatible benchmarks; coach prioritizes rather than maximizing every quality.",
+      "status": "proposed_review_required"
+    },
+    {
+      "domain": "functional_mass",
+      "source_ids": [
+        "ACR-017",
+        "ACR-018",
+        "ACR-019",
+        "ACR-020",
+        "ACR-021",
+        "ACR-022",
+        "ACR-023",
+        "ACR-024",
+        "ACR-025",
+        "ACR-026",
+        "ACR-027"
+      ],
+      "action": "Track mass with speed, strength, power and conditioning trends; do not prescribe mass gain or infer injury protection from mass alone.",
+      "status": "proposed_review_required"
+    },
+    {
+      "domain": "body_composition",
+      "source_ids": [
+        "ACR-028",
+        "ACR-029",
+        "ACR-030",
+        "ACR-031",
+        "ACR-032",
+        "ACR-033",
+        "ACR-034",
+        "ACR-035",
+        "ACR-036",
+        "ACR-037"
+      ],
+      "action": "Use comparable measurement methods and contextual age, maturation, sex, health and position; no automatic weight or fat targets.",
+      "status": "proposed_review_required"
+    },
+    {
+      "domain": "strength",
+      "source_ids": [
+        "ACR-038",
+        "ACR-039",
+        "ACR-040",
+        "ACR-041",
+        "ACR-042",
+        "ACR-043",
+        "ACR-044",
+        "ACR-045",
+        "ACR-046",
+        "ACR-047"
+      ],
+      "action": "Keep movement categories and absolute/relative strength distinct; track longitudinally; record external and system mass separately where relevant.",
+      "status": "proposed_review_required"
+    },
+    {
+      "domain": "power",
+      "source_ids": [
+        "ACR-048",
+        "ACR-049",
+        "ACR-050",
+        "ACR-051",
+        "ACR-052",
+        "ACR-053",
+        "ACR-054",
+        "ACR-055",
+        "ACR-056"
+      ],
+      "action": "Keep strength and power distinct; use absolute and relative measures where appropriate; force/velocity limitation remains a hypothesis pending suitable testing.",
+      "status": "proposed_review_required"
+    },
+    {
+      "domain": "speed",
+      "source_ids": [
+        "ACR-057",
+        "ACR-058",
+        "ACR-059",
+        "ACR-060",
+        "ACR-061",
+        "ACR-062",
+        "ACR-063",
+        "ACR-064",
+        "ACR-065",
+        "ACR-066"
+      ],
+      "action": "Keep acceleration and maximal speed separate; retain splits and protocol; distinguish development priorities.",
+      "status": "proposed_review_required"
+    },
+    {
+      "domain": "endurance",
+      "source_ids": [
+        "ACR-067",
+        "ACR-068",
+        "ACR-069",
+        "ACR-070",
+        "ACR-071",
+        "ACR-072",
+        "ACR-073",
+        "ACR-074",
+        "ACR-075",
+        "ACR-076",
+        "ACR-077"
+      ],
+      "action": "Separate aerobic capacity, repeated sprint ability and repeated high-intensity effort ability; match format and position; track performance decrement.",
+      "status": "proposed_review_required"
+    }
+  ],
+  "decision_contract": {
+    "inputs": [
+      "athlete context",
+      "assessment metric and protocol",
+      "benchmark provenance and matching context",
+      "coach-approved priority",
+      "safety review"
+    ],
+    "outputs": [
+      "DEVELOP",
+      "MAINTAIN",
+      "RESTORE",
+      "MONITOR",
+      "REFER",
+      "REVIEW_REQUIRED"
+    ],
+    "guardrails": [
+      "No invented normative thresholds",
+      "Missing or incompatible benchmark requires review",
+      "Safety decisions override development priorities",
+      "No automatic prescription or medical clearance"
+    ],
+    "priority_policy": "Use coach-approved rugby relevance and comparable assessment gaps; do not rank unlike metrics by raw numeric difference."
+  }
+}
