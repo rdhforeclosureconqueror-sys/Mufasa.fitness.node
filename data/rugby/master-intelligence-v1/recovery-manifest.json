@@ -1254,5 +1254,38 @@
       "training": 100,
       "progression_statuses": 8
     }
+  },
+  "backs_archive_transfer": {
+    "source": "rugby-hq-resource-007-transfer-package.zip",
+    "archive_entries": 23,
+    "payload_files": 22,
+    "verified_count": 4,
+    "files": [
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
+        "expected": "69415317682589d928c27660fcb9be3ec0d4c632",
+        "actual": "69415317682589d928c27660fcb9be3ec0d4c632",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/research-gaps.md",
+        "expected": "ddde2399f31ae52de3557041c74bd1d5e372850c",
+        "actual": "ddde2399f31ae52de3557041c74bd1d5e372850c",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/README.md",
+        "expected": "f67b4f821fd08f10c0c8d9f5d9d7cd44564e9cd1",
+        "actual": "f67b4f821fd08f10c0c8d9f5d9d7cd44564e9cd1",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/missing-rules-manifest.json",
+        "expected": "d0285612bcf2ea11a6b2b17eb67b6cc4c8b3e16a",
+        "actual": "d0285612bcf2ea11a6b2b17eb67b6cc4c8b3e16a",
+        "verified": true
+      }
+    ],
+    "runtime_activation": false
   }
 }
