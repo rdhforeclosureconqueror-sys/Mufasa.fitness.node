@@ -142,5 +142,65 @@
     "Transfer original knowledge payloads without overwrites",
     "Validate unique rule IDs, schema, provenance and semantic conflicts",
     "Review and merge preservation-only changes before runtime integration"
-  ]
+  ],
+  "archive_fidelity_audit": {
+    "algorithm": "git blob SHA-1",
+    "results": [
+      {
+        "path": "sources/acr/acr-recoverable-153-780.json",
+        "expected": "0f2fffb109c63e2173c596584b719fad6455792c",
+        "actual": "ce91c1ecd9e4761ac73da366b7446e552f724146",
+        "match": false
+      },
+      {
+        "path": "sources/acr/coverage-manifest.json",
+        "expected": "aa1dacd1bb411817311899d517c0de38ed5ea1da",
+        "actual": "fe466ca4fd449af342c2be1926139d49e1ec83c9",
+        "match": false
+      },
+      {
+        "path": "sources/acr/master-rules.json",
+        "expected": "13cc0acc27049738e133952036907eee583ea1bc",
+        "actual": "13cc0acc27049738e133952036907eee583ea1bc",
+        "match": true
+      },
+      {
+        "path": "sources/acr/schemas/athlete-state.schema.json",
+        "expected": "555b3b2c41256ed2d87aea23c72ca01accaa27bd",
+        "actual": "555b3b2c41256ed2d87aea23c72ca01accaa27bd",
+        "match": true
+      },
+      {
+        "path": "sources/acr/schemas/recommendation.schema.json",
+        "expected": "e5930ea18742c572e961108bf1078c690065b261",
+        "actual": "e5930ea18742c572e961108bf1078c690065b261",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/gym-course-guides.json",
+        "expected": "389a4577d2b2f18b9f5b2aa20b696e0065bda104",
+        "actual": "389a4577d2b2f18b9f5b2aa20b696e0065bda104",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/peak-passages.json",
+        "expected": "ad65f06ce2abb8ac8380f41bd6f21ae9706b0ebb",
+        "actual": "ad65f06ce2abb8ac8380f41bd6f21ae9706b0ebb",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/conditioning-templates.json",
+        "expected": "eeabf5633d0da3aafc27c2bdd42d18704318f81e",
+        "actual": "eeabf5633d0da3aafc27c2bdd42d18704318f81e",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/u20-game-demands.json",
+        "expected": "fddfcead404c43f16c3655c6d797cd40c6a64904",
+        "actual": "fddfcead404c43f16c3655c6d797cd40c6a64904",
+        "match": true
+      }
+    ],
+    "activation_blocked": true
+  }
 }
