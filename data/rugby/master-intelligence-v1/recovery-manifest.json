@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "status": "recovery_validated_transfer_pending",
+  "status": "partial_source_transfer",
   "runtime_activation": false,
   "source_of_truth": "Mufasa.fitness.node",
   "archives": [
@@ -87,7 +87,21 @@
       ]
     ],
     "classification": "conversation_reconstructed_not_independently_verified",
-    "activation": "blocked_pending_review"
+    "activation": "blocked_pending_review",
+    "source_transfer": {
+      "status": "branch_readback_verified",
+      "files": [
+        "sources/acr/acr-recoverable-153-780.json",
+        "sources/acr/coverage-manifest.json"
+      ],
+      "checks": {
+        "unique_ids": true,
+        "expected_ranges": true,
+        "coverage_ids": true,
+        "required_fields": true,
+        "provenance": true
+      }
+    }
   },
   "deduplication": {
     "drop_in_shared_files": 41,
