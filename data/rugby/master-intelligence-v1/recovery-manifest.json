@@ -1142,7 +1142,7 @@
   "activate_archive_transfer": {
     "source": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
     "payload_files": 16,
-    "verified_count": 10,
+    "verified_count": 13,
     "files": [
       {
         "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COACH_TRACKING_SPEC.md",
@@ -1203,11 +1203,30 @@
         "expected": "e1d928c6c82885b7503a73c69634189b70c428ae",
         "actual": "e1d928c6c82885b7503a73c69634189b70c428ae",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/IMPLEMENTATION_HANDOFF.md",
+        "expected": "2dd76ca0f6731218479b7f989cee5bbe8c88ecff",
+        "actual": "2dd76ca0f6731218479b7f989cee5bbe8c88ecff",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/SYSTEM_ACTIVATION_MAP.md",
+        "expected": "e65c84243bd98389a0f5f0b01e6aa6a221e7590e",
+        "actual": "e65c84243bd98389a0f5f0b01e6aa6a221e7590e",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_coverage_manifest.json",
+        "expected": "193c9c6735647b80e09ed155a125a1103fd4f560",
+        "actual": "193c9c6735647b80e09ed155a125a1103fd4f560",
+        "verified": true
       }
     ],
     "runtime_activation": false,
     "installer_executed": false,
     "inventory_note": "ZIP contains 11 docs and 5 data files, plus transfer manifest and installer; original inventory omits BOT_CONTEXT.md.",
-    "coverage_discrepancy": "Coverage manifest reports seven progression statuses; inventory and coach tracking list eight. Preserve both pending reconciliation."
+    "coverage_discrepancy": "Coverage manifest reports seven progression statuses; inventory and coach tracking list eight. Preserve both pending reconciliation.",
+    "safety_review": "Original pain regression pseudocode is not approved for runtime; clinical safety precedence required."
   }
 }
