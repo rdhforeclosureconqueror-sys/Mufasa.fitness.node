@@ -1457,5 +1457,46 @@
     "catalog_count": 884,
     "readback_verified": true,
     "runtime_activation": false
+  },
+  "exercise_purpose_classification": {
+    "path": "data/rugby/master-intelligence-v1/exercise-purpose-classification.json",
+    "names": 63,
+    "records": 123,
+    "counts": {
+      "change_direction_agility": {
+        "names": 7,
+        "records": 17
+      },
+      "movement_control": {
+        "names": 15,
+        "records": 25
+      },
+      "resistance_preparation": {
+        "names": 7,
+        "records": 30
+      },
+      "power_landing": {
+        "names": 24,
+        "records": 29
+      },
+      "tactical_multiplayer": {
+        "names": 2,
+        "records": 8
+      },
+      "repeat_effort": {
+        "names": 1,
+        "records": 7
+      },
+      "linear_speed": {
+        "names": 2,
+        "records": 2
+      },
+      "contact_conditioning": {
+        "names": 5,
+        "records": 5
+      }
+    },
+    "readback_verified": true,
+    "runtime_activation": false
   }
 }
