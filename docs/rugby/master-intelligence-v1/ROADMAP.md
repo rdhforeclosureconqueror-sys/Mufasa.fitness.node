@@ -35,6 +35,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Integrate trusted privacy/safety, dated trends, recovery feedback and programme review; run repository readiness tests.
 - [x] Save nutrition specification ACR-101–118 and isolated context/scope evaluator (13 functional cases passed).
 - [ ] Inspect and reconcile existing Nutrition Lab interface, trusted safety, fueling education and performance feedback; run repository nutrition tests.
+- [x] Map conditioning ACR-435–542 and implement isolated MAS arithmetic (10 functional cases passed).
+- [ ] Implement and validate peak passages, RSA/RHIE, contact and progression logic; reconcile existing conditioning engine and run repository tests.
 - [ ] Complete remaining movement assessment, readiness, nutrition, injury, conditioning, resistance and gamespeed decision mapping.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
@@ -47,7 +49,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Nutrition specification and isolated context/scope evaluator saved; 13 functional cases passed. Existing Nutrition Lab integration pending. Runtime activation remains disabled; no production merge or deployment claimed.
+Conditioning specification and isolated MAS arithmetic saved; 10 functional cases passed. Remaining conditioning logic and integration pending. Runtime activation remains disabled; no production merge or deployment claimed.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
