@@ -1,0 +1,160 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "classification": "engineering interpretation of recovered rules",
+  "groups": [
+    {
+      "domain": "energy systems",
+      "source_ids": [
+        "ACR-435",
+        "ACR-436",
+        "ACR-437",
+        "ACR-438",
+        "ACR-439",
+        "ACR-440",
+        "ACR-441",
+        "ACR-442",
+        "ACR-443",
+        "ACR-444"
+      ]
+    },
+    {
+      "domain": "positional and contact demands",
+      "source_ids": [
+        "ACR-445",
+        "ACR-446",
+        "ACR-447",
+        "ACR-448",
+        "ACR-449",
+        "ACR-450",
+        "ACR-451",
+        "ACR-452",
+        "ACR-453",
+        "ACR-454",
+        "ACR-455",
+        "ACR-456",
+        "ACR-457",
+        "ACR-458",
+        "ACR-459",
+        "ACR-460",
+        "ACR-461",
+        "ACR-462",
+        "ACR-463",
+        "ACR-464",
+        "ACR-465",
+        "ACR-466",
+        "ACR-467",
+        "ACR-468"
+      ]
+    },
+    {
+      "domain": "peak passages",
+      "source_ids": [
+        "ACR-469",
+        "ACR-470",
+        "ACR-471",
+        "ACR-472",
+        "ACR-473",
+        "ACR-474",
+        "ACR-475",
+        "ACR-476",
+        "ACR-477",
+        "ACR-478"
+      ]
+    },
+    {
+      "domain": "repeatability and limiting factors",
+      "source_ids": [
+        "ACR-479",
+        "ACR-480",
+        "ACR-481",
+        "ACR-482",
+        "ACR-483",
+        "ACR-484",
+        "ACR-485",
+        "ACR-486",
+        "ACR-487",
+        "ACR-488",
+        "ACR-489",
+        "ACR-490",
+        "ACR-491",
+        "ACR-492",
+        "ACR-493",
+        "ACR-494",
+        "ACR-495",
+        "ACR-496",
+        "ACR-497",
+        "ACR-498",
+        "ACR-499",
+        "ACR-500",
+        "ACR-501",
+        "ACR-502",
+        "ACR-503",
+        "ACR-504",
+        "ACR-505",
+        "ACR-506",
+        "ACR-507",
+        "ACR-508"
+      ]
+    },
+    {
+      "domain": "MAS",
+      "source_ids": [
+        "ACR-509",
+        "ACR-510",
+        "ACR-511",
+        "ACR-512",
+        "ACR-513",
+        "ACR-514",
+        "ACR-515",
+        "ACR-516",
+        "ACR-517",
+        "ACR-518",
+        "ACR-519",
+        "ACR-520",
+        "ACR-521",
+        "ACR-522",
+        "ACR-523",
+        "ACR-524",
+        "ACR-525",
+        "ACR-526",
+        "ACR-527",
+        "ACR-528",
+        "ACR-529"
+      ]
+    },
+    {
+      "domain": "tempo and progression",
+      "source_ids": [
+        "ACR-530",
+        "ACR-531",
+        "ACR-532",
+        "ACR-533",
+        "ACR-534",
+        "ACR-535",
+        "ACR-536",
+        "ACR-537",
+        "ACR-538",
+        "ACR-539",
+        "ACR-540",
+        "ACR-541",
+        "ACR-542"
+      ]
+    }
+  ],
+  "guardrails": [
+    "Field MAS estimate distinct from laboratory measurement",
+    "Arithmetic scenarios are not prescriptions",
+    "No automatic contact dose",
+    "Keep RSA and RHIE separate",
+    "Preserve peak window and threshold method",
+    "No automatic progression"
+  ],
+  "pending": [
+    "rolling-window implementation",
+    "RSA/RHIE protocol and decrement conventions",
+    "contact validation",
+    "position benchmarks",
+    "programme and safety integration"
+  ]
+}
