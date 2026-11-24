@@ -27,7 +27,10 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Enforce persistent plan immutability, validate calendar/date constraints, and run repository programme tests with trusted safety integration.
 - [x] Save movement assessment decision specification covering ACR-119–190 and four foundational tests.
 - [x] Implement and test isolated movement assessment capture and review evaluator (13 functional cases passed; scoring disabled).
-- [ ] Verify movement protocols, complete ACR-191–198 mapping, integrate trusted safety and run repository tests before enabling scoring.
+- [x] Map remaining movement reasoning ACR-191–198 in specification addendum.
+- [ ] Verify movement protocols, implement remaining reasoning, integrate trusted safety and run repository tests before enabling scoring.
+- [x] Save injury surveillance specification ACR-199–236 and isolated descriptive metrics evaluator (8 functional cases passed).
+- [ ] Validate injury case definitions, cohort/exposure completeness, privacy, availability and medical workflow; run repository tests.
 - [ ] Complete remaining movement assessment, readiness, nutrition, injury, conditioning, resistance and gamespeed decision mapping.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
@@ -40,7 +43,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Movement assessment capture/review prototype saved and 13 isolated cases passed; scoring disabled pending protocol verification and integration. Programme evaluator persistent storage and integration remain pending. Runtime activation remains disabled. No production merge or deployment claimed. All original evidence classifications remain intact.
+Injury surveillance specification and isolated metrics evaluator saved; eight functional cases passed. Movement reasoning addendum mapped. Runtime activation remains disabled; no production merge or deployment claimed.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
