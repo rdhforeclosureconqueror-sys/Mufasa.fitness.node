@@ -1,0 +1,187 @@
+{
+  "source": "User-supplied Lost retrieval 5, batch 3",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-048",
+      "plain_language_rule": "Power is the ability to produce high levels of force rapidly.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-049",
+      "plain_language_rule": "Power is determined by the interaction between force and movement velocity.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-050",
+      "plain_language_rule": "Many rugby actions have very short force-production windows, making rapid force production critical.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-051",
+      "plain_language_rule": "Power contributes to sprinting, acceleration, cutting, jumping, tackling, lifting, hand-offs, and other explosive rugby actions.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-052",
+      "plain_language_rule": "Strength and power must be profiled separately; high maximal strength does not guarantee high power.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-053",
+      "plain_language_rule": "Lower-body power characteristics can distinguish higher- from lower-level rugby players.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-054",
+      "plain_language_rule": "Power assessment should consider both absolute and relative outputs where appropriate.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-055",
+      "plain_language_rule": "The system should track power longitudinally alongside strength, body mass, and speed.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-056",
+      "plain_language_rule": "Training should eventually distinguish whether an athlete’s power limitation is primarily force-related, velocity-related, or mixed.",
+      "source_module": "Player Profile",
+      "domain": "Power"
+    },
+    {
+      "rule_id": "ACR-057",
+      "plain_language_rule": "Speed is a critical rugby physical quality with clear transfer to attacking and defensive performance.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-058",
+      "plain_language_rule": "Speed should be divided into acceleration ability and maximal running speed rather than treated as one single quality.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-059",
+      "plain_language_rule": "Short sprint splits such as 10 m and 20 m can provide useful information about acceleration.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-060",
+      "plain_language_rule": "Longer sprint distances or flying-speed measures can provide information about maximal-speed ability.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-061",
+      "plain_language_rule": "Sprint split times should be stored because identical total sprint times can hide different speed profiles.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-062",
+      "plain_language_rule": "Faster sprint ability is associated with important rugby actions including line breaks, metres gained, defenders beaten, tries, defensive positioning, and tackle success.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-063",
+      "plain_language_rule": "Speed can differentiate playing standards, including high levels of rugby performance.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-064",
+      "plain_language_rule": "Speed development should be included in long-term rugby physical preparation rather than being treated as an optional extra.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-065",
+      "plain_language_rule": "Speed development should be interpreted alongside strength, power, body composition, and sprint mechanics.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-066",
+      "plain_language_rule": "Speed prescriptions should ultimately distinguish whether the athlete primarily needs acceleration development, maximal-speed development, or both.",
+      "source_module": "Player Profile",
+      "domain": "Speed"
+    },
+    {
+      "rule_id": "ACR-067",
+      "plain_language_rule": "Rugby requires sufficient aerobic endurance to sustain effective involvement over an 80-minute intermittent collision game.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-068",
+      "plain_language_rule": "Aerobic fitness supports movement around the field and recovery between high-intensity efforts.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-069",
+      "plain_language_rule": "Rugby endurance should not be represented solely as continuous running capacity.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-070",
+      "plain_language_rule": "Repeated sprint ability represents the capacity to reproduce high-intensity sprint efforts with limited performance decline.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-071",
+      "plain_language_rule": "Rugby requires repeated high-intensity effort ability beyond sprinting because contact actions also impose substantial metabolic demands.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-072",
+      "plain_language_rule": "Endurance assessment should consider the athlete’s ability to recover and reproduce performance, not merely their best single effort.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-073",
+      "plain_language_rule": "Performance decrement across repeated efforts can provide useful diagnostic information.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-074",
+      "plain_language_rule": "Aerobic fitness and repeated high-intensity ability can influence technical and tactical match performance under fatigue.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-075",
+      "plain_language_rule": "Endurance demands vary by rugby format, position, and playing level.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-076",
+      "plain_language_rule": "Sevens and 15-a-side rugby should not automatically share identical endurance benchmarks or conditioning prescriptions.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    },
+    {
+      "rule_id": "ACR-077",
+      "plain_language_rule": "Endurance development should be integrated with speed, strength, power, and rugby-specific activities rather than viewed in isolation.",
+      "source_module": "Player Profile",
+      "domain": "Endurance"
+    }
+  ]
+}
