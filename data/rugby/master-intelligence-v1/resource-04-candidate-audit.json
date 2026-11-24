@@ -87,6 +87,34 @@
     "Verify references before publication",
     "Wellness sum requires scale direction reconciliation",
     "Three loading weeks plus one unload is a common pattern not universal prescription",
-    "Session RPE times minutes requires consistent scale and duration protocol"
+    "Session RPE times minutes requires consistent scale and duration protocol",
+    "Screening observations and MoveNet proxies are not diagnostic; validate protocols and pain referral before scoring.",
+    "Contact drills require qualified supervision, competency progression and appropriate contact-load controls.",
+    "Energy systems overlap; work-rest ratios and loading ranges are contextual, not universal prescriptions."
+  ],
+  "transferred": [
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_programming_rules.json",
+      "verified": true,
+      "actual": "24732586f856e89e5eeb3410e0c9bf979881832d"
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+      "expected": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff",
+      "actual": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff",
+      "verified": true
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_drills.json",
+      "expected": "4108bab9de6c5a6f68da6a7cdb92f9d83b21c061",
+      "actual": "4108bab9de6c5a6f68da6a7cdb92f9d83b21c061",
+      "verified": true
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_knowledge_base.json",
+      "expected": "fabae5a461302057f26a60f20448c9a3c63c4eb6",
+      "actual": "fabae5a461302057f26a60f20448c9a3c63c4eb6",
+      "verified": true
+    }
   ]
 }
