@@ -1,0 +1,145 @@
+[
+  {
+    "id": "overhead_squat",
+    "name": "Overhead Squat",
+    "purpose": "General movement screen for mobility, stability, and compensation.",
+    "observe": [
+      "squat depth",
+      "arms fall forward",
+      "heels lift",
+      "knees collapse",
+      "torso lean",
+      "hip shift"
+    ],
+    "movenet_metrics": [
+      "hip/knee/ankle angles",
+      "torso angle",
+      "wrist/shoulder position",
+      "left-right asymmetry"
+    ]
+  },
+  {
+    "id": "hands_behind_head_squat",
+    "name": "Hands-Behind-Head Squat",
+    "purpose": "Progress overhead squat to determine if compensation may be upper-body related.",
+    "interpretation": "If squat improves with hands behind head, upper body may contribute to overhead restriction."
+  },
+  {
+    "id": "lat_tightness_wall_test",
+    "name": "Latissimus Dorsi Tightness Test",
+    "purpose": "Check if tight lats contribute to arms falling forward.",
+    "setup": "Stand against wall in quarter squat, elbows straight, thumbs out, lower back against wall; raise arms overhead.",
+    "faults": [
+      "lower back arches",
+      "thumbs cannot touch wall",
+      "elbows bend"
+    ],
+    "correctives": [
+      "lat stretch",
+      "bench lat stretch"
+    ],
+    "movenet_metrics": [
+      "elbow angle",
+      "shoulder flexion",
+      "torso/rib compensation"
+    ]
+  },
+  {
+    "id": "heels_raised_overhead_squat",
+    "name": "Heels-Raised Overhead Squat",
+    "purpose": "Determine whether squat improves when heels are raised, suggesting lower-body restriction.",
+    "interpretation": "Improvement suggests ankle/calf or lower-body mobility limit.",
+    "movenet_metrics": [
+      "depth",
+      "torso angle",
+      "knee track",
+      "hip shift"
+    ]
+  },
+  {
+    "id": "ankle_rom",
+    "name": "Ankle Range of Motion Test",
+    "purpose": "Assess ankle mobility/calf flexibility.",
+    "setup": "Tape 4 inches from box; half kneeling; toe at tape; knee touches box without heel rising.",
+    "faults": [
+      "heel raises",
+      "foot rotates",
+      "knee collapses"
+    ],
+    "correctives": [
+      "calf stretch on step",
+      "foam roll calf"
+    ],
+    "movenet_metrics": [
+      "ankle angle",
+      "knee travel",
+      "heel lift estimate"
+    ]
+  },
+  {
+    "id": "thomas_test",
+    "name": "Thomas Test",
+    "purpose": "Assess hip flexor and quadriceps tightness.",
+    "faults": [
+      "tested thigh lifts off table = possible iliopsoas tightness",
+      "knee cannot flex at least 90 degrees = possible quad tightness"
+    ],
+    "correctives": [
+      "lunge position quad stretch",
+      "rear foot elevated quad stretch"
+    ],
+    "movenet_metrics": [
+      "hip angle",
+      "knee angle",
+      "thigh-table angle"
+    ]
+  },
+  {
+    "id": "glute_bridge_leg_extension",
+    "name": "Glute Bridge With Leg Extension",
+    "purpose": "Assess pelvic stability and glute function.",
+    "faults": [
+      "pelvis drops",
+      "support leg shakes",
+      "hamstring cramps",
+      "lower back cramps"
+    ],
+    "correctives": [
+      "clam exercise",
+      "glute foam roll",
+      "glute activation"
+    ],
+    "movenet_metrics": [
+      "hip height",
+      "pelvic tilt",
+      "knee extension",
+      "hold time"
+    ]
+  },
+  {
+    "id": "shoulder_mobility",
+    "name": "Shoulder Mobility Test",
+    "purpose": "Assess shoulder range and symmetry.",
+    "pass": "Fists within 1.5 hand lengths with no pain.",
+    "faults": [
+      "distance > 1.5 hand lengths",
+      "pain",
+      "torso compensation"
+    ],
+    "correctives": [
+      "shoulder dislocations with stick"
+    ],
+    "movenet_metrics": [
+      "hand distance proxy",
+      "shoulder/elbow position",
+      "trunk lean"
+    ]
+  },
+  {
+    "id": "shoulder_clearance",
+    "name": "Shoulder Clearance Test",
+    "purpose": "Check for pain or possible shoulder impingement sign.",
+    "setup": "Palm on opposite shoulder; lift elbow while maintaining contact.",
+    "referral_trigger": "Pain means refer to physiotherapist/medical professional."
+  }
+]
