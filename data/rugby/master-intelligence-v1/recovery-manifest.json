@@ -1531,5 +1531,11 @@
       "execution": "local node --test",
       "repository_ci_pending": true
     }
+  },
+  "longitudinal_athlete_evidence": {
+    "path": "data/rugby/master-intelligence-v1/policies/longitudinal-athlete-evidence-spec.json",
+    "readback_verified": true,
+    "runtime_activation": false,
+    "tests_pending": true
   }
 }
