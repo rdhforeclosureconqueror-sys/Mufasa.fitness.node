@@ -1259,7 +1259,7 @@
     "source": "rugby-hq-resource-007-transfer-package.zip",
     "archive_entries": 23,
     "payload_files": 22,
-    "verified_count": 4,
+    "verified_count": 6,
     "files": [
       {
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
@@ -1283,6 +1283,18 @@
         "path": "data/rugby/backs-readiness-resource-007/missing-rules-manifest.json",
         "expected": "d0285612bcf2ea11a6b2b17eb67b6cc4c8b3e16a",
         "actual": "d0285612bcf2ea11a6b2b17eb67b6cc4c8b3e16a",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/evaluation-rubric.json",
+        "expected": "4df3a7750a73afbf22647d063ba70327000b291e",
+        "actual": "4df3a7750a73afbf22647d063ba70327000b291e",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/athletic-index.md",
+        "expected": "0155c33f581d2e4371df749d567f84fe05ba5039",
+        "actual": "0155c33f581d2e4371df749d567f84fe05ba5039",
         "verified": true
       }
     ],
