@@ -149,14 +149,14 @@
       {
         "path": "sources/acr/acr-recoverable-153-780.json",
         "expected": "0f2fffb109c63e2173c596584b719fad6455792c",
-        "actual": "ce91c1ecd9e4761ac73da366b7446e552f724146",
-        "match": false
+        "actual": "0f2fffb109c63e2173c596584b719fad6455792c",
+        "match": true
       },
       {
         "path": "sources/acr/coverage-manifest.json",
         "expected": "aa1dacd1bb411817311899d517c0de38ed5ea1da",
-        "actual": "fe466ca4fd449af342c2be1926139d49e1ec83c9",
-        "match": false
+        "actual": "aa1dacd1bb411817311899d517c0de38ed5ea1da",
+        "match": true
       },
       {
         "path": "sources/acr/master-rules.json",
