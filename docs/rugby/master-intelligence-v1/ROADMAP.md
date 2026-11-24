@@ -31,6 +31,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify movement protocols, implement remaining reasoning, integrate trusted safety and run repository tests before enabling scoring.
 - [x] Save injury surveillance specification ACR-199–236 and isolated descriptive metrics evaluator (8 functional cases passed).
 - [ ] Validate injury case definitions, cohort/exposure completeness, privacy, availability and medical workflow; run repository tests.
+- [x] Save readiness and recovery specification ACR-078–100 and isolated evaluator (13 functional cases passed).
+- [ ] Integrate trusted privacy/safety, dated trends, recovery feedback and programme review; run repository readiness tests.
 - [ ] Complete remaining movement assessment, readiness, nutrition, injury, conditioning, resistance and gamespeed decision mapping.
 - [ ] Reconcile with existing production engines; avoid duplicate scoring and prescription logic.
 
@@ -43,7 +45,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Injury surveillance specification and isolated metrics evaluator saved; eight functional cases passed. Movement reasoning addendum mapped. Runtime activation remains disabled; no production merge or deployment claimed.
+Readiness and recovery specification and isolated evaluator saved; 13 functional cases passed. Runtime activation remains disabled; no production merge or deployment claimed.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
