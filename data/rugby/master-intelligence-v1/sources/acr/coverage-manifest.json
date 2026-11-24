@@ -1,0 +1,3131 @@
+{
+  "total_ids": 780,
+  "reconstructed_count": 614,
+  "missing_count": 166,
+  "known_missing_ranges": [
+    "ACR-001\u2013152",
+    "ACR-237\u2013250"
+  ],
+  "coverage": [
+    {
+      "rule_id": "ACR-001",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-002",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-003",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-004",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-005",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-006",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-007",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-008",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-009",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-010",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-011",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-012",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-013",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-014",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-015",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-016",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-017",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-018",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-019",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-020",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-021",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-022",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-023",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-024",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-025",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-026",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-027",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-028",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-029",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-030",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-031",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-032",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-033",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-034",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-035",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-036",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-037",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-038",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-039",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-040",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-041",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-042",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-043",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-044",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-045",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-046",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-047",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-048",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-049",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-050",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-051",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-052",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-053",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-054",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-055",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-056",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-057",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-058",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-059",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-060",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-061",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-062",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-063",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-064",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-065",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-066",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-067",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-068",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-069",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-070",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-071",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-072",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-073",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-074",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-075",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-076",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-077",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-078",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-079",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-080",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-081",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-082",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-083",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-084",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-085",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-086",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-087",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-088",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-089",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-090",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-091",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-092",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-093",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-094",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-095",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-096",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-097",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-098",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-099",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-100",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-101",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-102",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-103",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-104",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-105",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-106",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-107",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-108",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-109",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-110",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-111",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-112",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-113",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-114",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-115",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-116",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-117",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-118",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-119",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-120",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-121",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-122",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-123",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-124",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-125",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-126",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-127",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-128",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-129",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-130",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-131",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-132",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-133",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-134",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-135",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-136",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-137",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-138",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-139",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-140",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-141",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-142",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-143",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-144",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-145",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-146",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-147",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-148",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-149",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-150",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-151",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-152",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-153",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-154",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-155",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-156",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-157",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-158",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-159",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-160",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-161",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-162",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-163",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-164",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-165",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-166",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-167",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-168",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-169",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-170",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-171",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-172",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-173",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-174",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-175",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-176",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-177",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-178",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-179",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-180",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-181",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-182",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-183",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-184",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-185",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-186",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-187",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-188",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-189",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-190",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-191",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-192",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-193",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-194",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-195",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-196",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-197",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-198",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-199",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-200",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-201",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-202",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-203",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-204",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-205",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-206",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-207",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-208",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-209",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-210",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-211",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-212",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-213",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-214",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-215",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-216",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-217",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-218",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-219",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-220",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-221",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-222",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-223",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-224",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-225",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-226",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-227",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-228",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-229",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-230",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-231",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-232",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-233",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-234",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-235",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-236",
+      "status": "RECONSTRUCTED_PHASE1"
+    },
+    {
+      "rule_id": "ACR-237",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-238",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-239",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-240",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-241",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-242",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-243",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-244",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-245",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-246",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-247",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-248",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-249",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-250",
+      "status": "MISSING_NEEDS_RECOVERY"
+    },
+    {
+      "rule_id": "ACR-251",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-252",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-253",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-254",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-255",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-256",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-257",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-258",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-259",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-260",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-261",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-262",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-263",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-264",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-265",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-266",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-267",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-268",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-269",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-270",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-271",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-272",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-273",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-274",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-275",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-276",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-277",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-278",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-279",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-280",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-281",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-282",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-283",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-284",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-285",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-286",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-287",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-288",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-289",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-290",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-291",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-292",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-293",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-294",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-295",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-296",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-297",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-298",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-299",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-300",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-301",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-302",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-303",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-304",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-305",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-306",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-307",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-308",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-309",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-310",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-311",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-312",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-313",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-314",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-315",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-316",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-317",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-318",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-319",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-320",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-321",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-322",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-323",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-324",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-325",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-326",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-327",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-328",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-329",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-330",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-331",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-332",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-333",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-334",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-335",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-336",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-337",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-338",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-339",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-340",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-341",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-342",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-343",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-344",
+      "status": "RECONSTRUCTED_PHASE2"
+    },
+    {
+      "rule_id": "ACR-345",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-346",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-347",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-348",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-349",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-350",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-351",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-352",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-353",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-354",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-355",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-356",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-357",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-358",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-359",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-360",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-361",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-362",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-363",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-364",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-365",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-366",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-367",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-368",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-369",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-370",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-371",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-372",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-373",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-374",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-375",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-376",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-377",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-378",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-379",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-380",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-381",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-382",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-383",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-384",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-385",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-386",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-387",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-388",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-389",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-390",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-391",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-392",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-393",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-394",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-395",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-396",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-397",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-398",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-399",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-400",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-401",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-402",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-403",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-404",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-405",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-406",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-407",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-408",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-409",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-410",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-411",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-412",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-413",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-414",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-415",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-416",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-417",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-418",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-419",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-420",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-421",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-422",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-423",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-424",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-425",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-426",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-427",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-428",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-429",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-430",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-431",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-432",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-433",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-434",
+      "status": "RECONSTRUCTED_PHASE3"
+    },
+    {
+      "rule_id": "ACR-435",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-436",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-437",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-438",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-439",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-440",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-441",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-442",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-443",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-444",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-445",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-446",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-447",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-448",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-449",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-450",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-451",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-452",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-453",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-454",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-455",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-456",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-457",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-458",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-459",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-460",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-461",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-462",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-463",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-464",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-465",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-466",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-467",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-468",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-469",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-470",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-471",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-472",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-473",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-474",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-475",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-476",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-477",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-478",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-479",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-480",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-481",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-482",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-483",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-484",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-485",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-486",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-487",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-488",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-489",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-490",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-491",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-492",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-493",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-494",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-495",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-496",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-497",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-498",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-499",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-500",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-501",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-502",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-503",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-504",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-505",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-506",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-507",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-508",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-509",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-510",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-511",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-512",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-513",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-514",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-515",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-516",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-517",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-518",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-519",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-520",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-521",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-522",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-523",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-524",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-525",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-526",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-527",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-528",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-529",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-530",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-531",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-532",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-533",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-534",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-535",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-536",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-537",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-538",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-539",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-540",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-541",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-542",
+      "status": "RECONSTRUCTED_PHASE4"
+    },
+    {
+      "rule_id": "ACR-543",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-544",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-545",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-546",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-547",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-548",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-549",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-550",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-551",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-552",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-553",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-554",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-555",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-556",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-557",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-558",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-559",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-560",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-561",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-562",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-563",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-564",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-565",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-566",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-567",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-568",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-569",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-570",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-571",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-572",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-573",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-574",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-575",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-576",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-577",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-578",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-579",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-580",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-581",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-582",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-583",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-584",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-585",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-586",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-587",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-588",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-589",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-590",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-591",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-592",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-593",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-594",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-595",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-596",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-597",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-598",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-599",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-600",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-601",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-602",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-603",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-604",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-605",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-606",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-607",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-608",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-609",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-610",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-611",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-612",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-613",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-614",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-615",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-616",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-617",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-618",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-619",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-620",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-621",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-622",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-623",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-624",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-625",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-626",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-627",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-628",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-629",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-630",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-631",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-632",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-633",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-634",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-635",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-636",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-637",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-638",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-639",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-640",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-641",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-642",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-643",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-644",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-645",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-646",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-647",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-648",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-649",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-650",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-651",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-652",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-653",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-654",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-655",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-656",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-657",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-658",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-659",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-660",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-661",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-662",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-663",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-664",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-665",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-666",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-667",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-668",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-669",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-670",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-671",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-672",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-673",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-674",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-675",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-676",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-677",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-678",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-679",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-680",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-681",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-682",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-683",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-684",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-685",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-686",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-687",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-688",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-689",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-690",
+      "status": "RECONSTRUCTED_PHASE5"
+    },
+    {
+      "rule_id": "ACR-691",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-692",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-693",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-694",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-695",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-696",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-697",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-698",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-699",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-700",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-701",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-702",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-703",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-704",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-705",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-706",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-707",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-708",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-709",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-710",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-711",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-712",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-713",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-714",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-715",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-716",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-717",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-718",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-719",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-720",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-721",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-722",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-723",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-724",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-725",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-726",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-727",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-728",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-729",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-730",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-731",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-732",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-733",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-734",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-735",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-736",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-737",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-738",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-739",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-740",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-741",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-742",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-743",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-744",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-745",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-746",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-747",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-748",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-749",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-750",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-751",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-752",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-753",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-754",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-755",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-756",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-757",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-758",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-759",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-760",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-761",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-762",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-763",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-764",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-765",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-766",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-767",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-768",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-769",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-770",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-771",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-772",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-773",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-774",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-775",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-776",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-777",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-778",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-779",
+      "status": "RECONSTRUCTED_PHASE6"
+    },
+    {
+      "rule_id": "ACR-780",
+      "status": "RECONSTRUCTED_PHASE6"
+    }
+  ]
+}
