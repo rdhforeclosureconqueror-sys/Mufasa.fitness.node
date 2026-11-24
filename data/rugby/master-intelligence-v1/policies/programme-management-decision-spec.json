@@ -1,0 +1,96 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "status": "proposed_review_required",
+  "source_ids": [
+    "ACR-237",
+    "ACR-238",
+    "ACR-239",
+    "ACR-240",
+    "ACR-241",
+    "ACR-242",
+    "ACR-243",
+    "ACR-244",
+    "ACR-245",
+    "ACR-246",
+    "ACR-247",
+    "ACR-248",
+    "ACR-249",
+    "ACR-250"
+  ],
+  "hierarchy": [
+    "season",
+    "phase",
+    "mesocycle",
+    "microcycle",
+    "session",
+    "exercise"
+  ],
+  "contracts": {
+    "season": [
+      "id",
+      "objective"
+    ],
+    "phase": [
+      "id",
+      "season_id",
+      "objective"
+    ],
+    "mesocycle": [
+      "id",
+      "phase_id",
+      "objective",
+      "start_date",
+      "end_date",
+      "quality_priorities"
+    ],
+    "microcycle": [
+      "id",
+      "mesocycle_id",
+      "objective",
+      "start_date",
+      "end_date",
+      "match_calendar",
+      "constraints"
+    ],
+    "session": [
+      "id",
+      "microcycle_id",
+      "objective",
+      "planned_load",
+      "actual_load",
+      "modification_reason",
+      "coach_approval"
+    ],
+    "exercise": [
+      "id",
+      "session_id",
+      "objective",
+      "athlete_need"
+    ]
+  },
+  "quality_priorities": [
+    "DEVELOP",
+    "MAINTAIN",
+    "RESTORE",
+    "DE_EMPHASIZE"
+  ],
+  "guardrails": [
+    "Preserve original planned workload separately from actual workload and revisions",
+    "Never treat missing actual load as zero",
+    "Require compatible metric units and protocols for comparison",
+    "Safety holds and referrals override programming",
+    "Daily changes require review of mesocycle intent and coach approval",
+    "No automatic dosage or rigid block sequence inferred from recovered text"
+  ],
+  "acceptance_cases": [
+    "orphan session rejected",
+    "missing objective flagged",
+    "planned load unchanged after actual entry",
+    "missing actual load remains unknown",
+    "incompatible units block comparison",
+    "match calendar change requests review",
+    "safety referral blocks automated prescription",
+    "modified session retains original plan and reason"
+  ]
+}
