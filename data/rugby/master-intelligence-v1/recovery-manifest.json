@@ -1064,7 +1064,7 @@
   "knowledge_archive_transfer": {
     "source": "Rugby_HQ_Resources_DropIn.zip",
     "expected_count": 12,
-    "verified_count": 9,
+    "verified_count": 12,
     "files": [
       {
         "path": "docs/rugby/master-intelligence-v1/knowledge/11-course-completion-context.md",
@@ -1116,8 +1116,27 @@
         "archive_blob_sha": "ac6030f8cea3ec2f3aca861831390c9b9d25044f",
         "verified": true,
         "actual": "ac6030f8cea3ec2f3aca861831390c9b9d25044f"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/07-gamespeed-speed-agility.md",
+        "archive_blob_sha": "c7723c6c2b6f11232eeded6152958f6c861f01f9",
+        "verified": true,
+        "actual": "c7723c6c2b6f11232eeded6152958f6c861f01f9"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/10-course-corrections-and-guardrails.md",
+        "archive_blob_sha": "4bbd3720d9712da554441801130e34c2d5e81b9f",
+        "verified": true,
+        "actual": "4bbd3720d9712da554441801130e34c2d5e81b9f"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/08-data-monitoring-ai.md",
+        "archive_blob_sha": "c53ab7498cd55b5e909195723cad73e625efcea2",
+        "verified": true,
+        "actual": "c53ab7498cd55b5e909195723cad73e625efcea2"
       }
     ],
-    "runtime_activation": false
+    "runtime_activation": false,
+    "complete": true
   }
 }
