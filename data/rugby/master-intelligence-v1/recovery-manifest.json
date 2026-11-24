@@ -738,5 +738,79 @@
       "position benchmarks",
       "programme and safety integration"
     ]
+  },
+  "advanced_conditioning": {
+    "paths": [
+      "docs/rugby/master-intelligence-v1/prototypes/advanced-conditioning.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/advanced-conditioning.test.cjs"
+    ],
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "RSA",
+        "pass": true
+      },
+      {
+        "name": "reserve",
+        "pass": true
+      },
+      {
+        "name": "rolling peak",
+        "pass": true
+      },
+      {
+        "name": "oversized window",
+        "pass": true
+      },
+      {
+        "name": "unknown contact",
+        "pass": true
+      },
+      {
+        "name": "gap",
+        "pass": true
+      },
+      {
+        "name": "invalid sprint",
+        "pass": true
+      },
+      {
+        "name": "average sprint rejected",
+        "pass": true
+      },
+      {
+        "name": "missing recovery",
+        "pass": true
+      },
+      {
+        "name": "zero sprint",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "empty",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "Equal-distance RSA time decrement only",
+      "One-second contiguous samples required",
+      "Contact counts require validated upstream classification",
+      "RHIE and limiting-factor inference not implemented",
+      "Trusted safety and benchmark integration pending"
+    ]
   }
 }
