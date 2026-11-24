@@ -1520,7 +1520,16 @@
     "quality_fields": 9,
     "source_statuses": 8,
     "readback_verified": true,
-    "tests_pending": true,
-    "runtime_activation": false
+    "tests_pending": false,
+    "runtime_activation": false,
+    "tests": {
+      "path": "docs/rugby/master-intelligence-v1/prototypes/beast-mode-progression.test.cjs",
+      "passed": 19,
+      "failed": 0,
+      "evaluator_sha": "95dde0ed2dcf9a9effc4577e8e6d33ef9688a6bb",
+      "test_sha": "37195bff07dc2f894385480078abe4bca4a8b12f",
+      "execution": "local node --test",
+      "repository_ci_pending": true
+    }
   }
 }
