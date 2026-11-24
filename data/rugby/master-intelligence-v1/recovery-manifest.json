@@ -228,12 +228,19 @@
         "count": 23,
         "range": "ACR-078–100",
         "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "count": 18,
+        "range": "ACR-101–118",
+        "readback_verified": true,
+        "master_rule_source_variants": 10
       }
     ],
-    "total_recovered_identifiers": 714,
-    "remaining": 66,
+    "total_recovered_identifiers": 732,
+    "remaining": 48,
     "missing_ranges": [
-      "ACR-101–152",
+      "ACR-119–152",
       "ACR-237–250"
     ],
     "original_coverage_manifest_preserved": true,
