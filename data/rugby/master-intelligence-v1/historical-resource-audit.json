@@ -1,0 +1,59 @@
+{
+  "status": "merged_prs_confirmed_sample_readback",
+  "full_file_audit_pending": true,
+  "resources": [
+    {
+      "pr": 1402,
+      "changed_paths": [
+        "data/rugby/rugby-hq-conditioning-context.v1.json",
+        "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
+        "docs/rugby/conditioning/ATHLETE_001_PRESEASON_CASE.md",
+        "docs/rugby/conditioning/README.md",
+        "docs/rugby/conditioning/THREAD_HARVEST_HANDOFF.md"
+      ],
+      "main_sample": {
+        "path": "docs/rugby/conditioning/README.md",
+        "sha": "5c8dc3d0494a8f0677928c92875f3ebcfe8f87b9",
+        "verified": true
+      }
+    },
+    {
+      "pr": 1403,
+      "changed_paths": [
+        "docs/rugby/RUGBY_HQ_RESOURCES_3_PLAYER_PATHWAY_PRO_NETWORK.json",
+        "docs/rugby/RUGBY_HQ_RESOURCES_3_PLAYER_PATHWAY_PRO_NETWORK.md"
+      ],
+      "main_sample": {
+        "path": "docs/rugby/RUGBY_HQ_RESOURCES_3_PLAYER_PATHWAY_PRO_NETWORK.json",
+        "sha": "e6ff697c74fa98ddac7ecaf7982218536aa55de6",
+        "verified": true
+      }
+    },
+    {
+      "pr": 1404,
+      "changed_paths": [
+        "data/rugby/rugby-hq-resources-5-context.v1.json",
+        "docs/rugby/resources-5/CLUB_STANDARDS_AND_COMPLIANCE.md",
+        "docs/rugby/resources-5/README.md",
+        "docs/rugby/resources-5/SYSTEM_ACTIVATION_MAP.md",
+        "docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md"
+      ],
+      "main_sample": {
+        "path": "docs/rugby/resources-5/README.md",
+        "sha": "f3d7f8ba571f6df783944d5fec21abe4e20fe9f2",
+        "verified": true
+      }
+    },
+    {
+      "pr": 1405,
+      "changed_paths": [
+        "docs/rugby/rugby-hq-coaching-os-handoff.md"
+      ],
+      "main_sample": {
+        "path": "docs/rugby/rugby-hq-coaching-os-handoff.md",
+        "sha": "788c165047aefa7ce60e02344b42214fd26babd6",
+        "verified": true
+      }
+    }
+  ]
+}
