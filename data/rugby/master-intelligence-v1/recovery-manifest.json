@@ -360,5 +360,17 @@
     ],
     "repository_runner_pending": true,
     "runtime_activation": false
+  },
+  "programme_management_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/programme-management-decision-spec.json",
+    "readback_verified": true,
+    "source_rule_count": 14,
+    "status": "proposed_review_required",
+    "runtime_activation": false
+  },
+  "roadmap": {
+    "path": "docs/rugby/master-intelligence-v1/ROADMAP.md",
+    "readback_verified": true,
+    "maintenance": "Update checklist and manifest with every milestone; require acceptance evidence."
   }
 }
