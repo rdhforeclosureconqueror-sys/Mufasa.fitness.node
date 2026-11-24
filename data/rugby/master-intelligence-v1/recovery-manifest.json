@@ -1259,7 +1259,7 @@
     "source": "rugby-hq-resource-007-transfer-package.zip",
     "archive_entries": 23,
     "payload_files": 22,
-    "verified_count": 16,
+    "verified_count": 20,
     "files": [
       {
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
@@ -1356,6 +1356,30 @@
         "expected": "42437ee1d88ae635726077f0b9c7873d21001af1",
         "actual": "42437ee1d88ae635726077f0b9c7873d21001af1",
         "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/integration-map.md",
+        "expected": "9b4d51065bb0c431cc7fd9c5d35f2a2892491532",
+        "actual": "9b4d51065bb0c431cc7fd9c5d35f2a2892491532",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/system-activation-map.md",
+        "expected": "ff9fc7878467a83538f2c5c40deef3136ba38977",
+        "actual": "ff9fc7878467a83538f2c5c40deef3136ba38977",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/activation-map.json",
+        "expected": "93fedd5e4237bcab4fdb1d5a0ea2a57ee1892681",
+        "actual": "93fedd5e4237bcab4fdb1d5a0ea2a57ee1892681",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/integration-map.json",
+        "expected": "8c68cd376a0fbe86303173f4d75ad427cc6fcf9d",
+        "actual": "8c68cd376a0fbe86303173f4d75ad427cc6fcf9d",
+        "verified": true
       }
     ],
     "runtime_activation": false,
@@ -1363,7 +1387,8 @@
       "Narrative example uses scrimmage, timestamp, evaluator and date; schema uses controlled_scrimmage, clipTimestamp, evaluatorId/evaluatorName and evaluatedAt. Preserve originals; normalize only in integration.",
       "Narrative score 64 is described as close to match-ready; rubric classifies 60–69 as developmental.",
       "Coverage and machine context include explicit coach approval gate; evaluation rubric instead lists defensive IQ review gate. Preserve both; reconcile before runtime. Inventory dataFiles omits resource-inventory.json itself.",
-      "Original bot prompt and contractor tasks reference legacy resources/rugby-hq paths; resolve to consolidated paths before activation. Original pilot-store option is not approved for production architecture."
+      "Original bot prompt and contractor tasks reference legacy resources/rugby-hq paths; resolve to consolidated paths before activation. Original pilot-store option is not approved for production architecture.",
+      "Activation map relative paths ../../docs resolve under data, not repo root; use verified root-relative paths in future loader."
     ]
   }
 }
