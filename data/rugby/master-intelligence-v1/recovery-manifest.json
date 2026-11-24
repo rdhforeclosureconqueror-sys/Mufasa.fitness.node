@@ -1414,6 +1414,12 @@
     "resource_number_confirmed": false,
     "course_identity_archive_confirmed": true,
     "overlap_audit_pending": true,
-    "runtime_activation": false
+    "runtime_activation": false,
+    "crosswalk": {
+      "path": "data/rugby/master-intelligence-v1/intro-conditioning-crosswalk.json",
+      "rows": 40,
+      "verified": true,
+      "status": "preliminary_domain_crosswalk"
+    }
   }
 }
