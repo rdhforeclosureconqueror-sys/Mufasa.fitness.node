@@ -1429,5 +1429,14 @@
     "candidates": 13,
     "readback_verified": true,
     "runtime_activation": false
+  },
+  "exercise_drill_registry": {
+    "path": "data/rugby/master-intelligence-v1/policies/exercise-drill-registry.json",
+    "count": 123,
+    "activate": 114,
+    "intro": 9,
+    "readback_verified": true,
+    "name_overlap_groups": 22,
+    "runtime_activation": false
   }
 }
