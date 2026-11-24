@@ -1259,7 +1259,7 @@
     "source": "rugby-hq-resource-007-transfer-package.zip",
     "archive_entries": 23,
     "payload_files": 22,
-    "verified_count": 10,
+    "verified_count": 13,
     "files": [
       {
         "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
@@ -1320,12 +1320,31 @@
         "expected": "2b94d46c214eea16199bf5d553091c3a5bc53e2a",
         "actual": "2b94d46c214eea16199bf5d553091c3a5bc53e2a",
         "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/coverage-manifest.json",
+        "expected": "a03f2eb82fcf0e271a00cc9cdfc466bd98616d8f",
+        "actual": "a03f2eb82fcf0e271a00cc9cdfc466bd98616d8f",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/machine-context.json",
+        "expected": "33b64a0ee0056b39476ec57055f6210f44d70cd7",
+        "actual": "33b64a0ee0056b39476ec57055f6210f44d70cd7",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/resource-inventory.json",
+        "expected": "f63c066b1262357d61a6254b5b62cee2b1a76210",
+        "actual": "f63c066b1262357d61a6254b5b62cee2b1a76210",
+        "verified": true
       }
     ],
     "runtime_activation": false,
     "reconciliation_notes": [
       "Narrative example uses scrimmage, timestamp, evaluator and date; schema uses controlled_scrimmage, clipTimestamp, evaluatorId/evaluatorName and evaluatedAt. Preserve originals; normalize only in integration.",
-      "Narrative score 64 is described as close to match-ready; rubric classifies 60–69 as developmental."
+      "Narrative score 64 is described as close to match-ready; rubric classifies 60–69 as developmental.",
+      "Coverage and machine context include explicit coach approval gate; evaluation rubric instead lists defensive IQ review gate. Preserve both; reconcile before runtime. Inventory dataFiles omits resource-inventory.json itself."
     ]
   }
 }
