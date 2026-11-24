@@ -11,7 +11,8 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [x] Align fields of 166 recovered records without inventing missing semantics.
 - [x] Audit 20 master source pointers and preserve 19 divergent identifier meanings without overwriting originals.
 - [x] Preserve 40 qualified master source references and reject ambiguous legacy references (6 isolated cases passed).
-- [ ] Approve canonical master semantics, reconcile overlapping principles and normalize unresolved triggers, actions, exceptions and tests.
+- [x] Group all 40 qualified master statements into 13 traceable proposed principles with safety precedence.
+- [ ] Approve canonical master semantics and normalize unresolved triggers, actions, exceptions and tests.
 - [ ] Archive twelve original knowledge documents and supporting batch narratives, protocols and references.
 - [ ] Transfer and reconcile Activate/Beast Mode and Backs Readiness archives.
 - [ ] Audit candidate resource 04 and verify historical resources 01, 03, 05, 08 on main.
@@ -58,7 +59,7 @@ Update this checklist with every completed milestone, in the same PR where pract
 - [ ] Verify live Rugby HQ with authorized acceptance tests; record results and rollback readiness.
 
 ## Current checkpoint
-Qualified master registry and resolver saved; 40 distinct source references, six isolated tests passed. Canonical semantics and production integration pending. Runtime activation disabled.
+13 proposed canonical principle groups preserve all 40 qualified master statements. Coverage and GitHub readback verified. Semantic approval, executable normalization and production integration pending. Runtime activation disabled.
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
