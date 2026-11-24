@@ -1,4 +1,7 @@
 function evaluateSafety(input = {}) {
+  if (input === null || typeof input !== "object" || Array.isArray(input)) {
+    return {runtimeActivation:false, decisions:[{policy:"input-validation",decision:"hold_for_review",priority:80}], primary:"hold_for_review", automatedPrescriptionAllowed:false};
+  }
   const decisions = [];
   const add = (policy, decision, priority) => decisions.push({policy, decision, priority});
   if (input.screening === true) {
