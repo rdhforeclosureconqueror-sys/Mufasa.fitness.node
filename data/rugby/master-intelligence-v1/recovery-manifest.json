@@ -437,5 +437,67 @@
     "assessment_count": 4,
     "status": "review_required",
     "runtime_activation": false
+  },
+  "movement_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/movement-evaluator.cjs",
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "pain",
+        "pass": true
+      },
+      {
+        "name": "concern",
+        "pass": true
+      },
+      {
+        "name": "unknown pain",
+        "pass": true
+      },
+      {
+        "name": "invalid technique",
+        "pass": true
+      },
+      {
+        "name": "unverified protocol",
+        "pass": true
+      },
+      {
+        "name": "different retest",
+        "pass": true
+      },
+      {
+        "name": "same retest",
+        "pass": true
+      },
+      {
+        "name": "conflict",
+        "pass": true
+      },
+      {
+        "name": "missing trial",
+        "pass": true
+      },
+      {
+        "name": "three trials",
+        "pass": true
+      },
+      {
+        "name": "hamstring compensation",
+        "pass": true
+      },
+      {
+        "name": "missing faults",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "scoring_enabled": false,
+    "limitations": "Protocol registry, measurement error, trusted safety and full ACR-191–198 mapping pending."
   }
 }
