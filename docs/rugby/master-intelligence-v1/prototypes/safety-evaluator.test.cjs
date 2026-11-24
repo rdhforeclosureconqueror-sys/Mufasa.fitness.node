@@ -132,7 +132,44 @@ const cases = [
     "review"
   ]
 ];
-function runTests(evaluate) { return cases.map(([name,input,expected])=>{const result=evaluate(input);return {name,expected,actual:result.primary,pass:result.primary===expected && result.automatedPrescriptionAllowed===false};}); }
+function runTests(evaluate) { return cases.map(([name,input,expected])=>{const result=evaluate(input);return {name,expected,actual:result.primary,pass:result.primary===expected && result.automatedPrescriptionAllowed===false && result.runtimeActivation===false};}); }
+cases.push(...[
+  [
+    "null",
+    null,
+    "hold_for_review"
+  ],
+  [
+    "array",
+    [],
+    "hold_for_review"
+  ],
+  [
+    "string",
+    "bad",
+    "hold_for_review"
+  ],
+  [
+    "number",
+    42,
+    "hold_for_review"
+  ],
+  [
+    "boolean",
+    false,
+    "hold_for_review"
+  ],
+  [
+    "malformed pain",
+    {
+      "screening": true,
+      "pain": "false",
+      "clinicalConcern": false,
+      "validTechnique": true
+    },
+    "hold_for_review"
+  ]
+]);
 const results = runTests(evaluateSafety);
 console.log(JSON.stringify(results,null,2));
 if(results.some(r=>!r.pass)) process.exitCode=1;
