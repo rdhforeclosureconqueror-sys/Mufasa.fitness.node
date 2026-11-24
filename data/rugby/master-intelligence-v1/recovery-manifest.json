@@ -1,0 +1,115 @@
+{
+  "version": "1.0.0",
+  "status": "recovery_validated_transfer_pending",
+  "runtime_activation": false,
+  "source_of_truth": "Mufasa.fitness.node",
+  "archives": [
+    {
+      "name": "Rugby_HQ_Resources_DropIn.zip",
+      "entries": 41,
+      "json_files": 20,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "Pocket_PT_Rugby_Coaching_OS_with_Rugby_HQ_Resources.zip",
+      "entries": 65,
+      "json_files": 23,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
+      "entries": 18,
+      "json_files": 5,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "rugby_hq_activate_harvest.zip",
+      "entries": 8,
+      "json_files": 1,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "mufasa-fit-rugby-hq-resources.zip",
+      "entries": 33,
+      "json_files": 5,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "rugby_hq_resource_pack.zip",
+      "entries": 13,
+      "json_files": 6,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "rugby-hq-resource-007-transfer-package.zip",
+      "entries": 23,
+      "json_files": 9,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    }
+  ],
+  "acr": {
+    "expected": 780,
+    "recovered": 614,
+    "missing": 166,
+    "additional_master_rules": 20,
+    "recovered_ranges": [
+      [
+        153,
+        236
+      ],
+      [
+        251,
+        780
+      ]
+    ],
+    "missing_ranges": [
+      [
+        1,
+        152
+      ],
+      [
+        237,
+        250
+      ]
+    ],
+    "classification": "conversation_reconstructed_not_independently_verified",
+    "activation": "blocked_pending_review"
+  },
+  "deduplication": {
+    "drop_in_shared_files": 41,
+    "byte_identical": 41,
+    "other_overlaps": "pending"
+  },
+  "resource_04": {
+    "candidate": "rugby_hq_resource_pack.zip",
+    "course": "Introduction to Conditioning - Adults - Pre-Level 1",
+    "identity": "unconfirmed"
+  },
+  "guardrails": [
+    "Preserve source IDs, provenance and original payloads",
+    "Do not activate reconstructed rules before evidence and safety review",
+    "Do not create a competing scoring engine",
+    "Do not import prototype app scaffolding or execute archive installers",
+    "Resolve conflicts explicitly; do not silently overwrite existing resources"
+  ],
+  "next": [
+    "Audit existing repository resource paths",
+    "Transfer original knowledge payloads without overwrites",
+    "Validate unique rule IDs, schema, provenance and semantic conflicts",
+    "Review and merge preservation-only changes before runtime integration"
+  ]
+}
