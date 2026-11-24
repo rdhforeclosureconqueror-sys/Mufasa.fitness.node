@@ -1142,7 +1142,7 @@
   "activate_archive_transfer": {
     "source": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
     "payload_files": 16,
-    "verified_count": 13,
+    "verified_count": 15,
     "files": [
       {
         "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COACH_TRACKING_SPEC.md",
@@ -1220,6 +1220,18 @@
         "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_coverage_manifest.json",
         "expected": "193c9c6735647b80e09ed155a125a1103fd4f560",
         "actual": "193c9c6735647b80e09ed155a125a1103fd4f560",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_system_activation_map.json",
+        "expected": "f7ddac9641a3d0153ea7d11c128552acd1a3462b",
+        "actual": "f7ddac9641a3d0153ea7d11c128552acd1a3462b",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_schema.sql",
+        "expected": "0a1c3d115f8be0b500bd9f495008bb86de9e662f",
+        "actual": "0a1c3d115f8be0b500bd9f495008bb86de9e662f",
         "verified": true
       }
     ],
