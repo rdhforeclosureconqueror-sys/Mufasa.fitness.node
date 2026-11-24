@@ -1,0 +1,89 @@
+{
+  "warning": "Course-derived starting templates. Individualize and verify ambiguous values before production hard-coding.",
+  "MAS_formulas": {
+    "m_per_s": "distance_m / time_s",
+    "m_per_min": "MAS_m_per_s * 60",
+    "km_per_h": "MAS_m_per_s * 3.6",
+    "target_interval_distance": "MAS_m_per_s * intensity_fraction * work_seconds"
+  },
+  "templates": [
+    {
+      "name": "Grid",
+      "work": "15 s at 100% MAS",
+      "active_recovery": "15 s at ~70% MAS",
+      "lap": "~60 s",
+      "starting_set": "~5 min",
+      "progression": "6\u20138 min",
+      "sets": "2\u20134",
+      "between_sets": "2\u20133 min"
+    },
+    {
+      "name": "Eurofit-style",
+      "work": "15 s at ~120% MAS",
+      "recovery": "15 s",
+      "starting_set": "~5 min",
+      "sets": "1\u20132 initially",
+      "progression": "6\u20138 min"
+    },
+    {
+      "name": "Tabata-style running",
+      "work": "20 s",
+      "recovery": "10 s",
+      "intensity": "~120\u2013140% MAS",
+      "starting_duration": "~4 min",
+      "progression": "6\u20138 min",
+      "sets": "2\u20133 possible",
+      "between_sets": "3\u20134 min"
+    },
+    {
+      "name": "Sprint-style tempo",
+      "intensity": "~65\u201375% sprint-speed reference",
+      "volume": "~1000\u20131500 m",
+      "interval_distance": "~50\u2013200 m",
+      "rest": "starting guide ~2x run time"
+    }
+  ],
+  "speed_samples": {
+    "acceleration": {
+      "technical": [
+        "wall drive single exchange 1\u20132x5 each leg",
+        "A-march 2x10 m",
+        "A-skip 2x10 m"
+      ],
+      "resisted": [
+        "partner resisted march 2x10 m",
+        "sled 2x20 m"
+      ],
+      "free": [
+        "3x20 m",
+        "1\u20132 sets"
+      ],
+      "recovery": "technical 1\u20132 min; free sprint up to ~5 min; sets up to ~8 min as course examples"
+    },
+    "max_velocity": {
+      "technical": [
+        "step-overs/ankling 2x10 m",
+        "A-run 2x10 m",
+        "acceleration 2x20\u201330 m"
+      ],
+      "free": [
+        "3x40 m",
+        "2 flying 30 m",
+        "1\u20132 sets"
+      ],
+      "recovery": "reps up to ~6\u20138 min; sets ~8\u201310 min as course examples"
+    },
+    "agility": {
+      "closed": [
+        "side shuffle 3x5 m each side",
+        "cut 3x5 m each side"
+      ],
+      "open": [
+        "mirror 4x10 s",
+        "Run to Daylight 4x5\u201310 m"
+      ],
+      "game_specific": "2\u20133 min x2",
+      "principle": "closed mechanics \u2192 reactive/open \u2192 rugby-specific game scenario"
+    }
+  }
+}
