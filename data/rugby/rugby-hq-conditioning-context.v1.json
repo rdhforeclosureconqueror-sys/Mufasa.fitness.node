@@ -1,0 +1,221 @@
+{
+  "schemaVersion": "1.0",
+  "id": "rugby-hq-conditioning-context-v1",
+  "generatedFrom": "2026-11-24 conditioning thread harvest plus Pocket PT Advanced Conditioning Integration Specification v1.0",
+  "purpose": "Machine-readable Rugby HQ context for future bots and implementation agents.",
+  "authorities": [
+    "docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md",
+    "docs/rugby/conditioning/README.md",
+    "docs/rugby/conditioning/THREAD_HARVEST_HANDOFF.md",
+    "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
+    "docs/rugby/conditioning/ATHLETE_001_PRESEASON_CASE.md"
+  ],
+  "knowledgeStatus": {
+    "specConfirmed": "Explicitly represented in the uploaded Advanced Conditioning integration specification.",
+    "threadConfirmed": "Clarified/agreed in discussion; may still need official protocol verification.",
+    "userReported": "Athlete goal/history/equipment preference supplied by athlete.",
+    "needsVerification": "Do not hard-code as official until authoritative protocol/source/version is captured."
+  },
+  "coreLoop": [
+    "ASSESS",
+    "CLASSIFY",
+    "PRIORITISE",
+    "PROGRAMME",
+    "TRAIN",
+    "MONITOR",
+    "RETEST",
+    "ADAPT"
+  ],
+  "periodisation": {
+    "hierarchy": [
+      "session",
+      "microcycle",
+      "mesocycle",
+      "macrocycle"
+    ],
+    "residualTrainingEffect": true,
+    "primarySecondaryModel": {
+      "primaryTargets": 1,
+      "secondaryTargets": 1,
+      "maintenanceForOtherQualities": true
+    },
+    "rememberedLoadingRhythm": {
+      "value": "3 loading weeks + 1 unload/retest week",
+      "status": "needsVerification"
+    },
+    "governingConcept": "Build -> maintain -> convert -> peak"
+  },
+  "physicalQualities": [
+    "body_mass_hypertrophy",
+    "max_strength",
+    "power",
+    "acceleration",
+    "max_sprint_speed",
+    "aerobic_MAS",
+    "RSA",
+    "RHIE",
+    "agility_COD",
+    "movement_capacity"
+  ],
+  "terminology": {
+    "MAS": "Maximal Aerobic Speed",
+    "MSS": "Maximum Sprint Speed",
+    "RSA": "Repeated Sprint Ability",
+    "RHIE": "Repeated High-Intensity Effort ability",
+    "residualTrainingEffect": "Persistence of an adaptation after its main training emphasis is reduced."
+  },
+  "hardRules": [
+    "Do not merge MAS, MSS, RSA and RHIE into one metric.",
+    "Do not treat curved-treadmill mph as directly interchangeable with field/GPS mph.",
+    "Preserve protocol, device, surface and setup for longitudinal comparisons.",
+    "Keep raw assessment values immutable; derived metrics may be recalculated.",
+    "Use DEVELOP / MAINTAIN / RESTORE / DE-EMPHASIZE rather than one universal fitness score.",
+    "Coach selection remains a human decision.",
+    "AI does not diagnose injury or declare medical clearance.",
+    "Pain/medical gates override optimization.",
+    "Place technical/explosive priority work before fatigue by default.",
+    "Power clean is a power-development tool, not the sole hypertrophy strategy."
+  ],
+  "assessmentDomains": {
+    "bodyProfile": [
+      "mass",
+      "height",
+      "composition_method",
+      "composition_result",
+      "trend"
+    ],
+    "strength": [
+      "absolute_strength",
+      "relative_strength",
+      "upper_lower",
+      "1RM_or_e1RM"
+    ],
+    "power": [
+      "CMJ_or_jump",
+      "throw",
+      "VBT",
+      "peak_output",
+      "quality_loss"
+    ],
+    "speed": [
+      "0_5m",
+      "10m",
+      "20m",
+      "MSS",
+      "high_speed_exposure"
+    ],
+    "conditioning": [
+      "MAS",
+      "aerobic",
+      "RSA",
+      "RHIE",
+      "peak_game_passages",
+      "repeatability",
+      "recovery"
+    ],
+    "movement": [
+      "global_screen",
+      "local_ROM",
+      "dynamic_tests",
+      "hip_ROM",
+      "CKCUEST"
+    ],
+    "readiness": [
+      "sleep",
+      "fatigue",
+      "soreness",
+      "stress",
+      "mood",
+      "fueling",
+      "hydration",
+      "match_minutes",
+      "running_contact_load"
+    ]
+  },
+  "assessmentEventRequiredFields": [
+    "athlete_id",
+    "occurred_at",
+    "protocol_id",
+    "protocol_version",
+    "assessor_source",
+    "device",
+    "surface_setup",
+    "validity",
+    "confidence",
+    "pain_flag",
+    "units",
+    "raw_values",
+    "derived_values"
+  ],
+  "athlete001": {
+    "privacy": "deidentified_public_case",
+    "userReported": {
+      "currentBodyMassLb": 140,
+      "targetBodyMassLb": 160,
+      "timeWindowWeeks": "10-11",
+      "currentSpeedMph": "16-17 self-estimated while tight",
+      "desiredSpeedMph": "18-19 with aspirational 20",
+      "historicalPlayingMassLb": "155-160",
+      "curvedTreadmillAvailable": true,
+      "heavyBarbellTrainingHistory": "limited",
+      "barbellBackSquatPreference": "does_not_prefer",
+      "powerCleanInterest": true
+    },
+    "primaryGoal": "functional mass gain without losing speed",
+    "proposedBlocks": [
+      {
+        "name": "Foundation & baseline",
+        "duration": "~1 week",
+        "primary": "movement/technique/tolerance",
+        "secondary": "baseline testing"
+      },
+      {
+        "name": "Functional mass + speed exposure",
+        "duration": "~3 weeks",
+        "primary": "hypertrophy",
+        "secondary": "max-velocity exposure"
+      },
+      {
+        "name": "Functional mass + power",
+        "duration": "~3 weeks",
+        "primary": "hypertrophy",
+        "secondary": "power"
+      },
+      {
+        "name": "Speed conversion + repeatability",
+        "duration": "~3 weeks",
+        "primary": "max velocity/acceleration",
+        "secondary": "RSA/RHIE"
+      }
+    ],
+    "decisionQuestion": "Did the athlete become heavier AND better?"
+  },
+  "productSurfaces": [
+    "Assessment Lab",
+    "Player Physical Performance Profile",
+    "Preseason Block Builder",
+    "Speed Lab",
+    "Conditioning Lab",
+    "Movement Screen and Retest",
+    "Athlete Timeline",
+    "Position Demand Comparison",
+    "Why this priority? explainability",
+    "Athlete #001 case study"
+  ],
+  "exactProtocolGaps": [
+    "official test setup/instructions",
+    "trial counts and rest intervals",
+    "validity/fault criteria",
+    "normative thresholds",
+    "residual-effect duration values",
+    "licensing/source version"
+  ],
+  "botInstructions": [
+    "Read human Markdown authorities before generating implementation.",
+    "Do not invent missing official thresholds or protocols.",
+    "Mark inferred recommendations separately from source-grounded rules.",
+    "Prefer athlete timeline events over mutable summary fields.",
+    "Preserve same-protocol comparisons and data provenance.",
+    "Use this knowledge to propose Rugby HQ features, schemas, tests and coaching workflows; do not silently activate medical or selection automation."
+  ]
+}
