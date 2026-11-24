@@ -1,0 +1,668 @@
+{
+  "version": 1,
+  "status": "lexical_candidate_review_pending",
+  "runtime_activation": false,
+  "sourceSha": "99d414913b62e96263f31d1babe5bb50d13444f5",
+  "method": "Token Jaccard similarity >=0.5; plural and press-up normalization; top five only",
+  "candidates": [
+    {
+      "name": "Snake Run",
+      "keys": [
+        "activate:AD-MD-A-001",
+        "activate:AD-L1-A-002",
+        "activate:AD-L2-A-002",
+        "activate:AD-L3-A-002",
+        "activate:AD-L4-A-002",
+        "activate:AD-L5-A-002",
+        "activate:AD-L6-A-002",
+        "activate:AD-L7-A-002"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Squat Stand with Twist",
+      "keys": [
+        "activate:AD-MD-B-001",
+        "activate:AD-L2-B-003"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Heel to Toe Walk with Knee Raise",
+      "keys": [
+        "activate:AD-MD-B-002",
+        "activate:AD-L1-B-004",
+        "activate:AD-L2-B-004",
+        "activate:AD-L3-B-004",
+        "activate:AD-L4-B-004",
+        "activate:AD-L7-B-003"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Balance with Push to Unbalance",
+      "keys": [
+        "activate:AD-MD-B-003",
+        "activate:AD-L4-B-005"
+      ],
+      "matches": [
+        {
+          "id": "Single_Leg_Push-off",
+          "name": "Single Leg Push-off",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Resisted Arm Side Raise",
+      "keys": [
+        "activate:AD-MD-B-004",
+        "activate:AD-L1-B-006",
+        "activate:AD-L2-B-006",
+        "activate:AD-L3-B-006",
+        "activate:AD-L4-B-006",
+        "activate:AD-L7-B-007"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Resisted Arm Rotation",
+      "keys": [
+        "activate:AD-MD-B-005",
+        "activate:AD-L1-B-007",
+        "activate:AD-L2-B-007",
+        "activate:AD-L3-B-007",
+        "activate:AD-L4-B-007",
+        "activate:AD-L7-B-008"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Arabesque",
+      "keys": [
+        "activate:AD-MD-B-006",
+        "activate:AD-L1-B-008"
+      ],
+      "matches": [
+        {
+          "id": "Single-Leg_Leg_Extension",
+          "name": "Single-Leg Leg Extension",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Mountain Climber",
+      "keys": [
+        "activate:AD-MD-C-001",
+        "activate:AD-L1-C-009"
+      ],
+      "matches": [
+        {
+          "id": "Mountain_Climbers",
+          "name": "Mountain Climbers",
+          "score": 1
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Hop and Stick",
+      "keys": [
+        "activate:AD-MD-C-002",
+        "activate:AD-L1-C-010"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Pop Press Up – Alternate",
+      "keys": [
+        "activate:AD-MD-C-003",
+        "activate:AD-L2-C-011"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Jogging High Ball Jumps",
+      "keys": [
+        "activate:AD-MD-C-004",
+        "activate:AD-L1-C-012"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Diagonal Shuffle to Lunge",
+      "keys": [
+        "activate:AD-MD-C-005",
+        "activate:AD-L1-C-014"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Shoulder Workout",
+      "keys": [
+        "activate:AD-MD-C-006",
+        "activate:AD-L1-C-013",
+        "activate:AD-L2-C-014",
+        "activate:AD-L5-B-008",
+        "activate:AD-L6-B-008",
+        "activate:AD-L7-C-014"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Static Neck Contractions",
+      "keys": [
+        "activate:AD-MD-D-001",
+        "activate:AD-L1-D-015",
+        "activate:AD-L2-D-015",
+        "activate:AD-L3-D-015",
+        "activate:AD-L4-D-015",
+        "activate:AD-L5-D-009",
+        "activate:AD-L6-D-009",
+        "activate:AD-L7-D-015"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Small-sided Games",
+      "keys": [
+        "activate:AD-L1-A-001",
+        "activate:AD-L2-A-001",
+        "activate:AD-L3-A-001",
+        "activate:AD-L4-A-001",
+        "activate:AD-L5-A-001",
+        "activate:AD-L6-A-001",
+        "activate:AD-L7-A-001"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Squat Stand",
+      "keys": [
+        "activate:AD-L1-B-003"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Balance Back Slaps",
+      "keys": [
+        "activate:AD-L1-B-005"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Pop Press Up – Wide to Narrow",
+      "keys": [
+        "activate:AD-L1-C-011"
+      ],
+      "matches": [
+        {
+          "id": "Push-Up_Wide",
+          "name": "Push-Up Wide",
+          "score": 0.6
+        },
+        {
+          "id": "Incline_Push-Up_Wide",
+          "name": "Incline Push-Up Wide",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Repeated Sprint Conditioning",
+      "keys": [
+        "activate:AD-L1-D-016",
+        "activate:AD-L2-D-016",
+        "activate:AD-L3-D-016",
+        "activate:AD-L4-D-016",
+        "activate:AD-L5-D-010",
+        "activate:AD-L6-D-010",
+        "activate:AD-L7-D-016"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Balance Arm Circles",
+      "keys": [
+        "activate:AD-L2-B-005"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Bent Hip Nordic Hamstring Curl",
+      "keys": [
+        "activate:AD-L2-B-008"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Partner Resisted Quick Steps",
+      "keys": [
+        "activate:AD-L2-C-009"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Diagonal Hop and Stick",
+      "keys": [
+        "activate:AD-L2-C-010",
+        "activate:AD-L4-C-010"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Jogging High Ball Jump and Turn",
+      "keys": [
+        "activate:AD-L2-C-012"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Partner Mirroring",
+      "keys": [
+        "activate:AD-L2-C-013"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Lunge and Reach",
+      "keys": [
+        "activate:AD-L3-B-003"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Balance with Eyes Closed",
+      "keys": [
+        "activate:AD-L3-B-005"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Static Nordic Hamstring Hold",
+      "keys": [
+        "activate:AD-L3-B-008",
+        "activate:AD-L4-B-008"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Pogo Jumps",
+      "keys": [
+        "activate:AD-L3-C-009"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Double Hop and Stick",
+      "keys": [
+        "activate:AD-L3-C-010"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Pop Press Up – Near to Far",
+      "keys": [
+        "activate:AD-L3-C-011"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Lunge Jumps",
+      "keys": [
+        "activate:AD-L3-C-012"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Shoulder Walkout",
+      "keys": [
+        "activate:AD-L3-C-013",
+        "activate:AD-L4-C-013"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Figure of 8",
+      "keys": [
+        "activate:AD-L3-C-014",
+        "activate:AD-L4-C-014"
+      ],
+      "matches": [
+        {
+          "id": "Kettlebell_Figure_8",
+          "name": "Kettlebell Figure 8",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Lunge and Side Bend",
+      "keys": [
+        "activate:AD-L4-B-003"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Maximum Height Pogo Jumps",
+      "keys": [
+        "activate:AD-L4-C-009"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Plyo Press Up",
+      "keys": [
+        "activate:AD-L4-C-011"
+      ],
+      "matches": [
+        {
+          "id": "Plyo_Push-up",
+          "name": "Plyo Push-up",
+          "score": 1
+        },
+        {
+          "id": "Clock_Push-Up",
+          "name": "Clock Push-Up",
+          "score": 0.5
+        },
+        {
+          "id": "Decline_Push-Up",
+          "name": "Decline Push-Up",
+          "score": 0.5
+        },
+        {
+          "id": "Handstand_Push-Ups",
+          "name": "Handstand Push-Ups",
+          "score": 0.5
+        },
+        {
+          "id": "Incline_Push-Up",
+          "name": "Incline Push-Up",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Bounding",
+      "keys": [
+        "activate:AD-L4-C-012"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Dead Leg Sprint",
+      "keys": [
+        "activate:AD-L5-B-003"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Kneeling Drop Catch",
+      "keys": [
+        "activate:AD-L5-B-004"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Triple Hop and Stick",
+      "keys": [
+        "activate:AD-L5-B-005"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Backtrack Pivot and Sprint",
+      "keys": [
+        "activate:AD-L5-B-006"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Alternating Single Leg Bounds",
+      "keys": [
+        "activate:AD-L5-B-007"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Pogo Jumps",
+      "keys": [
+        "activate:AD-L6-B-003",
+        "activate:AD-L7-C-010"
+      ],
+      "matches": [
+        {
+          "id": "Single-Leg_Stride_Jump",
+          "name": "Single-Leg Stride Jump",
+          "score": 0.6
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Diagonal Triple Hop and Stick",
+      "keys": [
+        "activate:AD-L6-B-004"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Tuck Jumps",
+      "keys": [
+        "activate:AD-L6-B-005"
+      ],
+      "matches": [
+        {
+          "id": "Knee_Tuck_Jump",
+          "name": "Knee Tuck Jump",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Run Set Cut",
+      "keys": [
+        "activate:AD-L6-B-006",
+        "activate:AD-L7-C-011"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Kneeling Drop Catch – Press Up",
+      "keys": [
+        "activate:AD-L6-B-007"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Mountain Climber and Twist",
+      "keys": [
+        "activate:AD-L7-B-004"
+      ],
+      "matches": [
+        {
+          "id": "Mountain_Climbers",
+          "name": "Mountain Climbers",
+          "score": 0.6666666666666666
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Single Leg Balance with Eyes Closed and Push to Unbalance",
+      "keys": [
+        "activate:AD-L7-B-005"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Nordic Hamstring Curl",
+      "keys": [
+        "activate:AD-L7-B-006"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Hop and Stick with Shallow Squat",
+      "keys": [
+        "activate:AD-L7-C-009"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Kneeling Drop Catch – Plyometric Press Up",
+      "keys": [
+        "activate:AD-L7-C-012"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Weaving Tuck Jumps",
+      "keys": [
+        "activate:AD-L7-C-013"
+      ],
+      "matches": [
+        {
+          "id": "Knee_Tuck_Jump",
+          "name": "Knee Tuck Jump",
+          "score": 0.5
+        }
+      ],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Ground Fight Sprint Rotation",
+      "keys": [
+        "intro:ground_fight_sprint_rotation"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Beast Mode 3v2 Transition Game",
+      "keys": [
+        "intro:beast_mode_3v2_transition"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Sand Acceleration Sprints",
+      "keys": [
+        "intro:sand_acceleration_sprints"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Sand Cone Change-of-Direction",
+      "keys": [
+        "intro:sand_cone_cod"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Sand Ladder Footwork",
+      "keys": [
+        "intro:sand_ladder"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Maul Ball",
+      "keys": [
+        "intro:maul_ball"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Forward Drive",
+      "keys": [
+        "intro:forward_drive"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Get Up",
+      "keys": [
+        "intro:get_up"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    },
+    {
+      "name": "Tackle Shuttle",
+      "keys": [
+        "intro:tackle_shuttle"
+      ],
+      "matches": [],
+      "status": "lexical_candidates_only"
+    }
+  ],
+  "summary": {
+    "distinctNames": 63,
+    "namesWithCandidates": 10,
+    "recordsWithCandidates": 15
+  },
+  "limitations": [
+    "Lexical similarity not semantic equivalence",
+    "Legacy catalog only in this pass",
+    "No canonical mappings approved"
+  ]
+}
