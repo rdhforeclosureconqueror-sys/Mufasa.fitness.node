@@ -1064,7 +1064,7 @@
   "knowledge_archive_transfer": {
     "source": "Rugby_HQ_Resources_DropIn.zip",
     "expected_count": 12,
-    "verified_count": 6,
+    "verified_count": 9,
     "files": [
       {
         "path": "docs/rugby/master-intelligence-v1/knowledge/11-course-completion-context.md",
@@ -1098,6 +1098,24 @@
         "archive_blob_sha": "56531ab3a7997ee0ffdd406e5acb4b608cd27afe",
         "verified": true,
         "actual": "56531ab3a7997ee0ffdd406e5acb4b608cd27afe"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/04-programme-management.md",
+        "archive_blob_sha": "07ca5d908f971cb555668f6680c46aa0a474fbb3",
+        "verified": true,
+        "actual": "07ca5d908f971cb555668f6680c46aa0a474fbb3"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/05-game-demand-conditioning.md",
+        "archive_blob_sha": "1e15f696e94c3e1d911e7dee5a31ded35def304b",
+        "verified": true,
+        "actual": "1e15f696e94c3e1d911e7dee5a31ded35def304b"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/06-gym-strength-power.md",
+        "archive_blob_sha": "ac6030f8cea3ec2f3aca861831390c9b9d25044f",
+        "verified": true,
+        "actual": "ac6030f8cea3ec2f3aca861831390c9b9d25044f"
       }
     ],
     "runtime_activation": false
