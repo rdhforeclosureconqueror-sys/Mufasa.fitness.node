@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {evaluateProgramme}=require('./programme-evaluator.cjs');
 function run(evaluate,cases){return cases.map(([name,input,expected])=>{const before=JSON.stringify(input),r=evaluate(input);return {name,pass:r.status===expected&&r.automatedPrescriptionAllowed===false&&before===JSON.stringify(input)&&(name!=="missing actual"||r.delta===null&&r.record.actual_load===null)&&(name!=="modified approved"||r.delta===800&&r.record.planned_load.value===4500&&r.record.modification_reason==="coach adjustment")&&(name!=="zero actual"||r.delta===-4500)}})}
 const results=run(evaluateProgramme,[
@@ -577,4 +579,4 @@ const results=run(evaluateProgramme,[
     "RECORDED"
   ]
 ]);
-console.log(JSON.stringify(results,null,2));if(results.some(r=>!r.pass))process.exitCode=1;
+for(const r of results)test(r.name,()=>assert.ok(r.pass,JSON.stringify(r)));
