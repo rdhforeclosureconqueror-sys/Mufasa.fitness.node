@@ -1,0 +1,456 @@
+{
+  "source": "C:/Users/pftgu/Documents/rugby-hq",
+  "checkpoint": "C:/Users/pftgu/Documents/RugbyHQ-Checkpoints/V8B-20261124-173024",
+  "files": [
+    {
+      "file": "project.godot",
+      "sha256": "4dfe9ff5df2473d3f28f29d3a2546bfd69d87c2d8c3268a12f6e02b589d27106",
+      "checkpointSha256": "4dfe9ff5df2473d3f28f29d3a2546bfd69d87c2d8c3268a12f6e02b589d27106"
+    },
+    {
+      "file": "scripts/characters/rugby_player.gd",
+      "sha256": "110ac07e86d689180c0d3ec674383d358bb4b0e0e2593bca69494be63bb43c3d",
+      "checkpointSha256": "110ac07e86d689180c0d3ec674383d358bb4b0e0e2593bca69494be63bb43c3d"
+    },
+    {
+      "file": "scripts/game/rugby_decision_telemetry.gd",
+      "sha256": "fee521f1dfa42aee967390644575086eced076afe607238f6acfdfe0bd0f51e4",
+      "checkpointSha256": "fee521f1dfa42aee967390644575086eced076afe607238f6acfdfe0bd0f51e4"
+    },
+    {
+      "file": "scripts/game/training_drill.gd",
+      "sha256": "16021a4321e9e4425ee9eba3695d181e39ff2d22fb767af809b45f5d48559270",
+      "checkpointSha256": "16021a4321e9e4425ee9eba3695d181e39ff2d22fb767af809b45f5d48559270"
+    },
+    {
+      "file": "scenes/ball/rugby_ball.tscn",
+      "sha256": "b7d8e78fd6522ba3220f453ff28afdea619026126b1570d991b1d42a52c458f3",
+      "checkpointSha256": "b7d8e78fd6522ba3220f453ff28afdea619026126b1570d991b1d42a52c458f3"
+    },
+    {
+      "file": "scenes/characters/rashad_player.tscn",
+      "sha256": "8ffae788ec2ac9a8311274075a703082b88678ccfbe9d466c874cbc497c74a90",
+      "checkpointSha256": "8ffae788ec2ac9a8311274075a703082b88678ccfbe9d466c874cbc497c74a90"
+    },
+    {
+      "file": "scenes/quin_nation_perimeter.tscn",
+      "sha256": "68910dedf20aa2ea766fef05657e11ef4a4d9bde914b0bd9ebe234d7a851b92d",
+      "checkpointSha256": "68910dedf20aa2ea766fef05657e11ef4a4d9bde914b0bd9ebe234d7a851b92d"
+    },
+    {
+      "file": "scenes/training_drill.tscn",
+      "sha256": "6c978005e02b6d1bd371ac0dd202a88a105dc427ee3a245a78eef786feb87e0f",
+      "checkpointSha256": "6c978005e02b6d1bd371ac0dd202a88a105dc427ee3a245a78eef786feb87e0f"
+    },
+    {
+      "file": "playbook/playbook_arena.gd",
+      "sha256": "fe739c6187602f0fc48fb058a14eb84b970cb8fa9bf2a4908d03fb27ee2ac3a4",
+      "checkpointSha256": "fe739c6187602f0fc48fb058a14eb84b970cb8fa9bf2a4908d03fb27ee2ac3a4"
+    },
+    {
+      "file": "playbook/playbook_arena.tscn",
+      "sha256": "c44b8e184a4f6316efc53093aafaafd8d3127871d0c1c6eb856f5d7689fd1c8a",
+      "checkpointSha256": "c44b8e184a4f6316efc53093aafaafd8d3127871d0c1c6eb856f5d7689fd1c8a"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1.glb",
+      "sha256": "faaa22d93196a058dca10545c8300f42de6e0c681fe8d05865927cd6320581e3",
+      "checkpointSha256": "faaa22d93196a058dca10545c8300f42de6e0c681fe8d05865927cd6320581e3"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_0.jpg",
+      "sha256": "b0a7f224c9fe66433ebb3dcc60d857a6d3d60fed4c7b370c51be336e9f366441",
+      "checkpointSha256": "b0a7f224c9fe66433ebb3dcc60d857a6d3d60fed4c7b370c51be336e9f366441"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_1.jpg",
+      "sha256": "c7205e34bbc8754dae67412b21298ffe30cdd98c50ae3695abc379fc84d274f0",
+      "checkpointSha256": "c7205e34bbc8754dae67412b21298ffe30cdd98c50ae3695abc379fc84d274f0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_10.jpg",
+      "sha256": "fd0e4a92161f1d5d0fea9edb08476ba0a3f7f9d53332138ef5fda6af4a7b872c",
+      "checkpointSha256": "fd0e4a92161f1d5d0fea9edb08476ba0a3f7f9d53332138ef5fda6af4a7b872c"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_11.jpg",
+      "sha256": "c95dd827275ee9a0b194d18fb7c4a6b44217708a9fb04e8e0cc1d3165b73047b",
+      "checkpointSha256": "c95dd827275ee9a0b194d18fb7c4a6b44217708a9fb04e8e0cc1d3165b73047b"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_12.jpg",
+      "sha256": "bf813042e2127d5c3a85d3ef5f27f1e18cbae29975388ed4546194a0b7b468b7",
+      "checkpointSha256": "bf813042e2127d5c3a85d3ef5f27f1e18cbae29975388ed4546194a0b7b468b7"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_13.jpg",
+      "sha256": "c346a38a049d904f98a59954fb8f91e888aebfc690464563bfb12d5c66f860db",
+      "checkpointSha256": "c346a38a049d904f98a59954fb8f91e888aebfc690464563bfb12d5c66f860db"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_2.jpg",
+      "sha256": "7d30370f01caf7405c35869e2456335a626253c5386c5c51fa95faa73a1bf9e0",
+      "checkpointSha256": "7d30370f01caf7405c35869e2456335a626253c5386c5c51fa95faa73a1bf9e0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_3.jpg",
+      "sha256": "1277082e6d36d1315289ccb405ce45e19ec288d8bd1babe00c83967df104381d",
+      "checkpointSha256": "1277082e6d36d1315289ccb405ce45e19ec288d8bd1babe00c83967df104381d"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_4.png",
+      "sha256": "fcbb8d6c39a13b801ee8c3101591c139e3b27b7d2bb38ff49ff4b499dd59dcae",
+      "checkpointSha256": "fcbb8d6c39a13b801ee8c3101591c139e3b27b7d2bb38ff49ff4b499dd59dcae"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_5.jpg",
+      "sha256": "6e4516322b072433e15ebbd110c8ffd18ceff5104ec9cadf71df3dd16ef31d15",
+      "checkpointSha256": "6e4516322b072433e15ebbd110c8ffd18ceff5104ec9cadf71df3dd16ef31d15"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_6.jpg",
+      "sha256": "f1c41a5d34b5ef78301bc0bd46d462d62b58f83615d4cb9162d372a333c3b820",
+      "checkpointSha256": "f1c41a5d34b5ef78301bc0bd46d462d62b58f83615d4cb9162d372a333c3b820"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_7.jpg",
+      "sha256": "89b23f6dda5e430de5ffd216f0b99a3908f6be362c55c619de6a23fb877cc607",
+      "checkpointSha256": "89b23f6dda5e430de5ffd216f0b99a3908f6be362c55c619de6a23fb877cc607"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_8.jpg",
+      "sha256": "b7222a7ccd3f049e4ede0bf88d6786e4de1c1cf77c810e141160ac7a65327d17",
+      "checkpointSha256": "b7222a7ccd3f049e4ede0bf88d6786e4de1c1cf77c810e141160ac7a65327d17"
+    },
+    {
+      "file": "assets/characters/rashad/rashad1_9.jpg",
+      "sha256": "762ffd927ea66ae516d40651e5c7a81af1c6dc5d82ea81548b6955f6780472cc",
+      "checkpointSha256": "762ffd927ea66ae516d40651e5c7a81af1c6dc5d82ea81548b6955f6780472cc"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit.glb",
+      "sha256": "21f682913df6011fc80ecedbd9b10b65e58b469807257382d1ed88a018808040",
+      "checkpointSha256": "21f682913df6011fc80ecedbd9b10b65e58b469807257382d1ed88a018808040"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_0.jpg",
+      "sha256": "21578cb13df6fbe4f66cf4f21c514a56e616310f9c6716c1aaa64f43cea006df",
+      "checkpointSha256": "21578cb13df6fbe4f66cf4f21c514a56e616310f9c6716c1aaa64f43cea006df"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_1.jpg",
+      "sha256": "f27831c564b40d2606f1ad9f6fa70c0ff69457d8577d3dc72b5a2190677c2812",
+      "checkpointSha256": "f27831c564b40d2606f1ad9f6fa70c0ff69457d8577d3dc72b5a2190677c2812"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_10.jpg",
+      "sha256": "e9f282610558b1392a1c48f8e351cc6017df790a2824fef750bc78fe6527b03a",
+      "checkpointSha256": "e9f282610558b1392a1c48f8e351cc6017df790a2824fef750bc78fe6527b03a"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_11.jpg",
+      "sha256": "c99a1dcca3ad99d3eda34654cf59cbb9a4d833f5ceb6caed5a87c7b1e66409ff",
+      "checkpointSha256": "c99a1dcca3ad99d3eda34654cf59cbb9a4d833f5ceb6caed5a87c7b1e66409ff"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_12.jpg",
+      "sha256": "e3b30af50eb9362f77719f439ef8d871daaf76f1916f5d47798c2d1f03423306",
+      "checkpointSha256": "e3b30af50eb9362f77719f439ef8d871daaf76f1916f5d47798c2d1f03423306"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_13.jpg",
+      "sha256": "e7ca1ad24d39629782529648ee488ec6e2bcc544f53472716d4525181f5c6d9b",
+      "checkpointSha256": "e7ca1ad24d39629782529648ee488ec6e2bcc544f53472716d4525181f5c6d9b"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_14.png",
+      "sha256": "eb7d1e11e7fb9c5b319b056a9d4203ebbb7ca4bf4fdd446ba7e5647a9beca62e",
+      "checkpointSha256": "eb7d1e11e7fb9c5b319b056a9d4203ebbb7ca4bf4fdd446ba7e5647a9beca62e"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_15.png",
+      "sha256": "c2e4d1b99b97b9acd2f4775b5d33f732f4f0829385095a4fb1a459cea25b6dec",
+      "checkpointSha256": "c2e4d1b99b97b9acd2f4775b5d33f732f4f0829385095a4fb1a459cea25b6dec"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_16.jpg",
+      "sha256": "e7ca1ad24d39629782529648ee488ec6e2bcc544f53472716d4525181f5c6d9b",
+      "checkpointSha256": "e7ca1ad24d39629782529648ee488ec6e2bcc544f53472716d4525181f5c6d9b"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_17.jpg",
+      "sha256": "90cf67e11d06d9f1fd9d9326652bfe666ec057f9a5f37f6003c0757a773e8194",
+      "checkpointSha256": "90cf67e11d06d9f1fd9d9326652bfe666ec057f9a5f37f6003c0757a773e8194"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_18.png",
+      "sha256": "3a7939aa9199530c4106f1b1a30a9bcd0dcf0ad637d99519a1293d83f30a8301",
+      "checkpointSha256": "3a7939aa9199530c4106f1b1a30a9bcd0dcf0ad637d99519a1293d83f30a8301"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_19.jpg",
+      "sha256": "8c568c457118e5157bf3cd0e88b72cb093191e5735df7caa21a899d0d1b7c285",
+      "checkpointSha256": "8c568c457118e5157bf3cd0e88b72cb093191e5735df7caa21a899d0d1b7c285"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_2.jpg",
+      "sha256": "c983e5b5f71016bd29a18ed4333114360bc35fd7e7c9ed149b878f0be1fedae7",
+      "checkpointSha256": "c983e5b5f71016bd29a18ed4333114360bc35fd7e7c9ed149b878f0be1fedae7"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_20.jpg",
+      "sha256": "b6976520c032cac2193ebbaf86f1d306ea0c9638c4c22ae9753d9e5a15b4e1db",
+      "checkpointSha256": "b6976520c032cac2193ebbaf86f1d306ea0c9638c4c22ae9753d9e5a15b4e1db"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_21.jpg",
+      "sha256": "d299389cbfa1aad7d05745e1c733268050e337aca6bcc402030142ce6f9eef63",
+      "checkpointSha256": "d299389cbfa1aad7d05745e1c733268050e337aca6bcc402030142ce6f9eef63"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_22.jpg",
+      "sha256": "2076bd11bb488bb1a45c272eb597b84f908795e2b7939b5b5ac93b0e92c81e0f",
+      "checkpointSha256": "2076bd11bb488bb1a45c272eb597b84f908795e2b7939b5b5ac93b0e92c81e0f"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_23.jpg",
+      "sha256": "1d5b44b754fd9f2084f4123dc28d336b3244942184e182b96d70d1a7a8609ad6",
+      "checkpointSha256": "1d5b44b754fd9f2084f4123dc28d336b3244942184e182b96d70d1a7a8609ad6"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_24.jpg",
+      "sha256": "5d9dd55d69199f3390a399cad4714fb9d4b61d6c48d5d972ea7a679d85124b64",
+      "checkpointSha256": "5d9dd55d69199f3390a399cad4714fb9d4b61d6c48d5d972ea7a679d85124b64"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_25.jpg",
+      "sha256": "6112b5296ba79749ee645e8e485a090461aa816263d092a2e6f0a49b6f5593fa",
+      "checkpointSha256": "6112b5296ba79749ee645e8e485a090461aa816263d092a2e6f0a49b6f5593fa"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_26.jpg",
+      "sha256": "c2d00649f44710b7e53b6fc3b08727c0c2795ca36635a95693a5dd434a7d5ddd",
+      "checkpointSha256": "c2d00649f44710b7e53b6fc3b08727c0c2795ca36635a95693a5dd434a7d5ddd"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_27.jpg",
+      "sha256": "bb25d58fea4e34469adbd32f5987ee123f37f2c86d54c864209993deaf81bec1",
+      "checkpointSha256": "bb25d58fea4e34469adbd32f5987ee123f37f2c86d54c864209993deaf81bec1"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_3.jpg",
+      "sha256": "a9eebb1b96019ecb5819c736ee1aec1ad01c7dcee9bf3e5ea96208c9982196b0",
+      "checkpointSha256": "a9eebb1b96019ecb5819c736ee1aec1ad01c7dcee9bf3e5ea96208c9982196b0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_4.jpg",
+      "sha256": "43aceb0e60bb5d51c9c4594a10cdc9d0d08e683b7b5b11acfe41b4d49ee8035e",
+      "checkpointSha256": "43aceb0e60bb5d51c9c4594a10cdc9d0d08e683b7b5b11acfe41b4d49ee8035e"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_5.png",
+      "sha256": "400c53eae8c63a54ed0913a22885517b1f69eb3f51a5d8e13b62876df7592955",
+      "checkpointSha256": "400c53eae8c63a54ed0913a22885517b1f69eb3f51a5d8e13b62876df7592955"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_6.jpg",
+      "sha256": "14ab2740f78369c30fa8c038f3649b2566e58c06ab9698f825c28a9f3660aea5",
+      "checkpointSha256": "14ab2740f78369c30fa8c038f3649b2566e58c06ab9698f825c28a9f3660aea5"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_7.png",
+      "sha256": "89b7a457bba7cd8920e42d159cad866b28afa472e0768fbffa7644b81caf0ee4",
+      "checkpointSha256": "89b7a457bba7cd8920e42d159cad866b28afa472e0768fbffa7644b81caf0ee4"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_8.png",
+      "sha256": "4957b5e64a5858e68b8d6befc8fbe94be994df00b650e2800ea042d5f1cc206a",
+      "checkpointSha256": "4957b5e64a5858e68b8d6befc8fbe94be994df00b650e2800ea042d5f1cc206a"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_rugby_kit_9.jpg",
+      "sha256": "88efba2992a7338841e8791bee41045984e8712c20506872e9b0d1fa91d7c1bd",
+      "checkpointSha256": "88efba2992a7338841e8791bee41045984e8712c20506872e9b0d1fa91d7c1bd"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected.glb",
+      "sha256": "905989c50e6ec707983d83ea9a382c16e10784559c50a2e72f3d8fcafaa323c4",
+      "checkpointSha256": "905989c50e6ec707983d83ea9a382c16e10784559c50a2e72f3d8fcafaa323c4"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_0.jpg",
+      "sha256": "b0a7f224c9fe66433ebb3dcc60d857a6d3d60fed4c7b370c51be336e9f366441",
+      "checkpointSha256": "b0a7f224c9fe66433ebb3dcc60d857a6d3d60fed4c7b370c51be336e9f366441"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_1.jpg",
+      "sha256": "c7205e34bbc8754dae67412b21298ffe30cdd98c50ae3695abc379fc84d274f0",
+      "checkpointSha256": "c7205e34bbc8754dae67412b21298ffe30cdd98c50ae3695abc379fc84d274f0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_10.jpg",
+      "sha256": "fd0e4a92161f1d5d0fea9edb08476ba0a3f7f9d53332138ef5fda6af4a7b872c",
+      "checkpointSha256": "fd0e4a92161f1d5d0fea9edb08476ba0a3f7f9d53332138ef5fda6af4a7b872c"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_11.jpg",
+      "sha256": "c95dd827275ee9a0b194d18fb7c4a6b44217708a9fb04e8e0cc1d3165b73047b",
+      "checkpointSha256": "c95dd827275ee9a0b194d18fb7c4a6b44217708a9fb04e8e0cc1d3165b73047b"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_12.jpg",
+      "sha256": "bf813042e2127d5c3a85d3ef5f27f1e18cbae29975388ed4546194a0b7b468b7",
+      "checkpointSha256": "bf813042e2127d5c3a85d3ef5f27f1e18cbae29975388ed4546194a0b7b468b7"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_13.jpg",
+      "sha256": "c346a38a049d904f98a59954fb8f91e888aebfc690464563bfb12d5c66f860db",
+      "checkpointSha256": "c346a38a049d904f98a59954fb8f91e888aebfc690464563bfb12d5c66f860db"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_2.jpg",
+      "sha256": "7d30370f01caf7405c35869e2456335a626253c5386c5c51fa95faa73a1bf9e0",
+      "checkpointSha256": "7d30370f01caf7405c35869e2456335a626253c5386c5c51fa95faa73a1bf9e0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_3.jpg",
+      "sha256": "1277082e6d36d1315289ccb405ce45e19ec288d8bd1babe00c83967df104381d",
+      "checkpointSha256": "1277082e6d36d1315289ccb405ce45e19ec288d8bd1babe00c83967df104381d"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_4.png",
+      "sha256": "fcbb8d6c39a13b801ee8c3101591c139e3b27b7d2bb38ff49ff4b499dd59dcae",
+      "checkpointSha256": "fcbb8d6c39a13b801ee8c3101591c139e3b27b7d2bb38ff49ff4b499dd59dcae"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_5.jpg",
+      "sha256": "6e4516322b072433e15ebbd110c8ffd18ceff5104ec9cadf71df3dd16ef31d15",
+      "checkpointSha256": "6e4516322b072433e15ebbd110c8ffd18ceff5104ec9cadf71df3dd16ef31d15"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_6.jpg",
+      "sha256": "f1c41a5d34b5ef78301bc0bd46d462d62b58f83615d4cb9162d372a333c3b820",
+      "checkpointSha256": "f1c41a5d34b5ef78301bc0bd46d462d62b58f83615d4cb9162d372a333c3b820"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_7.jpg",
+      "sha256": "89b23f6dda5e430de5ffd216f0b99a3908f6be362c55c619de6a23fb877cc607",
+      "checkpointSha256": "89b23f6dda5e430de5ffd216f0b99a3908f6be362c55c619de6a23fb877cc607"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_8.jpg",
+      "sha256": "b7222a7ccd3f049e4ede0bf88d6786e4de1c1cf77c810e141160ac7a65327d17",
+      "checkpointSha256": "b7222a7ccd3f049e4ede0bf88d6786e4de1c1cf77c810e141160ac7a65327d17"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_run_corrected_Image_9.jpg",
+      "sha256": "762ffd927ea66ae516d40651e5c7a81af1c6dc5d82ea81548b6955f6780472cc",
+      "checkpointSha256": "762ffd927ea66ae516d40651e5c7a81af1c6dc5d82ea81548b6955f6780472cc"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected.glb",
+      "sha256": "506c30f50099d03ee076881677634b658675c7c7441cb7b1762838db32cc85e3",
+      "checkpointSha256": "506c30f50099d03ee076881677634b658675c7c7441cb7b1762838db32cc85e3"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_0.jpg",
+      "sha256": "b0a7f224c9fe66433ebb3dcc60d857a6d3d60fed4c7b370c51be336e9f366441",
+      "checkpointSha256": "b0a7f224c9fe66433ebb3dcc60d857a6d3d60fed4c7b370c51be336e9f366441"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_1.jpg",
+      "sha256": "c7205e34bbc8754dae67412b21298ffe30cdd98c50ae3695abc379fc84d274f0",
+      "checkpointSha256": "c7205e34bbc8754dae67412b21298ffe30cdd98c50ae3695abc379fc84d274f0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_10.jpg",
+      "sha256": "fd0e4a92161f1d5d0fea9edb08476ba0a3f7f9d53332138ef5fda6af4a7b872c",
+      "checkpointSha256": "fd0e4a92161f1d5d0fea9edb08476ba0a3f7f9d53332138ef5fda6af4a7b872c"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_11.jpg",
+      "sha256": "c95dd827275ee9a0b194d18fb7c4a6b44217708a9fb04e8e0cc1d3165b73047b",
+      "checkpointSha256": "c95dd827275ee9a0b194d18fb7c4a6b44217708a9fb04e8e0cc1d3165b73047b"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_12.jpg",
+      "sha256": "bf813042e2127d5c3a85d3ef5f27f1e18cbae29975388ed4546194a0b7b468b7",
+      "checkpointSha256": "bf813042e2127d5c3a85d3ef5f27f1e18cbae29975388ed4546194a0b7b468b7"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_13.jpg",
+      "sha256": "c346a38a049d904f98a59954fb8f91e888aebfc690464563bfb12d5c66f860db",
+      "checkpointSha256": "c346a38a049d904f98a59954fb8f91e888aebfc690464563bfb12d5c66f860db"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_2.jpg",
+      "sha256": "7d30370f01caf7405c35869e2456335a626253c5386c5c51fa95faa73a1bf9e0",
+      "checkpointSha256": "7d30370f01caf7405c35869e2456335a626253c5386c5c51fa95faa73a1bf9e0"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_3.jpg",
+      "sha256": "1277082e6d36d1315289ccb405ce45e19ec288d8bd1babe00c83967df104381d",
+      "checkpointSha256": "1277082e6d36d1315289ccb405ce45e19ec288d8bd1babe00c83967df104381d"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_4.png",
+      "sha256": "fcbb8d6c39a13b801ee8c3101591c139e3b27b7d2bb38ff49ff4b499dd59dcae",
+      "checkpointSha256": "fcbb8d6c39a13b801ee8c3101591c139e3b27b7d2bb38ff49ff4b499dd59dcae"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_5.jpg",
+      "sha256": "6e4516322b072433e15ebbd110c8ffd18ceff5104ec9cadf71df3dd16ef31d15",
+      "checkpointSha256": "6e4516322b072433e15ebbd110c8ffd18ceff5104ec9cadf71df3dd16ef31d15"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_6.jpg",
+      "sha256": "f1c41a5d34b5ef78301bc0bd46d462d62b58f83615d4cb9162d372a333c3b820",
+      "checkpointSha256": "f1c41a5d34b5ef78301bc0bd46d462d62b58f83615d4cb9162d372a333c3b820"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_7.jpg",
+      "sha256": "89b23f6dda5e430de5ffd216f0b99a3908f6be362c55c619de6a23fb877cc607",
+      "checkpointSha256": "89b23f6dda5e430de5ffd216f0b99a3908f6be362c55c619de6a23fb877cc607"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_8.jpg",
+      "sha256": "b7222a7ccd3f049e4ede0bf88d6786e4de1c1cf77c810e141160ac7a65327d17",
+      "checkpointSha256": "b7222a7ccd3f049e4ede0bf88d6786e4de1c1cf77c810e141160ac7a65327d17"
+    },
+    {
+      "file": "assets/characters/rashad/rashad_walk_corrected_Image_9.jpg",
+      "sha256": "762ffd927ea66ae516d40651e5c7a81af1c6dc5d82ea81548b6955f6780472cc",
+      "checkpointSha256": "762ffd927ea66ae516d40651e5c7a81af1c6dc5d82ea81548b6955f6780472cc"
+    },
+    {
+      "file": "addons/virtual_joystick_cf/direction_utils/direction_utils.gd",
+      "sha256": "973355533991b55f3569beef3e086ea0e39609add11e0a84d7176e90c232f318",
+      "checkpointSha256": "973355533991b55f3569beef3e086ea0e39609add11e0a84d7176e90c232f318"
+    },
+    {
+      "file": "addons/virtual_joystick_cf/textures/base_texture.svg",
+      "sha256": "b775cbe4059c43261e8f14fadeb4f4dc3181934ee9291aa07cfabb5e3371d42e",
+      "checkpointSha256": "b775cbe4059c43261e8f14fadeb4f4dc3181934ee9291aa07cfabb5e3371d42e"
+    },
+    {
+      "file": "addons/virtual_joystick_cf/textures/stick_texture.svg",
+      "sha256": "98825a8b693559c94c1c8b1597d61b57220d833cbf347e05bcf19c745020f51c",
+      "checkpointSha256": "98825a8b693559c94c1c8b1597d61b57220d833cbf347e05bcf19c745020f51c"
+    },
+    {
+      "file": "addons/virtual_joystick_cf/virtual_joystick_cf.gd",
+      "sha256": "432f2447a9c79f48d02bd0e47cccf1c67c60ab0d7cbcedb6f82528b87e063998",
+      "checkpointSha256": "432f2447a9c79f48d02bd0e47cccf1c67c60ab0d7cbcedb6f82528b87e063998"
+    },
+    {
+      "file": "addons/virtual_joystick_cf/virtual_joystick_cf.tscn",
+      "sha256": "5dad724b8e7daf46d4bc4da26151e647664b1eb404d873b4b284acafe4671eff",
+      "checkpointSha256": "5dad724b8e7daf46d4bc4da26151e647664b1eb404d873b4b284acafe4671eff"
+    },
+    {
+      "file": "addons/virtual_joystick_cf/virtual_joystick_cf_icon.svg",
+      "sha256": "bb98af54729c149b9498e00e9de890f5866157a2e397f48cbf66b9f91a33bb1e",
+      "checkpointSha256": "bb98af54729c149b9498e00e9de890f5866157a2e397f48cbf66b9f91a33bb1e"
+    }
+  ]
+}

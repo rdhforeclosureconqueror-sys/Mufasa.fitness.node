@@ -20,16 +20,28 @@ test('production package excludes editor-only tools and native dependencies',()=
  const config=read('godot/rugby-hq-web/project.godot');assert.ok(!/C#|\[dotnet\]|\[editor_plugins\]/.test(config));
  const b=fs.readFileSync(path.join(out,'index.pck'));assert.equal(b.readUInt32LE(4),3);let offset=Number(b.readBigUInt64LE(32));const count=b.readUInt32LE(offset);offset+=4;const paths=[];for(let i=0;i<count;i++){const length=b.readUInt32LE(offset);offset+=4;paths.push(b.subarray(offset,offset+length).toString('utf8').replaceAll(String.fromCharCode(0),''));offset+=length+36;}const pack=paths.join('\n');
  for(const unwanted of ['addons/gut/','addons/godot_mcp','virtual_joystick_cf_plugin.gd','.csproj','.backup-'])assert.ok(!pack.includes(unwanted),unwanted);
+ assert.ok(pack.includes('playbook/playbook_arena'),'Playbook dependencies exported');
+ assert.ok(pack.includes('scripts/game/rugby_decision_telemetry'),'Training dependency exported');
 });
 test('mobile restart is visible and wired; pass rejection explains why',()=>{
  const scene=read('godot/rugby-hq-web/scenes/training_drill.tscn');
  const logic=read('godot/rugby-hq-web/scripts/game/training_drill.gd');
- assert.match(scene,/\[node name="RestartButton" type="Button" parent="HUD"\]/);
- assert.match(logic,/\$HUD\/RestartButton\.pressed\.connect\(_reset_drill\)/);
+ assert.match(logic,/restart.name = "RestartButton"/);
+ assert.match(logic,/restart.pressed.connect\(_reset_drill\)/);
  assert.match(logic,/Play ended\. Tap RESTART/);
  assert.match(logic,/Ball in flight\. Wait for the catch/);
- assert.match(logic,/event is InputEventScreenTouch and event.pressed/);
+ assert.match(logic,/event is InputEventScreenTouch/);
  assert.match(logic,/\$HUD\/PassButton.get_global_rect\(\).has_point\(event.position\)/);
  assert.match(logic,/\$HUD\/RestartButton.get_global_rect\(\).has_point\(event.position\)/);
- assert.match(read('godot/rugby-hq-web/project.godot'),/pointing\/emulate_mouse_from_touch=false/);
+ assert.match(logic,/event is InputEventMouseButton and event.device == -1/);
+ assert.match(logic,/_release_pass_gesture\("touch"\)/);
+});
+
+test('synchronized tactical simulation has no obsolete scoring override',()=>{
+ const arena=read('godot/rugby-hq-web/playbook/playbook_arena.gd');
+ assert.ok(!arena.includes('reaction_solution'));
+ assert.match(arena,/ball_carrier.position.z <= DRILL_TRY_LINE/);
+ assert.match(arena,/opponent.position.distance_to\(ball_carrier.position\) < TOUCH_DISTANCE/);
+ assert.match(arena,/attack_gap < defense_gap/);
+ assert.match(read('godot/rugby-hq-web/export_presets.cfg'),/variant\/thread_support=false/);
 });

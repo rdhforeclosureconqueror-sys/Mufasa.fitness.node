@@ -5,10 +5,16 @@ enum Role { ATTACKER, SUPPORT, DEFENDER }
 @export var role: Role = Role.ATTACKER
 @export var movement_speed: float = 5.2
 @export var team_color := Color.WHITE
-const RUN_SCENE: PackedScene = preload("res://assets/characters/rashad/rashad_run_corrected.glb")
+const RUN_SCENE: PackedScene = preload("res://assets/characters/rashad/rashad_rugby_kit.glb")
 const WALK_SCENE: PackedScene = preload("res://assets/characters/rashad/rashad_walk_corrected.glb")
 var velocity_target := Vector3.ZERO
 var control_enabled := true
+var turbo_energy: float = 100.0
+var turbo_touch := false
+var turbo_keyboard := false
+var turbo_active := false
+var turbo_exhausted := false
+var turbo_recovery_delay := 0.0
 var touch_direction := Vector2.ZERO
 var telemetry: Dictionary = {}
 var _animation_player: AnimationPlayer
@@ -28,7 +34,7 @@ func _ready() -> void:
 				_clean_clip(idle)
 				library.remove_animation(clip_name)
 				library.add_animation(clip_name, idle)
-	_add_local_clip(RUN_SCENE, "Run", "PocketPT_Run_Corrected")
+	_add_local_clip(RUN_SCENE, "Run", "mixamo_com")
 	_add_local_clip(WALK_SCENE, "Walk", "Animation")
 	_apply_team_tint()
 	var tag := get_node_or_null("NameTag") as Label3D
@@ -50,8 +56,14 @@ func _physics_process(delta: float) -> void:
 		right.y = 0.0
 		back.y = 0.0
 		var direction := right.normalized() * input_vector.x + back.normalized() * input_vector.y
-		var speed := movement_speed * (0.48 if Input.is_action_pressed("walk") else 1.0)
+		var speed := movement_speed * (0.48 if left_shift_held else 1.0)
+		var turbo_requested := Input.is_physical_key_pressed(KEY_CTRL) or turbo_touch or turbo_keyboard
+		_update_turbo(delta, turbo_requested and input_vector.length() > 0.1 and control_enabled)
+		if turbo_active:
+			speed = movement_speed * 1.4
 		velocity_target = direction.limit_length(1.0) * speed
+	else:
+		_update_turbo(delta, false)
 	if not control_enabled:
 		velocity_target = Vector3.ZERO
 	velocity.x = move_toward(velocity.x, velocity_target.x, 18.0 * delta)
@@ -145,21 +157,57 @@ func _add_local_clip(source: PackedScene, clip_name: StringName, source_name: St
 	source_scene.free()
 
 func _apply_team_tint() -> void:
-	var skeleton := get_node_or_null("AvatarModel/Armature/Skeleton3D") as Skeleton3D
-	if skeleton == null or skeleton.find_child("TeamBib", true, false):
+	if role != Role.DEFENDER:
 		return
-	var attachment := BoneAttachment3D.new()
-	attachment.name = "TeamBibAttachment"
-	attachment.bone_name = "Spine2"
-	skeleton.add_child(attachment)
-	var bib := MeshInstance3D.new()
-	bib.name = "TeamBib"
-	var bib_mesh := BoxMesh.new()
-	bib_mesh.size = Vector3(0.52, 0.4, 0.24)
-	bib.mesh = bib_mesh
-	var material := StandardMaterial3D.new()
-	material.albedo_color = team_color
-	material.roughness = 0.8
-	bib.material_override = material
-	attachment.add_child(bib)
-	bib.position = Vector3(0, -0.08, 0.13)
+	for child in visual.find_children("*", "MeshInstance3D", true, false):
+		var instance: MeshInstance3D = child as MeshInstance3D
+		if instance.mesh == null:
+			continue
+		for surface in range(instance.mesh.get_surface_count()):
+			var original: Material = instance.get_active_material(surface)
+			if original == null:
+				continue
+			if not String(original.resource_name).to_lower().contains("avaturn_look_0"):
+				continue
+			var kit: StandardMaterial3D = original.duplicate() as StandardMaterial3D
+			if kit == null:
+				continue
+			kit.albedo_texture = null
+			kit.albedo_color = Color("#C51E36")
+			kit.metallic = 0.0
+			kit.roughness = 0.85
+			instance.set_surface_override_material(surface, kit)
+			print("[DEFENSIVE KIT V1.1] RED | ", name)
+
+
+
+func _update_turbo(delta: float, requested: bool) -> void:
+	turbo_active = requested and not turbo_exhausted and turbo_energy > 0.0
+	if turbo_active:
+		turbo_energy = maxf(0.0, turbo_energy - delta * 100.0 / 3.0)
+		turbo_recovery_delay = 1.0
+		if turbo_energy <= 0.0:
+			turbo_exhausted = true
+			turbo_active = false
+	else:
+		turbo_recovery_delay = maxf(0.0, turbo_recovery_delay - delta)
+		if turbo_recovery_delay <= 0.0:
+			turbo_energy = minf(100.0, turbo_energy + delta * 100.0 / 6.0)
+		if turbo_energy >= 25.0 and not requested:
+			turbo_exhausted = false
+
+func reset_turbo() -> void:
+	turbo_keyboard = false
+	turbo_energy = 100.0
+	turbo_touch = false
+	turbo_active = false
+	turbo_exhausted = false
+	turbo_recovery_delay = 0.0
+
+
+var left_shift_held := false
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		if event.keycode == KEY_SHIFT and event.location == KEY_LOCATION_LEFT:
+			left_shift_held = event.pressed

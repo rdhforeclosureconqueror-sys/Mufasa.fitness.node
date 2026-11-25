@@ -6771,6 +6771,56 @@
       "prNumber": 1400,
       "commitSha": null,
       "timestamp": "2026-11-23T19:06:38.879Z"
+    },
+    {
+      "operationId": "836a7ee5-afc0-4af0-ab20-c65b337fc298",
+      "board": "launch",
+      "cardId": "launch-development-rugby-sync-v8b",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Synchronize saved V8B checkpoint into Web project; validate tactical simulation, mobile controls, navigation and live deployment; defer coaching engine.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-24T23:37:49.715Z"
+    },
+    {
+      "operationId": "39143816-c7ac-472e-a1ed-d5b208618a92",
+      "board": "launch",
+      "cardId": "launch-development-rugby-sync-v8b",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "godot/rugby-hq-web/scripts/game/training_drill.gd",
+        "godot/rugby-hq-web/playbook/playbook_arena.gd",
+        "godot/rugby-hq-web/tests/sync/test_checkpoint.gd",
+        "scripts/check-rugby-checkpoint-browser.js",
+        "public/game/rugby-hq/build-manifest.json",
+        "docs/rugby/production-sync-20261124.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Saved V8B checkpoint synchronized. GUT 8 tests/568 assertions, 29 contracts, frontend build, desktop/landscape/portrait Chrome and multitouch pass. Web dependencies and deferred touch navigation repaired. Physical iPhone, visual quality and production verification pending; no human acceptance claimed.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-25T00:01:06.892Z"
+    },
+    {
+      "operationId": "04d40f4b-ddee-4e72-beb5-6316eb1a123b",
+      "board": "launch",
+      "cardId": "launch-development-rugby-sync-v8b",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "docs/rugby/production-sync-20261124.md",
+        "docs/rugby/web-validation/sync-browser-20261124.json",
+        "docs/rugby/web-validation/sync-mobile-20261124.json"
+      ],
+      "automated": null,
+      "evidence": "Local/GUT/browser validation and GitHub acceptance CI pass. Publication blocked: Charter/Spectrum network security redirects production hostname to block.charter-prod.hosted.cujo.io; HTTPS fails before HTTP in Node, curl and Chrome. No bypass attempted. Authorized network administrator must review and allow legitimate hostname so mandatory live verification can run. PR 1407 unmerged; production unchanged; iPhone acceptance pending.",
+      "prNumber": 1407,
+      "commitSha": "a8bd3ea63397ae4d84a73e08b6c0be09e9acbc0e",
+      "timestamp": "2026-11-25T00:07:46.355Z"
     }
   ]
 }
