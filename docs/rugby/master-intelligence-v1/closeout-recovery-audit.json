@@ -39,8 +39,18 @@
     "passed": 49,
     "failed": 0,
     "skipped": 0,
-    "coverage_reconciliation_pending": true
+    "coverage_reconciliation_pending": false
   },
   "repository_visibility": "public",
-  "merge_hold": "Archive privacy and intellectual property review; reconcile CI case count with prior isolated results."
+  "merge_hold": "Archive privacy and intellectual property review; production integration and repository-wide regression remain separate acceptance gates.",
+  "expanded_ci": {
+    "head": "8761efa6589287c0573ada0eba1eb79fab5781ce",
+    "run": 45558700391,
+    "job": 139016883916,
+    "passed": 198,
+    "failed": 0,
+    "skipped": 0,
+    "registered_test_files": 15,
+    "readback_verified": true
+  }
 }
