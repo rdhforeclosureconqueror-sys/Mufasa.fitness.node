@@ -45,3 +45,11 @@ test('synchronized tactical simulation has no obsolete scoring override',()=>{
  assert.match(arena,/attack_gap < defense_gap/);
  assert.match(read('godot/rugby-hq-web/export_presets.cfg'),/variant\/thread_support=false/);
 });
+
+test('immersive shell retains a fallback, exit and resize handling',()=>{
+ for(const p of ['godot/rugby-hq-web/web-shell.html','public/game/rugby-hq/index.html']){
+  const html=read(p);
+  for(const marker of ['id="game-stage"','id="exit-immersive"','setImmersive(true)','stage.requestFullscreen()','catch{nativeEntered=false;}','fullscreenchange','setImmersive(false)','safe-area-inset-bottom','visualViewport','Rotate phone','body.immersive header{display:none}'])assert.ok(html.includes(marker),p+': '+marker);
+  assert.ok(!html.includes('canvas.requestFullscreen()'));
+ }
+});
