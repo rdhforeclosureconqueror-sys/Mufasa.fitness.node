@@ -31,5 +31,16 @@
     "Run all prototype suites from checkout",
     "Verify repository CI and review",
     "Use bounded runtime PRs after recovery acceptance"
-  ]
+  ],
+  "ci": {
+    "head": "7cbd44ac7203dc9e198b021a15bbbba1b7114884",
+    "run": 45552993233,
+    "job": 138998289244,
+    "passed": 49,
+    "failed": 0,
+    "skipped": 0,
+    "coverage_reconciliation_pending": true
+  },
+  "repository_visibility": "public",
+  "merge_hold": "Archive privacy and intellectual property review; reconcile CI case count with prior isolated results."
 }
