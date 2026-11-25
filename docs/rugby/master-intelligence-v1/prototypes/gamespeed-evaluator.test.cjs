@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {evaluateGamespeed}=require('./gamespeed-evaluator.cjs');
 const cases=[["acceleration",{"pain":false,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.result.averageMS===5],
 ["fly average",{"pain":false,"clinicalConcern":false,"test":{"type":"flying_sprint","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"buildUpM":20}},r=>r.result.averageMS===5&&r.result.measuredPeakMS===undefined],
@@ -12,5 +14,4 @@ const cases=[["acceleration",{"pain":false,"clinicalConcern":false,"test":{"type
 ["pain",{"pain":true,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.status==="REFER"],
 ["unknown safety",{"pain":null,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.status==="REVIEW_REQUIRED"],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=evaluateGamespeed(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('13 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=evaluateGamespeed(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
