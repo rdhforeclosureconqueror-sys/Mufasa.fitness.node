@@ -2713,6 +2713,20 @@ function createApp(options = {}) {
   app.get("/api/me/conversations/:conversationId/messages", requireAuth, asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.viewMessages(crmActor(req),req.params.conversationId))));
   app.post("/api/me/conversations/:conversationId/messages", trainerWriteLimit, requireAuth, asyncHandler(async(req,res)=>ok(res,req.requestId,clientCrmService.send(crmActor(req),req.params.conversationId,req.body?.body),201)));
   const trainerClientGuard = (name) => [requireAuth, permission(name)];
+  if ((options.env || process.env).ENABLE_RUGBY_COACH_EVIDENCE === "true") {
+    const { createCoachEvidenceService } = require("./src/rugby/coachEvidenceService");
+    const coachEvidence = createCoachEvidenceService({assignmentStore:trainerWorkspaceStore,userStore,authorizationResolver});
+    app.get("/api/trainer/clients/:clientUserId/rugby/evidence", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENTS_READ), (req,res)=>{
+      res.set("Cache-Control","private, no-store");
+      try { return ok(res,req.requestId,coachEvidence.list(req.auth,req.params.clientUserId)); }
+      catch(error){return res.status(error.message==="Access denied"?403:500).json({ok:false,error:{message:"Evidence unavailable"}});}
+    });
+    app.post("/api/trainer/clients/:clientUserId/rugby/evidence/reviews", trainerWriteLimit, ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENTS_READ), (req,res)=>{
+      res.set("Cache-Control","private, no-store");
+      try { return ok(res,req.requestId,coachEvidence.review(req.auth,req.params.clientUserId,req.body),201); }
+      catch(error){return res.status(error.message==="Access denied"?403:400).json({ok:false,error:{message:"Review unavailable"}});}
+    });
+  }
   app.get("/api/trainer/workspace", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_WORKSPACE_READ), asyncHandler(async (req, res) =>
     ok(res, req.requestId, { trainer: { userId: req.auth.userId }, clientCount: trainerWorkspaceService.listClients(req.auth.userId).length, memberExperienceUrl: "/dashboard.html" })));
   app.get("/api/trainer/clients", ...trainerClientGuard(authorizationResolver.PERMISSIONS.TRAINER_CLIENTS_READ), asyncHandler(async (req, res) =>
