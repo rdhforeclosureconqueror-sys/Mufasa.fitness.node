@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {conditioningMath}=require('./conditioning-math.cjs');
 const cases=[["MAS",{"clinicalConcern":false,"test":{"type":"field_time_trial","distanceM":1500,"timeS":360,"athleteId":"demo","protocol":"example","surface":"grass","environment":"recorded"}},r=>Math.abs(r.mas.ms-1500/360)<1e-9&&Math.abs(r.mas.kmh-15)<1e-9],
 ["interval",{"clinicalConcern":false,"test":{"type":"field_time_trial","distanceM":1500,"timeS":360,"athleteId":"demo","protocol":"example","surface":"grass","environment":"recorded"},"scenario":{"percentMAS":120,"seconds":15}},r=>Math.abs(r.scenario.distanceM-75)<1e-9],
@@ -9,5 +11,4 @@ const cases=[["MAS",{"clinicalConcern":false,"test":{"type":"field_time_trial","
 ["clinical",{"clinicalConcern":true,"test":{"type":"field_time_trial","distanceM":1500,"timeS":360,"athleteId":"demo","protocol":"example","surface":"grass","environment":"recorded"}},r=>r.status==="REFER"],
 ["unknown safety",{"clinicalConcern":null,"test":{"type":"field_time_trial","distanceM":1500,"timeS":360,"athleteId":"demo","protocol":"example","surface":"grass","environment":"recorded"}},r=>r.status==="REVIEW_REQUIRED"],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=conditioningMath(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('10 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=conditioningMath(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
