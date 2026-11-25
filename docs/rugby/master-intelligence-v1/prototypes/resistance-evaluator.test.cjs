@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {reviewGym}=require('./resistance-evaluator.cjs');
 const cases=[["duration",{"pain":false,"clinicalConcern":false,"session":{"objective":"strength","availableSeconds":600,"overheadSeconds":60,"format":"straight_sets","exercises":[{"id":"a","pattern":"squat","role":"primary_strength","sets":3,"workSecondsPerSet":30,"restSeconds":120,"setupSeconds":30,"complexLift":false}]}},r=>r.estimatedSeconds===420],
 ["time overrun",{"pain":false,"clinicalConcern":false,"session":{"objective":"strength","availableSeconds":300,"overheadSeconds":60,"format":"straight_sets","exercises":[{"id":"a","pattern":"squat","role":"primary_strength","sets":3,"workSecondsPerSet":30,"restSeconds":120,"setupSeconds":30,"complexLift":false}]}},r=>r.flags.some(f=>f.reason==="session_exceeds_time_preserve_rest")],
@@ -11,5 +13,4 @@ const cases=[["duration",{"pain":false,"clinicalConcern":false,"session":{"objec
 ["negative rest",{"pain":false,"clinicalConcern":false,"session":{"objective":"strength","availableSeconds":600,"overheadSeconds":60,"format":"straight_sets","exercises":[{"id":"a","pattern":"squat","role":"primary_strength","sets":3,"workSecondsPerSet":30,"restSeconds":-1,"setupSeconds":30,"complexLift":false}]}},r=>r.status==="REVIEW_REQUIRED"],
 ["coverage",{"pain":false,"clinicalConcern":false,"session":{"objective":"strength","availableSeconds":600,"overheadSeconds":60,"format":"straight_sets","exercises":[{"id":"a","pattern":"squat","role":"primary_strength","sets":3,"workSecondsPerSet":30,"restSeconds":120,"setupSeconds":30,"complexLift":false}]}},r=>r.sessionPatterns.length===1&&r.sessionPatterns[0]==="squat"],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=reviewGym(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('12 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=reviewGym(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
