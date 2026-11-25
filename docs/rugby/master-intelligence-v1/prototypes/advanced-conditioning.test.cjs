@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {advancedConditioning}=require('./advanced-conditioning.cjs');
 const cases=[["RSA",{"clinicalConcern":false,"rsa":{"protocol":"demo","distanceM":30,"timesS":[4,5,6],"recoveryS":[20,20]}},r=>Math.abs(r.rsa.decrementPct-25)<1e-9],
 ["reserve",{"clinicalConcern":false,"speed":{"athleteId":"demo","masMS":4,"maxSprintMS":9,"masProtocol":"field","sprintProtocol":"flying","sprintMethod":"measured_peak"}},r=>r.reserve.ms===5],
@@ -13,5 +15,4 @@ const cases=[["RSA",{"clinicalConcern":false,"rsa":{"protocol":"demo","distanceM
 ["unknown safety",{"rsa":{"protocol":"demo","distanceM":30,"timesS":[4,5,6],"recoveryS":[20,20]}},r=>r.status==="REVIEW_REQUIRED"],
 ["empty",{"clinicalConcern":false},r=>r.status==="REVIEW_REQUIRED"],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=advancedConditioning(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('14 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=advancedConditioning(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
