@@ -1,6 +1,7 @@
 'use strict';
 const {validateProfile}=require('../rugby/profileValidation');
 const {validateAssessment}=require('../rugby/assessmentValidation');
+const {appendSelfReport,currentEvidence}=require('../rugby/athleteEvidence');
 const {randomUUID}=require('node:crypto');
 const {validateCheckin}=require('../rugby/checkinValidation');
 const {makePlan}=require('../rugby/inSeasonPlan');
@@ -33,6 +34,13 @@ function installRugbyProfileRoutes({app,requireAuth,userStore}) {
   const user=userStore.loadUser(req.auth.userId);
   return res.json({ok:true,data:user.rugbyAssessments||[]});
  });
+ app.get('/api/me/rugby/evidence',requireAuth,(req,res)=>{
+  res.set('Cache-Control','private, no-store');
+  try{
+   const user=userStore.loadUser(req.auth.userId);
+   return res.json({ok:true,data:currentEvidence(user.rugbyEvidence||[],String(req.auth.userId)),legacyAssessmentsIncluded:false});
+  }catch(error){return res.status(500).json({ok:false,error:{message:'Unable to read evidence'}});}
+ });
  app.post('/api/me/rugby/assessments',requireAuth,(req,res)=>{
   res.set('Cache-Control','private, no-store');
   let item;
@@ -42,7 +50,9 @@ function installRugbyProfileRoutes({app,requireAuth,userStore}) {
   try{userStore.updateUser(req.auth.userId,user=>{
    const existing=user.rugbyAssessments||[];
    if(existing.length>=200)throw Error('Assessment limit reached');
+   const evidence=appendSelfReport(user.rugbyEvidence||[],{eventType:'assessment_recorded',occurredAt:item.date+'T00:00:00.000Z',sourceRef:'assessment:'+entry.id},String(req.auth.userId),entry.recordedAt);
    user.rugbyAssessments=[...existing,entry];
+   user.rugbyEvidence=evidence;
    return user;
   });}catch(error){return res.status(400).json({ok:false,error:{message:'Unable to save assessment'}});}
   return res.status(201).json({ok:true,data:entry});
