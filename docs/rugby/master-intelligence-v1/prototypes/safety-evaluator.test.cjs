@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const { evaluateSafety } = require('./safety-evaluator.cjs');
 const cases = [
   [
@@ -171,5 +173,4 @@ cases.push(...[
   ]
 ]);
 const results = runTests(evaluateSafety);
-console.log(JSON.stringify(results,null,2));
-if(results.some(r=>!r.pass)) process.exitCode=1;
+for(const r of results)test(r.name,()=>assert.ok(r.pass,JSON.stringify(r)));
