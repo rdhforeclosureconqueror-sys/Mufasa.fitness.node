@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "status": "candidate_pending_owner_review",
+  "source": "data/rugby/master-intelligence-v1/policies/beast-mode-progression-spec.json",
+  "scale": [
+    {
+      "value": 1,
+      "label": "poor / unsafe"
+    },
+    {
+      "value": 2,
+      "label": "inconsistent / needs regression"
+    },
+    {
+      "value": 3,
+      "label": "acceptable but not ready to progress"
+    },
+    {
+      "value": 4,
+      "label": "good / progression-ready standard"
+    },
+    {
+      "value": 5,
+      "label": "excellent / advanced standard"
+    }
+  ],
+  "stages": [
+    {
+      "id": "BM-01",
+      "name": "Functional Stability",
+      "definition": "Athlete can hold clean positions and perform basic movement patterns with control.",
+      "gate": "Own basic position before speed, load or chaos.",
+      "proposedDimensions": [
+        "control",
+        "balance",
+        "technique",
+        "trunk_stability",
+        "lower_limb_alignment"
+      ],
+      "nextStage": "BM-02"
+    },
+    {
+      "id": "BM-02",
+      "name": "Maximum Stability",
+      "definition": "Athlete can maintain clean positions under perturbation, instability, fatigue or contact-like challenge.",
+      "gate": "Stay organized when stability is challenged.",
+      "proposedDimensions": [
+        "control",
+        "balance",
+        "technique",
+        "trunk_stability",
+        "lower_limb_alignment"
+      ],
+      "nextStage": "BM-03"
+    },
+    {
+      "id": "BM-03",
+      "name": "Strength Stabilization",
+      "definition": "Athlete can produce force while maintaining alignment and control.",
+      "gate": "Be strong without losing shape.",
+      "proposedDimensions": [
+        "control",
+        "technique",
+        "trunk_stability",
+        "lower_limb_alignment"
+      ],
+      "nextStage": "BM-04"
+    },
+    {
+      "id": "BM-04",
+      "name": "Maximum Strength",
+      "definition": "Athlete can produce high force without losing structure.",
+      "gate": "High force with clean mechanics.",
+      "proposedDimensions": [
+        "control",
+        "technique",
+        "trunk_stability",
+        "lower_limb_alignment"
+      ],
+      "nextStage": "BM-05"
+    },
+    {
+      "id": "BM-05",
+      "name": "Power",
+      "definition": "Athlete can produce force quickly.",
+      "gate": "Fast force without losing Activate standards.",
+      "proposedDimensions": [
+        "control",
+        "technique",
+        "landing_quality"
+      ],
+      "nextStage": "BM-06"
+    },
+    {
+      "id": "BM-06",
+      "name": "Maximum Power",
+      "definition": "Athlete can repeatedly produce explosive outputs while preserving movement quality.",
+      "gate": "Repeat explosive outputs with quality.",
+      "proposedDimensions": [
+        "control",
+        "technique",
+        "landing_quality"
+      ],
+      "nextStage": "BM-07"
+    },
+    {
+      "id": "BM-07",
+      "name": "Beast Mode",
+      "definition": "Repeated controlled violence with clean mechanics under fatigue, chaos, instability and contact-like demands.",
+      "gate": "High rugby power repeatedly without posture, balance, alignment or decision-making breakdown.",
+      "proposedDimensions": [
+        "control",
+        "balance",
+        "technique",
+        "trunk_stability",
+        "lower_limb_alignment",
+        "change_of_direction_quality"
+      ],
+      "nextStage": null
+    }
+  ],
+  "candidateRule": "Each applicable approved dimension must be at least 4 (source label progression-ready); no averaging. Coach must document context, applicable dimensions, repeated observations and limitations. No fixed observation count or time window established.",
+  "excluded": [
+    "fatigue_breakdown direction unresolved",
+    "contact and neck competency require separate approved protocol"
+  ],
+  "automaticProgression": false,
+  "activation": false,
+  "approvalRequired": [
+    "stage dimension applicability",
+    "minimum observation count and time window",
+    "protocol and contact competency requirements"
+  ]
+}
