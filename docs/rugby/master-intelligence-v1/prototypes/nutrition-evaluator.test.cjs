@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {evaluateNutrition}=require('./nutrition-evaluator.cjs');
 const cases=[["valid",{"ageGroup":"adult","clinicalConcern":false,"supplementRequested":false,"context":{"athleteId":"demo","position":"wing","format":"XV","goal":"functional_mass","trainingLoad":"high","sessionSchedule":"two sessions","bodyMassKg":80}},r=>r.status==="EDUCATION_ONLY"],
 ["clinical",{"ageGroup":"adult","clinicalConcern":true,"supplementRequested":false,"context":{"athleteId":"demo","position":"wing","format":"XV","goal":"functional_mass","trainingLoad":"high","sessionSchedule":"two sessions","bodyMassKg":80}},r=>r.status==="REFER"],
@@ -12,5 +14,4 @@ const cases=[["valid",{"ageGroup":"adult","clinicalConcern":false,"supplementReq
 ["different athlete",{"ageGroup":"adult","clinicalConcern":false,"supplementRequested":false,"context":{"athleteId":"demo","position":"wing","format":"XV","goal":"functional_mass","trainingLoad":"high","sessionSchedule":"two sessions","bodyMassKg":80},"current":{"athleteId":"demo","protocol":"morning","massKg":81,"date":"2026-11-24"},"previous":{"athleteId":"other","protocol":"morning","massKg":80,"date":"2026-11-17"}},r=>r.massChangeKg===null],
 ["reverse dates",{"ageGroup":"adult","clinicalConcern":false,"supplementRequested":false,"context":{"athleteId":"demo","position":"wing","format":"XV","goal":"functional_mass","trainingLoad":"high","sessionSchedule":"two sessions","bodyMassKg":80},"current":{"athleteId":"demo","protocol":"morning","massKg":80,"date":"2026-11-17"},"previous":{"athleteId":"demo","protocol":"morning","massKg":81,"date":"2026-11-24"}},r=>r.massChangeKg===null],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=evaluateNutrition(input);if(!check(r)||r.targets!==null||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('13 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=evaluateNutrition(input);if(!check(r)||r.targets!==null||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
