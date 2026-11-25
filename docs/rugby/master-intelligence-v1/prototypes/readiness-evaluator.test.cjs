@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {evaluateReadiness}=require('./readiness-evaluator.cjs');
 const cases=[["valid",{"ageGroup":"adult","clinicalConcern":false,"current":{"athleteId":"demo","scaleVersion":"v1","sleepHours":7,"sleepQuality":4,"physicalFatigue":2,"mentalFatigue":3,"soreness":2,"stress":2,"wellbeing":4,"hydration":"good"}},r=>r.status==="DESCRIPTIVE_ONLY"],
 ["youth hold",{"ageGroup":"youth","clinicalConcern":false,"current":{"athleteId":"demo","scaleVersion":"v1","sleepHours":7,"sleepQuality":4,"physicalFatigue":2,"mentalFatigue":3,"soreness":2,"stress":2,"wellbeing":4,"hydration":"good"}},r=>r.status==="HOLD_PROCESSING"],
@@ -12,5 +14,4 @@ const cases=[["valid",{"ageGroup":"adult","clinicalConcern":false,"current":{"at
 ["trend",{"ageGroup":"adult","clinicalConcern":false,"current":{"athleteId":"demo","scaleVersion":"v1","sleepHours":7,"sleepQuality":4,"physicalFatigue":2,"mentalFatigue":3,"soreness":2,"stress":2,"wellbeing":4,"hydration":"good"},"previous":{"athleteId":"demo","scaleVersion":"v1","sleepHours":6,"sleepQuality":4,"physicalFatigue":2,"mentalFatigue":3,"soreness":2,"stress":2,"wellbeing":4,"hydration":"good"}},r=>r.changes.sleepHours===1],
 ["different athlete",{"ageGroup":"adult","clinicalConcern":false,"current":{"athleteId":"demo","scaleVersion":"v1","sleepHours":7,"sleepQuality":4,"physicalFatigue":2,"mentalFatigue":3,"soreness":2,"stress":2,"wellbeing":4,"hydration":"good"},"previous":{"athleteId":"other","scaleVersion":"v1","sleepHours":7,"sleepQuality":4,"physicalFatigue":2,"mentalFatigue":3,"soreness":2,"stress":2,"wellbeing":4,"hydration":"good"}},r=>r.changes===null],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=evaluateReadiness(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('13 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=evaluateReadiness(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
