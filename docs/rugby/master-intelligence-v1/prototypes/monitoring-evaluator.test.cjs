@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {reviewMonitoring}=require('./monitoring-evaluator.cjs');
 const cases=[["velocity loss",{"clinicalConcern":false,"sensitiveHealthData":false,"vbt":{"athleteId":"demo","exercise":"squat","deviceId":"demo","protocol":"demo","metric":"mean","reps":[{"valid":true,"ms":1},{"valid":true,"ms":0.8}]}},r=>Math.abs(r.velocity.lossFromBestPct[1]-20)<1e-9],
 ["invalid rep",{"clinicalConcern":false,"sensitiveHealthData":false,"vbt":{"athleteId":"demo","exercise":"squat","deviceId":"demo","protocol":"demo","metric":"mean","reps":[{"valid":false,"ms":1}]}},r=>r.status==="REVIEW_REQUIRED"],
@@ -13,5 +15,4 @@ const cases=[["velocity loss",{"clinicalConcern":false,"sensitiveHealthData":fal
 ["unknown privacy",{"clinicalConcern":false,"sensitiveHealthData":null},r=>r.status==="REVIEW_REQUIRED"],
 ["empty",{"clinicalConcern":false,"sensitiveHealthData":false},r=>r.status==="REVIEW_REQUIRED"],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=reviewMonitoring(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('14 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=reviewMonitoring(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
