@@ -6,6 +6,7 @@ on:
       - 'data/rugby/**'
       - 'src/rugby/**'
       - 'test/rugby-athlete-evidence.test.js'
+      - 'test/rugby-coach-evidence.test.js'
       - '.github/workflows/rugby-recovery-acceptance.yml'
 permissions:
   contents: read
@@ -21,4 +22,4 @@ jobs:
         with:
           node-version: '22'
       - name: Execute recovered prototype suites
-        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js
+        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js test/rugby-coach-evidence.test.js
