@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "status": "owner_directed_development_policy",
+  "activation": false,
+  "principle": "Repeatable embodied competency and rugby field transfer, not isolated personal bests.",
+  "cycle": [
+    "baseline_assessment",
+    "individualized_programme",
+    "training_consistency",
+    "field_application",
+    "comparable_reassessment",
+    "coach_review",
+    "authorized_stage_decision"
+  ],
+  "requirements": {
+    "baseline": "dated same-athlete stage-specific baseline",
+    "programme": "versioned individualized progressive plan",
+    "consistency": "compare completed versus prescribed sessions and documented adaptations; missing evidence is not completion",
+    "workload": "consider practice, matches and independent training; do not reward extra volume",
+    "fieldTransfer": "coach-observed rugby-specific movement and decision application; gym performance alone insufficient",
+    "retest": "available even when consistency insufficient; comparable protocol; educational feedback",
+    "progression": "requires consistency, repeatable competency, field transfer, safety and authorized coach review; no single personal best or automatic advancement",
+    "recovery": "respect planned taper, rest, injury restrictions and coach-approved modifications"
+  },
+  "unresolved": [
+    "stage-specific field protocols",
+    "approved consistency thresholds and observation windows",
+    "trusted evidence capture and authorization"
+  ],
+  "automaticProgression": false
+}
