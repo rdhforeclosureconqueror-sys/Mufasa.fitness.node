@@ -6804,6 +6804,23 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-25T00:01:06.892Z"
+    },
+    {
+      "operationId": "04d40f4b-ddee-4e72-beb5-6316eb1a123b",
+      "board": "launch",
+      "cardId": "launch-development-rugby-sync-v8b",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "docs/rugby/production-sync-20261124.md",
+        "docs/rugby/web-validation/sync-browser-20261124.json",
+        "docs/rugby/web-validation/sync-mobile-20261124.json"
+      ],
+      "automated": null,
+      "evidence": "Local/GUT/browser validation and GitHub acceptance CI pass. Publication blocked: Charter/Spectrum network security redirects production hostname to block.charter-prod.hosted.cujo.io; HTTPS fails before HTTP in Node, curl and Chrome. No bypass attempted. Authorized network administrator must review and allow legitimate hostname so mandatory live verification can run. PR 1407 unmerged; production unchanged; iPhone acceptance pending.",
+      "prNumber": 1407,
+      "commitSha": "a8bd3ea63397ae4d84a73e08b6c0be09e9acbc0e",
+      "timestamp": "2026-11-25T00:07:46.355Z"
     }
   ]
 }

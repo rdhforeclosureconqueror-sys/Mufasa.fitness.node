@@ -35,7 +35,7 @@ main or reset databases. Preserve current auto-deploy settings after recovery.
 - [x] Validate replay/reset, formations and Training scenarios.
 - [x] Validate desktop gameplay, mobile controls and multitouch (Chrome emulation).
 - [x] Export, verify hashes and browser navigation/gameplay.
-- [ ] Review implementation and separately review acceptance criteria; pass CI.
+- [x] Review implementation and separately review acceptance criteria; pass CI.
 - [ ] Merge and confirm both Render deployments.
 - [ ] Verify public build, navigation, access restrictions; record final checkpoint.
 - [ ] Owner physical-device and visual acceptance (human only).
@@ -90,3 +90,25 @@ acceptance. Portrait preserves the landscape canvas and has small text/controls;
 landscape is recommended. The 15v15 formation uses 30 personalized avatars and needs
 owner assessment for phone performance. Access restrictions and website routes are
 unchanged. No database or service configuration changes are included.
+
+## Publication checkpoint and external blocker
+
+PR: https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/pull/1407
+Implementation commit: `a8bd3ea63397ae4d84a73e08b6c0be09e9acbc0e`.
+GitHub acceptance run `45515246629` passed, including the public smoke test.
+Local backend anonymous-read/write checks passed. Local frontend HTTPS failed in
+Node, curl and Chrome before HTTP with TLS/protocol errors. An HTTP HEAD request
+identified the cause: a 302 redirect to Charter/Spectrum's
+`block.charter-prod.hosted.cujo.io/warn.html` for this production hostname.
+
+Do not bypass the network security control. An authorized network administrator
+must review and allow the legitimate `mufasafitsite.onrender.com` hostname before
+this environment can perform the required live browser and asset verification.
+Merge/deployment intentionally remain pending; the previous production SHA and
+Render artifacts above remain unchanged. No new production success is claimed.
+
+Resume: confirm normal HTTPS access; fetch main and verify PR checks/current diff;
+merge #1407 with the reviewed head SHA; monitor both Render services; run
+`scripts/check-rugby-production.js` with `RUGBY_PRODUCTION_SHA` and the browser suite
+with `RUGBY_TEST_URL=https://mufasafitsite.onrender.com`; record final deployment IDs
+and machine evidence. Request owner iPhone acceptance only after live verification.
