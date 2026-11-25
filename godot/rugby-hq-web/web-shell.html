@@ -15,6 +15,13 @@ body.immersive #game-stage,#game-stage:fullscreen{position:fixed;inset:0;width:1
 body.immersive #exit-immersive{display:block;position:absolute;z-index:4;bottom:env(safe-area-inset-bottom);right:max(8px,env(safe-area-inset-right));min-height:44px;padding:8px 14px}
 @media(orientation:portrait){body.immersive #rotate-hint{display:block;position:absolute;bottom:calc(8px + env(safe-area-inset-bottom));left:max(8px,env(safe-area-inset-left));right:145px;font-size:12px;color:#e5dfd0;z-index:3}body.immersive #canvas{height:auto;aspect-ratio:16/9;max-height:100%}}
 @media(max-width:650px){header{min-height:0;padding:10px 14px;gap:8px}#controls{font-size:12px}#hint{font-size:12px}}
+
+/* Reclaim the bottom control strip on landscape phones; keep the exit in a small corner overlay. */
+@media (orientation:landscape) and (pointer:coarse){
+ body.immersive #game-stage{padding-bottom:env(safe-area-inset-bottom);grid-template:minmax(0,1fr)/minmax(0,1fr)}
+ body.immersive #exit-immersive{top:max(4px,env(safe-area-inset-top));bottom:auto;right:max(4px,env(safe-area-inset-right));font-size:12px;min-height:44px;padding:6px 10px;opacity:.92}
+ body.immersive #canvas{width:100%;height:100%}
+}
 </style>$GODOT_HEAD_INCLUDE</head><body>
 <header><a href="/rugby.html">← Rugby HQ</a><strong>QUIN NATION · RUGBY HQ</strong><button id="fullscreen" type="button" aria-pressed="false">Fullscreen</button><p id="controls">WASD / arrows: run · Shift: walk · Space / PASS: pass · R: reset · Right-drag: camera</p><span id="hint">Click the field to focus keyboard controls. Press R after a tackle.</span></header>
 <main id="game-stage"><canvas id="canvas" tabindex="0" aria-label="Rugby HQ 3D training field"></canvas>
@@ -28,7 +35,18 @@ const configuration=$GODOT_CONFIG;
 const qa=new URLSearchParams(location.search).get('qa')==='1';
 configuration.canvas=canvas; configuration.canvasResizePolicy=0;
 configuration.args=qa?['--','--web-qa']:[];
-function resizeCanvas(){const w=Math.max(1,Math.round(canvas.clientWidth)),h=Math.max(1,Math.round(canvas.clientHeight));if(canvas.width!==w)canvas.width=w;if(canvas.height!==h)canvas.height=h;} new ResizeObserver(resizeCanvas).observe(canvas);resizeCanvas();
+function renderDimensions(width,height,dpr,mobile){
+ const w=Math.max(1,width),h=Math.max(1,height);
+ // Bound GPU cost; preserve the same scale on both axes.
+ const scale=mobile?Math.min(2,Math.max(1,dpr||1),Math.sqrt(1600000/(w*h)),2048/Math.max(w,h)):1;
+ return {w:Math.max(1,Math.round(w*scale)),h:Math.max(1,Math.round(h*scale))};
+}
+function resizeCanvas(){
+ const mobile=matchMedia('(pointer: coarse)').matches;
+ const {w,h}=renderDimensions(canvas.clientWidth,canvas.clientHeight,window.devicePixelRatio,mobile);
+ if(canvas.width!==w)canvas.width=w;
+ if(canvas.height!==h)canvas.height=h;
+} new ResizeObserver(resizeCanvas).observe(canvas);resizeCanvas();
 let started=false,ready=false,watchdog;
 window.rugbyErrors=[];
 function fail(error){clearTimeout(watchdog);document.body.dataset.gameState='error';overlay.hidden=false;progress.hidden=true;message.textContent='The game could not start: '+String(error)+'. Try an up-to-date desktop Chrome, Edge or Firefox browser with WebGL 2 enabled.';start.disabled=false;start.textContent='Reload game';start.onclick=()=>location.reload();}
