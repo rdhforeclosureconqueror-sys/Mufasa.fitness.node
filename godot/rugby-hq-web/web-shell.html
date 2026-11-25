@@ -1,11 +1,25 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Play Rugby HQ | Milele Fit</title><style>
 :root{color-scheme:dark;font-family:system-ui,sans-serif;background:#081b17;color:#f3f7f2}*{box-sizing:border-box}body{margin:0;overflow:hidden}header{height:92px;padding:12px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}a{color:#d8c08a}button{background:#d8c08a;color:#10251b;border:0;border-radius:9px;padding:12px 20px;font-weight:800;cursor:pointer}button:disabled{opacity:.5}#canvas{display:block;width:100%;height:calc(100dvh - 92px);outline:none;touch-action:none}#canvas:focus-visible{outline:2px solid #64dfb5;outline-offset:-2px}#overlay{position:fixed;inset:92px 0 0;display:grid;place-content:center;text-align:center;background:#081b17f5;padding:24px}#overlay[hidden]{display:none}progress{width:min(400px,80vw);margin:20px auto}#message{max-width:650px;line-height:1.6}#controls{font-size:14px;margin:0;color:#b8cdc3}#fullscreen{margin-left:auto}#hint{font-size:12px;color:#c1e5d1}#canvas:fullscreen{height:100dvh;width:100vw}@media(max-width:650px){header{height:130px;gap:8px}#canvas{height:calc(100dvh - 130px)}#overlay{top:130px}}
+
+/* Immersive mode works even when iOS refuses element fullscreen. */
+body{height:100vh;height:100dvh;display:flex;flex-direction:column}
+header{height:auto;min-height:92px;flex:none;padding-top:max(12px,env(safe-area-inset-top));padding-left:max(20px,env(safe-area-inset-left));padding-right:max(20px,env(safe-area-inset-right))}
+#game-stage{position:relative;flex:1;min-height:0;min-width:0;background:#000;display:grid;place-items:center;overflow:hidden}
+#canvas{width:100%;height:100%;min-width:0;min-height:0}
+#overlay{position:absolute;inset:0;z-index:2;overflow:auto}
+#exit-immersive,#rotate-hint{display:none}
+body.immersive header{display:none}
+body.immersive #game-stage,#game-stage:fullscreen{position:fixed;inset:0;width:100%;height:100vh;height:100dvh;box-sizing:border-box;padding:env(safe-area-inset-top) env(safe-area-inset-right) calc(46px + env(safe-area-inset-bottom)) env(safe-area-inset-left);z-index:10}
+body.immersive #exit-immersive{display:block;position:absolute;z-index:4;bottom:env(safe-area-inset-bottom);right:max(8px,env(safe-area-inset-right));min-height:44px;padding:8px 14px}
+@media(orientation:portrait){body.immersive #rotate-hint{display:block;position:absolute;bottom:calc(8px + env(safe-area-inset-bottom));left:max(8px,env(safe-area-inset-left));right:145px;font-size:12px;color:#e5dfd0;z-index:3}body.immersive #canvas{height:auto;aspect-ratio:16/9;max-height:100%}}
+@media(max-width:650px){header{min-height:0;padding:10px 14px;gap:8px}#controls{font-size:12px}#hint{font-size:12px}}
 </style>$GODOT_HEAD_INCLUDE</head><body>
-<header><a href="/rugby.html">← Rugby HQ</a><strong>QUIN NATION · 2v1</strong><button id="fullscreen" type="button">Fullscreen</button><p id="controls">WASD / arrows: run · Shift: walk · Space / PASS: pass · R: reset · Right-drag: camera</p><span id="hint">Click the field to focus keyboard controls. Press R after a tackle.</span></header>
-<canvas id="canvas" tabindex="0" aria-label="Rugby HQ 3D training field"></canvas>
+<header><a href="/rugby.html">← Rugby HQ</a><strong>QUIN NATION · RUGBY HQ</strong><button id="fullscreen" type="button" aria-pressed="false">Fullscreen</button><p id="controls">WASD / arrows: run · Shift: walk · Space / PASS: pass · R: reset · Right-drag: camera</p><span id="hint">Click the field to focus keyboard controls. Press R after a tackle.</span></header>
+<main id="game-stage"><canvas id="canvas" tabindex="0" aria-label="Rugby HQ 3D training field"></canvas>
 <section id="overlay" aria-live="polite"><h1>Rugby HQ · 2v1</h1><p id="message">Train with Rashad, a support runner and a defender. On phones, rotate to landscape and use the joystick and PASS button.</p><progress id="progress" hidden></progress><button id="start">PLAY RUGBY HQ</button><p><a href="/rugby.html">Back to Rugby HQ</a></p></section>
+<span id="rotate-hint">Rotate phone for a larger field.</span><button id="exit-immersive" type="button">Exit fullscreen</button></main>
 <noscript>Enable JavaScript to play Rugby HQ.</noscript>
 <script src="$GODOT_URL"></script><script>
 'use strict';
@@ -14,7 +28,7 @@ const configuration=$GODOT_CONFIG;
 const qa=new URLSearchParams(location.search).get('qa')==='1';
 configuration.canvas=canvas; configuration.canvasResizePolicy=0;
 configuration.args=qa?['--','--web-qa']:[];
-function resizeCanvas(){canvas.width=Math.max(1,Math.round(canvas.clientWidth));canvas.height=Math.max(1,Math.round(canvas.clientHeight));} new ResizeObserver(resizeCanvas).observe(canvas);resizeCanvas();
+function resizeCanvas(){const w=Math.max(1,Math.round(canvas.clientWidth)),h=Math.max(1,Math.round(canvas.clientHeight));if(canvas.width!==w)canvas.width=w;if(canvas.height!==h)canvas.height=h;} new ResizeObserver(resizeCanvas).observe(canvas);resizeCanvas();
 let started=false,ready=false,watchdog;
 window.rugbyErrors=[];
 function fail(error){clearTimeout(watchdog);document.body.dataset.gameState='error';overlay.hidden=false;progress.hidden=true;message.textContent='The game could not start: '+String(error)+'. Try an up-to-date desktop Chrome, Edge or Firefox browser with WebGL 2 enabled.';start.disabled=false;start.textContent='Reload game';start.onclick=()=>location.reload();}
@@ -25,7 +39,43 @@ window.addEventListener('unhandledrejection',e=>{window.rugbyErrors.push(String(
 canvas.addEventListener('pointerdown',()=>canvas.focus({preventScroll:true}));
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 window.addEventListener('keydown',e=>{if(document.activeElement===canvas&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault();},{capture:true});
-document.getElementById('fullscreen').onclick=async()=>{try{await canvas.requestFullscreen();canvas.focus();}catch{document.getElementById('hint').textContent='Fullscreen is unavailable. The game still works in this window.';}};
+const stage=document.getElementById('game-stage'),fullscreenButton=document.getElementById('fullscreen'),exitButton=document.getElementById('exit-immersive');
+let nativeEntered=false,fullscreenBusy=false;
+function setImmersive(active){
+ document.body.classList.toggle('immersive',active);
+ fullscreenButton.setAttribute('aria-pressed',String(active));
+ if(active)canvas.focus({preventScroll:true});else fullscreenButton.focus({preventScroll:true});
+ requestAnimationFrame(resizeCanvas);
+}
+async function enterImmersive(){
+ if(fullscreenBusy||document.body.classList.contains('immersive'))return;
+ fullscreenBusy=true;
+ setImmersive(true);
+ try{
+  if(typeof stage.requestFullscreen==='function'&&document.fullscreenEnabled!==false){
+   await stage.requestFullscreen();
+   nativeEntered=document.fullscreenElement===stage;
+  }
+ }catch{nativeEntered=false;}
+ finally{fullscreenBusy=false;}
+}
+async function exitImmersive(){
+ if(fullscreenBusy)return;
+ fullscreenBusy=true;
+ try{if(document.fullscreenElement===stage&&typeof document.exitFullscreen==='function')await document.exitFullscreen();}
+ catch{if(document.fullscreenElement===stage)return;}
+ finally{fullscreenBusy=false;}
+ nativeEntered=false;setImmersive(false);
+}
+fullscreenButton.onclick=enterImmersive;
+exitButton.onclick=exitImmersive;
+document.addEventListener('fullscreenchange',()=>{
+ if(document.fullscreenElement===stage){nativeEntered=true;setImmersive(true);}
+ else if(nativeEntered){nativeEntered=false;setImmersive(false);}
+});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&document.body.classList.contains('immersive')&&!document.fullscreenElement)exitImmersive();});
+window.addEventListener('resize',resizeCanvas);
+window.visualViewport?.addEventListener('resize',resizeCanvas);
 start.onclick=async()=>{if(started)return;started=true;start.disabled=true;document.body.dataset.gameState='loading';progress.hidden=false;message.textContent='Loading the 3D field and avatar…';
 try{if(typeof Engine==='undefined')throw Error('Engine download failed');const missing=Engine.getMissingFeatures({threads:false});if(missing.length)throw Error(missing.join(', '));
 watchdog=setTimeout(()=>fail('Loading timed out. Check your connection'),120000);
