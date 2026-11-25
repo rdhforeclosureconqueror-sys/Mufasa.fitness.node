@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {summarizeInjuries}=require('./injury-surveillance.cjs');
 const cases=[["rates",{"cohort":"synthetic","caseDefinition":"all_complaints","exposure":[{"id":"m","setting":"match","minutes":600},{"id":"t","setting":"training","minutes":1200}],"injuries":[{"id":"i","setting":"match","daysLost":5,"medicalAttention":true,"timeLoss":true}]},r=>r.groups[0].incidence===100&&r.groups[0].burden===500&&r.groups[1].incidence===0],
 ["unknown days",{"cohort":"synthetic","caseDefinition":"all_complaints","exposure":[{"id":"m","setting":"match","minutes":600},{"id":"t","setting":"training","minutes":1200}],"injuries":[{"id":"i","setting":"match","daysLost":null,"medicalAttention":true,"timeLoss":true}]},r=>r.groups[0].burden===null],
@@ -7,5 +9,4 @@ const cases=[["rates",{"cohort":"synthetic","caseDefinition":"all_complaints","e
 ["unknown classification",{"cohort":"synthetic","caseDefinition":"time_loss","exposure":[{"id":"m","setting":"match","minutes":600},{"id":"t","setting":"training","minutes":1200}],"injuries":[{"id":"i","setting":"match","daysLost":5,"medicalAttention":true,"timeLoss":null}]},r=>r.groups[0].incidence===null],
 ["negative exposure",{"cohort":"synthetic","caseDefinition":"all_complaints","exposure":[{"id":"m","setting":"match","minutes":-1}],"injuries":[{"id":"i","setting":"match","daysLost":5,"medicalAttention":true,"timeLoss":true}]},r=>r.status==="REVIEW_REQUIRED"],
 ["null",null,r=>r.status==="REVIEW_REQUIRED"]];
-for(const [name,input,check] of cases){const r=summarizeInjuries(input);if(!check(r)||r.medicalClearanceAllowed!==false||r.runtimeActivation!==false)throw Error(name);}
-console.log('8 cases passed');
+for(const [name,input,check] of cases)test(name,()=>{const r=summarizeInjuries(input);if(!check(r)||r.medicalClearanceAllowed!==false||r.runtimeActivation!==false)throw Error(name);});
