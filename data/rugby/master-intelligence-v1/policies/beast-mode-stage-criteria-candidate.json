@@ -37,7 +37,12 @@
         "trunk_stability",
         "lower_limb_alignment"
       ],
-      "nextStage": "BM-02"
+      "nextStage": "BM-02",
+      "candidateMinimumDistinctDays": 2,
+      "candidateMinimumSpanDays": 1,
+      "candidateContexts": [
+        "basic_control"
+      ]
     },
     {
       "id": "BM-02",
@@ -51,7 +56,13 @@
         "trunk_stability",
         "lower_limb_alignment"
       ],
-      "nextStage": "BM-03"
+      "nextStage": "BM-03",
+      "candidateMinimumDistinctDays": 3,
+      "candidateMinimumSpanDays": 3,
+      "candidateContexts": [
+        "basic_control",
+        "stability_challenge"
+      ]
     },
     {
       "id": "BM-03",
@@ -64,7 +75,12 @@
         "trunk_stability",
         "lower_limb_alignment"
       ],
-      "nextStage": "BM-04"
+      "nextStage": "BM-04",
+      "candidateMinimumDistinctDays": 3,
+      "candidateMinimumSpanDays": 3,
+      "candidateContexts": [
+        "controlled_force"
+      ]
     },
     {
       "id": "BM-04",
@@ -77,7 +93,12 @@
         "trunk_stability",
         "lower_limb_alignment"
       ],
-      "nextStage": "BM-05"
+      "nextStage": "BM-05",
+      "candidateMinimumDistinctDays": 3,
+      "candidateMinimumSpanDays": 5,
+      "candidateContexts": [
+        "high_force"
+      ]
     },
     {
       "id": "BM-05",
@@ -89,7 +110,13 @@
         "technique",
         "landing_quality"
       ],
-      "nextStage": "BM-06"
+      "nextStage": "BM-06",
+      "candidateMinimumDistinctDays": 3,
+      "candidateMinimumSpanDays": 5,
+      "candidateContexts": [
+        "rapid_force",
+        "controlled_landing"
+      ]
     },
     {
       "id": "BM-06",
@@ -101,7 +128,12 @@
         "technique",
         "landing_quality"
       ],
-      "nextStage": "BM-07"
+      "nextStage": "BM-07",
+      "candidateMinimumDistinctDays": 4,
+      "candidateMinimumSpanDays": 7,
+      "candidateContexts": [
+        "repeated_explosive_effort"
+      ]
     },
     {
       "id": "BM-07",
@@ -116,7 +148,13 @@
         "lower_limb_alignment",
         "change_of_direction_quality"
       ],
-      "nextStage": null
+      "nextStage": null,
+      "candidateMinimumDistinctDays": 4,
+      "candidateMinimumSpanDays": 7,
+      "candidateContexts": [
+        "repeated_explosive_effort",
+        "rugby_decision_context"
+      ]
     }
   ],
   "candidateRule": "Each applicable approved dimension must be at least 4 (source label progression-ready); no averaging. Coach must document context, applicable dimensions, repeated observations and limitations. No fixed observation count or time window established.",
@@ -127,8 +165,12 @@
   "automaticProgression": false,
   "activation": false,
   "approvalRequired": [
+    "specific candidate day counts and spans",
     "stage dimension applicability",
-    "minimum observation count and time window",
-    "protocol and contact competency requirements"
-  ]
+    "protocol and contact competency requirements",
+    "trusted coach authorization and evidence provenance"
+  ],
+  "approach": "stage_specific_complexity_and_risk",
+  "approachApprovedByOwner": true,
+  "note": "Day counts, spans and context labels are proposed coaching policy, not validated scientific thresholds or approved exercise doses. Owner approved approach only."
 }
