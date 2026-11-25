@@ -1,0 +1,35 @@
+{
+  "auditedHead": "b4a34407dcc74b037310ae325560a7df6596c55a",
+  "pr": 1406,
+  "changedFiles": 146,
+  "groups": {
+    "docs": 76,
+    "data": 70
+  },
+  "runtimeFiles": 0,
+  "prototypeTests": [
+    "docs/rugby/master-intelligence-v1/prototypes/advanced-conditioning.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/beast-mode-progression.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/conditioning-math.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/exercise-eligibility.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/gamespeed-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/injury-surveillance.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/master-resolver.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/monitoring-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/movement-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/nutrition-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/player-profile-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/programme-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/readiness-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/resistance-evaluator.test.cjs",
+    "docs/rugby/master-intelligence-v1/prototypes/safety-evaluator.test.cjs"
+  ],
+  "prTriggeredWorkflowRuns": 0,
+  "decision": "Keep recovery PR separate from runtime implementation; no merge until source/privacy review and repository checkout tests.",
+  "remaining": [
+    "Review archive contents for sensitive and proprietary data before merge",
+    "Run all prototype suites from checkout",
+    "Verify repository CI and review",
+    "Use bounded runtime PRs after recovery acceptance"
+  ]
+}
