@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {evaluateProfile}=require('./player-profile-evaluator.cjs');
 const cases=[
   [
@@ -434,5 +436,4 @@ const cases=[
     "DEVELOP"
   ]
 ];
-for(const [name,input,expected] of cases){const r=evaluateProfile(input);if(r.status!==expected||r.automatedPrescriptionAllowed!==false||(name==='trend'&&Math.abs(r.trend-.1)>1e-9)||(name==='incompatible trend'&&r.trend!==null)||(name==='valid'&&Math.abs(r.gap-.1)>1e-9))throw Error(name);}
-console.log('12 cases passed');
+for(const [name,input,expected] of cases)test(name,()=>{const r=evaluateProfile(input);if(r.status!==expected||r.automatedPrescriptionAllowed!==false||(name==='trend'&&Math.abs(r.trend-.1)>1e-9)||(name==='incompatible trend'&&r.trend!==null)||(name==='valid'&&Math.abs(r.gap-.1)>1e-9))throw Error(name);});
