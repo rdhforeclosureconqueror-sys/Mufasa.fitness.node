@@ -66,5 +66,17 @@ Update this checklist with every completed milestone, in the same PR where pract
 ## Current checkpoint
 Historical resources 01, 03, 05, 08: 13/13 paths present on main. Introductory conditioning candidate archive: 13/13 accounted for; numbering and overlap review pending.
 
+## Closeout execution plan (approved batching approach)
+
+Preserve the original acceptance checklist and denominator. Group remaining milestones into bounded workstreams; use separate PRs when dependencies or risk require. Do not expand scope except to resolve an acceptance blocker.
+
+1. Unified athlete intelligence: master semantics, movement protocols, safety, profile, injury privacy, readiness, longitudinal evidence, eligibility and Beast Mode progression.
+2. Training prescription intelligence: conditioning, resistance, gamespeed, nutrition interfaces and exercise library reconciliation.
+3. Programme and season management: immutable plans, calendar constraints, advanced programme semantics and longitudinal monitoring.
+4. Production integration: reconcile recovered resources and existing engines, verify outstanding source claims, integrate behind restricted feature controls; avoid duplicate engines.
+5. Final acceptance: security/privacy/medical safeguards, repository CI, regression and integration tests, review, rollback, merge, deployment and authorized live acceptance.
+
+Batch exit gate: implementation and tests where applicable; source and runtime evidence distinguished; actual checklist and manifest updated; unresolved blockers documented; review and rollback plan before production changes. A design-only commit is not a functional completion. PR #1406 is the existing recovery PR; inspect its scope and CI before deciding merge or split. No production activation without acceptance evidence.
+
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
