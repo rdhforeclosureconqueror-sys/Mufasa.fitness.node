@@ -1,0 +1,244 @@
+{
+  "resourceName": "Rugby HQ Backs Rugby Ready Rubric",
+  "version": "1.0.0",
+  "createdFrom": "Pocket PT / Rugby HQ coaching design thread",
+  "ratingsScale": {
+    "min": 1,
+    "max": 99
+  },
+  "readinessBands": [
+    {
+      "min": 90,
+      "max": 99,
+      "label": "Impact starter / elite within program"
+    },
+    {
+      "min": 80,
+      "max": 89,
+      "label": "Clear starter-ready"
+    },
+    {
+      "min": 70,
+      "max": 79,
+      "label": "Match-ready / rotation player"
+    },
+    {
+      "min": 60,
+      "max": 69,
+      "label": "Developmental / situational use"
+    },
+    {
+      "min": 1,
+      "max": 59,
+      "label": "Not yet rugby-ready for that role"
+    }
+  ],
+  "skillIqCategories": [
+    {
+      "key": "defensive_iq",
+      "label": "Defensive IQ",
+      "weight": 0.2,
+      "competencies": [
+        "alignment",
+        "numbering_up",
+        "spacing",
+        "inside_shoulder",
+        "drift_vs_press",
+        "edge_defense",
+        "backfield_coverage",
+        "communication",
+        "reload_fold"
+      ]
+    },
+    {
+      "key": "tackling_in_space",
+      "label": "Tackling in Space",
+      "weight": 0.15,
+      "hardGate": {
+        "starterEligibleMinimum": 70
+      },
+      "competencies": [
+        "tracking",
+        "footwork",
+        "head_placement",
+        "shoulder_connection",
+        "wrap",
+        "finish",
+        "recovery"
+      ]
+    },
+    {
+      "key": "attack_iq",
+      "label": "Attack IQ",
+      "weight": 0.2,
+      "competencies": [
+        "scanning",
+        "depth",
+        "width",
+        "timing",
+        "decision_making",
+        "space_identification",
+        "continuity"
+      ]
+    },
+    {
+      "key": "ball_skills",
+      "label": "Ball Skills",
+      "weight": 0.15,
+      "competencies": [
+        "catch_quality",
+        "passing_left",
+        "passing_right",
+        "receiving_under_pressure",
+        "commit_defender",
+        "offload_decision",
+        "ball_presentation"
+      ]
+    },
+    {
+      "key": "movement_evasion",
+      "label": "Movement & Evasion",
+      "weight": 0.15,
+      "competencies": [
+        "footwork",
+        "acceleration",
+        "change_of_angle",
+        "outside_break",
+        "swerve",
+        "support_line_speed"
+      ]
+    },
+    {
+      "key": "role_specific_skill",
+      "label": "Role-Specific Skill",
+      "weight": 0.15,
+      "competencies": [
+        "position_specific_responsibilities"
+      ]
+    }
+  ],
+  "athleticIndexCategories": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "weight": 0.25,
+      "tests": [
+        "10m sprint",
+        "20m sprint",
+        "40m sprint"
+      ]
+    },
+    {
+      "key": "agility",
+      "label": "Agility",
+      "weight": 0.25,
+      "tests": [
+        "T-test",
+        "5-10-5",
+        "reactive cone drill"
+      ]
+    },
+    {
+      "key": "repeat_effort",
+      "label": "Repeat Effort",
+      "weight": 0.2,
+      "tests": [
+        "get-up sprint repeat drill"
+      ]
+    },
+    {
+      "key": "endurance",
+      "label": "Endurance",
+      "weight": 0.15,
+      "tests": [
+        "Bronco",
+        "beep test"
+      ]
+    },
+    {
+      "key": "power",
+      "label": "Power",
+      "weight": 0.1,
+      "tests": [
+        "broad jump",
+        "vertical jump",
+        "medicine ball throw"
+      ]
+    },
+    {
+      "key": "strength",
+      "label": "Strength",
+      "weight": 0.05,
+      "tests": [
+        "rugby-relevant strength assessment"
+      ]
+    }
+  ],
+  "positionOverlays": {
+    "10": [
+      "game_management",
+      "passing_range",
+      "kicking",
+      "defensive_bravery",
+      "communication"
+    ],
+    "12": [
+      "hard_line_threat",
+      "second_playmaker",
+      "defensive_control",
+      "contact_skill",
+      "decision_under_pressure"
+    ],
+    "13": [
+      "defensive_reads",
+      "edge_connection",
+      "outside_break",
+      "passing_to_wing",
+      "transition_speed"
+    ],
+    "11_14": [
+      "finishing",
+      "touchline_awareness",
+      "high_ball",
+      "kick_chase",
+      "last_pass_support"
+    ],
+    "15": [
+      "backfield_organization",
+      "high_ball_security",
+      "counterattack",
+      "last_line_tackling",
+      "communication"
+    ]
+  },
+  "hardGates": [
+    {
+      "key": "welfare_block",
+      "description": "Medical, concussion, or welfare restriction blocks starter eligibility."
+    },
+    {
+      "key": "safeguarding_block",
+      "description": "Safeguarding restriction blocks participation or access."
+    },
+    {
+      "key": "tackling_in_space_below_70",
+      "description": "Back cannot be starter eligible if tackling in space is below 70."
+    },
+    {
+      "key": "defensive_iq_below_65",
+      "description": "Coach review required if defensive IQ is below 65."
+    }
+  ],
+  "evidenceTypes": [
+    "drill",
+    "controlled_scrimmage",
+    "match",
+    "video_clip",
+    "coach_review"
+  ],
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "destinationHint": {
+    "docs": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/",
+    "data": "data/rugby/backs-readiness-resource-007/"
+  }
+}

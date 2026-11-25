@@ -1,0 +1,19 @@
+{
+  "id": "sample-backline-eval-001",
+  "playerId": "fictional-player-id",
+  "playerName": "Fictional Back",
+  "positionEvaluated": "13",
+  "category": "Defensive IQ",
+  "competency": "edge_defense",
+  "score": 64,
+  "evidenceType": "controlled_scrimmage",
+  "coachNote": "Shoots too early when the wing has an outside threat; needs to hold connection longer.",
+  "nextAction": "13/wing drift drill, three reps each side, reassess next session.",
+  "clipUrl": null,
+  "clipTimestamp": null,
+  "evaluatorId": "fictional-coach-id",
+  "evaluatorName": "Coach Example",
+  "confidence": "medium",
+  "evaluatedAt": "2026-11-24T00:00:00.000Z",
+  "createdAt": "2026-11-24T00:00:00.000Z"
+}

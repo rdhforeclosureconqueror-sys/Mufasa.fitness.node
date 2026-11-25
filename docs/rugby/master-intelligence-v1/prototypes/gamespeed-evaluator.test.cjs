@@ -1,0 +1,17 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {evaluateGamespeed}=require('./gamespeed-evaluator.cjs');
+const cases=[["acceleration",{"pain":false,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.result.averageMS===5],
+["fly average",{"pain":false,"clinicalConcern":false,"test":{"type":"flying_sprint","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"buildUpM":20}},r=>r.result.averageMS===5&&r.result.measuredPeakMS===undefined],
+["fly missing buildup",{"pain":false,"clinicalConcern":false,"test":{"type":"flying_sprint","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"buildUpM":null}},r=>r.status==="REVIEW_REQUIRED"],
+["measured peak",{"pain":false,"clinicalConcern":false,"test":{"type":"flying_sprint","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"buildUpM":20,"peakMS":6,"peakMethod":"measured_peak"}},r=>r.result.measuredPeakMS===6],
+["average mislabeled",{"pain":false,"clinicalConcern":false,"test":{"type":"flying_sprint","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"buildUpM":20,"peakMS":5,"peakMethod":"average"}},r=>r.status==="REVIEW_REQUIRED"],
+["closed COD",{"pain":false,"clinicalConcern":false,"test":{"type":"closed_cod","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.result.type==="closed_cod"&&r.result.decisionCorrect===undefined],
+["reactive incorrect",{"pain":false,"clinicalConcern":false,"test":{"type":"reactive_agility","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"stimulus":"opponent","decisionCorrect":false,"initiationS":0.5}},r=>r.result.decisionCorrect===false&&r.result.executionS===1.5],
+["missing stimulus",{"pain":false,"clinicalConcern":false,"test":{"type":"reactive_agility","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"stimulus":"","decisionCorrect":false,"initiationS":0.5}},r=>r.status==="REVIEW_REQUIRED"],
+["invalid initiation",{"pain":false,"clinicalConcern":false,"test":{"type":"reactive_agility","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10,"stimulus":"opponent","decisionCorrect":false,"initiationS":3}},r=>r.status==="REVIEW_REQUIRED"],
+["zero time",{"pain":false,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":0,"distanceM":10}},r=>r.status==="REVIEW_REQUIRED"],
+["pain",{"pain":true,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.status==="REFER"],
+["unknown safety",{"pain":null,"clinicalConcern":false,"test":{"type":"acceleration","athleteId":"demo","protocol":"demo","surface":"grass","timingMethod":"gates","timeS":2,"distanceM":10}},r=>r.status==="REVIEW_REQUIRED"],
+["null",null,r=>r.status==="REVIEW_REQUIRED"]];
+for(const [name,input,check] of cases)test(name,()=>{const r=evaluateGamespeed(input);if(!check(r)||r.automatedPrescriptionAllowed!==false||r.runtimeActivation!==false)throw Error(name);});

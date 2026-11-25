@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rugby HQ Backline Evaluation",
+  "type": "object",
+  "required": [
+    "playerId",
+    "positionEvaluated",
+    "category",
+    "competency",
+    "score",
+    "evidenceType",
+    "evaluatedAt"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "playerId": {
+      "type": "string"
+    },
+    "playerName": {
+      "type": "string"
+    },
+    "positionEvaluated": {
+      "type": "string",
+      "enum": [
+        "10",
+        "12",
+        "13",
+        "11",
+        "14",
+        "15",
+        "wing"
+      ]
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Defensive IQ",
+        "Tackling in Space",
+        "Attack IQ",
+        "Ball Skills",
+        "Movement & Evasion",
+        "Role-Specific Skill"
+      ]
+    },
+    "competency": {
+      "type": "string"
+    },
+    "score": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 99
+    },
+    "evidenceType": {
+      "type": "string",
+      "enum": [
+        "drill",
+        "controlled_scrimmage",
+        "match",
+        "video_clip",
+        "coach_review"
+      ]
+    },
+    "coachNote": {
+      "type": "string"
+    },
+    "nextAction": {
+      "type": "string"
+    },
+    "clipUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "clipTimestamp": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evaluatorId": {
+      "type": "string"
+    },
+    "evaluatorName": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    },
+    "evaluatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "$id": "https://mufasa.fitness/schemas/rugby/backs-readiness-resource-007/backline-evaluation.schema.json"
+}

@@ -1,0 +1,127 @@
+{
+  "source": "User-supplied Lost retrievable 6, batch 2",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-028",
+      "plain_language_rule": "Body composition refers to the relative contribution of tissues that make up body mass; for performance, fat mass and skeletal muscle are especially relevant.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-029",
+      "plain_language_rule": "Skeletal muscle contributes to force production and can support collision and movement performance.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-030",
+      "plain_language_rule": "Excess fat mass increases the mass that must be moved without directly contributing to force production.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-031",
+      "plain_language_rule": "Excess body fat may negatively affect acceleration, speed, endurance, and repeated work rate.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-032",
+      "plain_language_rule": "Body-composition requirements are position-specific; forwards and backs should not necessarily share identical targets.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-033",
+      "plain_language_rule": "Higher playing levels may combine greater total mass with lower relative fat mass.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-034",
+      "plain_language_rule": "Total body mass must always be interpreted alongside body composition.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-035",
+      "plain_language_rule": "Changes in body composition should be evaluated alongside changes in rugby-relevant performance.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-036",
+      "plain_language_rule": "The goal is optimal functional body composition, not maximum muscle mass or minimum body fat.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-037",
+      "plain_language_rule": "Body-composition targets must account for age, sex, maturation, position, playing level, and health.",
+      "source_module": "Player Profile",
+      "domain": "Body Composition"
+    },
+    {
+      "rule_id": "ACR-038",
+      "plain_language_rule": "Strength is the ability to produce force or resist unwanted movement.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-039",
+      "plain_language_rule": "Strength contributes to a wide range of rugby actions including tackling, scrummaging, mauling, lifting, sprinting, and evasion.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-040",
+      "plain_language_rule": "Strength development should therefore be a central component of rugby physical preparation.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-041",
+      "plain_language_rule": "Strength testing must be interpreted according to the mechanics of the test.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-042",
+      "plain_language_rule": "In bodyweight-plus-load exercises, total system mass may provide more meaningful information than external load alone.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-043",
+      "plain_language_rule": "Both absolute and relative strength can be relevant, depending on the player’s position and performance demands.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-044",
+      "plain_language_rule": "Strength should be assessed across relevant movement categories rather than represented by a single universal test.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-045",
+      "plain_language_rule": "Structured, progressive strength and conditioning pathways can produce meaningful physical-development advantages.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-046",
+      "plain_language_rule": "Development systems should be designed around available resources rather than assuming professional-level facilities are required.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    },
+    {
+      "rule_id": "ACR-047",
+      "plain_language_rule": "The website should track strength longitudinally so progression, plateaus, and regressions can be identified.",
+      "source_module": "Player Profile",
+      "domain": "Strength"
+    }
+  ]
+}

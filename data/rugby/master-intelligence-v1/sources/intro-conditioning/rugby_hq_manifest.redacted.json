@@ -1,0 +1,21 @@
+{
+  "pack_name": "Rugby HQ Resources",
+  "owner_project": "Mufasa Fit",
+  "created_from": "ChatGPT thread harvest: World Rugby Introduction to Conditioning - Adults - Pre-Level 1",
+  "created_on": "2026-11-24",
+  "certificate": {
+    "holder": "[redacted]",
+    "course": "Introduction to Conditioning - Adults - Pre-Level 1 (Online)",
+    "issuer": "World Rugby",
+    "completion_date": "[redacted]",
+    "note": "Awareness certificate; does not accredit holder as a qualified coach, match official or medic."
+  },
+  "primary_entry": "docs/RUGBY_HQ_BOT_HANDOFF.md",
+  "bot_resources": [
+    "data/rugby_hq_knowledge_base.json",
+    "data/rugby_hq_drills.json",
+    "data/rugby_hq_screening_tests.json",
+    "data/rugby_hq_programming_rules.json",
+    "prompts/rugby_hq_bot_system_prompt.md"
+  ]
+}

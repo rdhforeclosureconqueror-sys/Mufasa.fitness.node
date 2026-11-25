@@ -1,0 +1,540 @@
+{
+  "version": "1.0.0",
+  "status": "candidate_registry_not_runtime",
+  "runtime_activation": false,
+  "protocolVersionPolicy": "Null denotes unverified protocol version; registryRevision is not a protocol version.",
+  "contract": "data/rugby/master-intelligence-v1/policies/unified-assessment-contract.json",
+  "protocols": [
+    {
+      "protocolId": "sprint_10m",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "src/rugby/assessmentValidation.js",
+        "key": "sprint_10m",
+        "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+      },
+      "status": "legacy_unverified",
+      "metricDefinitions": [
+        {
+          "metricId": "value",
+          "unit": "seconds"
+        }
+      ],
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "legacyReadable": true,
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "sprint_20m",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "src/rugby/assessmentValidation.js",
+        "key": "sprint_20m",
+        "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+      },
+      "status": "legacy_unverified",
+      "metricDefinitions": [
+        {
+          "metricId": "value",
+          "unit": "seconds"
+        }
+      ],
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "legacyReadable": true,
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "ankle_knee_to_wall",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "src/rugby/assessmentValidation.js",
+        "key": "ankle_knee_to_wall",
+        "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+      },
+      "status": "legacy_unverified",
+      "metricDefinitions": [
+        {
+          "metricId": "value",
+          "unit": "cm"
+        }
+      ],
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "legacyReadable": true,
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "agility_505_left",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "src/rugby/assessmentValidation.js",
+        "key": "agility_505_left",
+        "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+      },
+      "status": "legacy_unverified",
+      "metricDefinitions": [
+        {
+          "metricId": "value",
+          "unit": "seconds"
+        }
+      ],
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "legacyReadable": true,
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "agility_505_right",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "src/rugby/assessmentValidation.js",
+        "key": "agility_505_right",
+        "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+      },
+      "status": "legacy_unverified",
+      "metricDefinitions": [
+        {
+          "metricId": "value",
+          "unit": "seconds"
+        }
+      ],
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "legacyReadable": true,
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "overhead_squat",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "overhead_squat",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "overhead_squat",
+        "name": "Overhead Squat",
+        "purpose": "General movement screen for mobility, stability, and compensation.",
+        "observe": [
+          "squat depth",
+          "arms fall forward",
+          "heels lift",
+          "knees collapse",
+          "torso lean",
+          "hip shift"
+        ],
+        "movenet_metrics": [
+          "hip/knee/ankle angles",
+          "torso angle",
+          "wrist/shoulder position",
+          "left-right asymmetry"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "hands_behind_head_squat",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "hands_behind_head_squat",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "hands_behind_head_squat",
+        "name": "Hands-Behind-Head Squat",
+        "purpose": "Progress overhead squat to determine if compensation may be upper-body related.",
+        "interpretation": "If squat improves with hands behind head, upper body may contribute to overhead restriction."
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "lat_tightness_wall_test",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "lat_tightness_wall_test",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": "Stand against wall in quarter squat, elbows straight, thumbs out, lower back against wall; raise arms overhead.",
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "lat_tightness_wall_test",
+        "name": "Latissimus Dorsi Tightness Test",
+        "purpose": "Check if tight lats contribute to arms falling forward.",
+        "setup": "Stand against wall in quarter squat, elbows straight, thumbs out, lower back against wall; raise arms overhead.",
+        "faults": [
+          "lower back arches",
+          "thumbs cannot touch wall",
+          "elbows bend"
+        ],
+        "correctives": [
+          "lat stretch",
+          "bench lat stretch"
+        ],
+        "movenet_metrics": [
+          "elbow angle",
+          "shoulder flexion",
+          "torso/rib compensation"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "heels_raised_overhead_squat",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "heels_raised_overhead_squat",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "heels_raised_overhead_squat",
+        "name": "Heels-Raised Overhead Squat",
+        "purpose": "Determine whether squat improves when heels are raised, suggesting lower-body restriction.",
+        "interpretation": "Improvement suggests ankle/calf or lower-body mobility limit.",
+        "movenet_metrics": [
+          "depth",
+          "torso angle",
+          "knee track",
+          "hip shift"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "ankle_rom",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "ankle_rom",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": "Tape 4 inches from box; half kneeling; toe at tape; knee touches box without heel rising.",
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "ankle_rom",
+        "name": "Ankle Range of Motion Test",
+        "purpose": "Assess ankle mobility/calf flexibility.",
+        "setup": "Tape 4 inches from box; half kneeling; toe at tape; knee touches box without heel rising.",
+        "faults": [
+          "heel raises",
+          "foot rotates",
+          "knee collapses"
+        ],
+        "correctives": [
+          "calf stretch on step",
+          "foam roll calf"
+        ],
+        "movenet_metrics": [
+          "ankle angle",
+          "knee travel",
+          "heel lift estimate"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": [
+        "ankle_knee_to_wall"
+      ]
+    },
+    {
+      "protocolId": "thomas_test",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "thomas_test",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "thomas_test",
+        "name": "Thomas Test",
+        "purpose": "Assess hip flexor and quadriceps tightness.",
+        "faults": [
+          "tested thigh lifts off table = possible iliopsoas tightness",
+          "knee cannot flex at least 90 degrees = possible quad tightness"
+        ],
+        "correctives": [
+          "lunge position quad stretch",
+          "rear foot elevated quad stretch"
+        ],
+        "movenet_metrics": [
+          "hip angle",
+          "knee angle",
+          "thigh-table angle"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "glute_bridge_leg_extension",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "glute_bridge_leg_extension",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "glute_bridge_leg_extension",
+        "name": "Glute Bridge With Leg Extension",
+        "purpose": "Assess pelvic stability and glute function.",
+        "faults": [
+          "pelvis drops",
+          "support leg shakes",
+          "hamstring cramps",
+          "lower back cramps"
+        ],
+        "correctives": [
+          "clam exercise",
+          "glute foam roll",
+          "glute activation"
+        ],
+        "movenet_metrics": [
+          "hip height",
+          "pelvic tilt",
+          "knee extension",
+          "hold time"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "shoulder_mobility",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "shoulder_mobility",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "shoulder_mobility",
+        "name": "Shoulder Mobility Test",
+        "purpose": "Assess shoulder range and symmetry.",
+        "pass": "Fists within 1.5 hand lengths with no pain.",
+        "faults": [
+          "distance > 1.5 hand lengths",
+          "pain",
+          "torso compensation"
+        ],
+        "correctives": [
+          "shoulder dislocations with stick"
+        ],
+        "movenet_metrics": [
+          "hand distance proxy",
+          "shoulder/elbow position",
+          "trunk lean"
+        ]
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "shoulder_clearance",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/sources/intro-conditioning/rugby_hq_screening_tests.json",
+        "key": "shoulder_clearance",
+        "sha": "2b22a543d570960078e9b1f62afd5bcc6b9ad5ff"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": "Palm on opposite shoulder; lift elbow while maintaining contact.",
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "shoulder_clearance",
+        "name": "Shoulder Clearance Test",
+        "purpose": "Check for pain or possible shoulder impingement sign.",
+        "setup": "Palm on opposite shoulder; lift elbow while maintaining contact.",
+        "referral_trigger": "Pain means refer to physiotherapist/medical professional."
+      },
+      "scoringAllowed": false,
+      "relatedProtocolIds": []
+    },
+    {
+      "protocolId": "hip_rotation",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/policies/movement-assessment-decision-spec.json",
+        "key": "hip_rotation",
+        "sha": "41ac1089a81f3f02ba6462c8c02a2a2747a0999b"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "hip_rotation",
+        "type": "local_rom",
+        "capture": [
+          "left_ir",
+          "right_ir",
+          "left_er",
+          "right_er",
+          "angle_unit",
+          "protocol_version"
+        ]
+      },
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "hamstring_popliteal",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/policies/movement-assessment-decision-spec.json",
+        "key": "hamstring_popliteal",
+        "sha": "41ac1089a81f3f02ba6462c8c02a2a2747a0999b"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "hamstring_popliteal",
+        "type": "local_rom",
+        "capture": [
+          "left_angle",
+          "right_angle",
+          "angle_convention",
+          "pelvic_control",
+          "non_test_leg_control",
+          "protocol_version"
+        ]
+      },
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "tuck_jump",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/policies/movement-assessment-decision-spec.json",
+        "key": "tuck_jump",
+        "sha": "41ac1089a81f3f02ba6462c8c02a2a2747a0999b"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "tuck_jump",
+        "type": "dynamic",
+        "capture": [
+          "individual_faults",
+          "front_side_view",
+          "protocol_version"
+        ],
+        "protocol_status": "verify duration versus repetition convention before scoring"
+      },
+      "scoringAllowed": false
+    },
+    {
+      "protocolId": "ckcuest",
+      "protocolVersion": null,
+      "registryRevision": 1,
+      "sourceRef": {
+        "path": "data/rugby/master-intelligence-v1/policies/movement-assessment-decision-spec.json",
+        "key": "ckcuest",
+        "sha": "41ac1089a81f3f02ba6462c8c02a2a2747a0999b"
+      },
+      "status": "candidate",
+      "metricDefinitions": null,
+      "setup": null,
+      "validityCriteria": null,
+      "safetyReview": "pending",
+      "sourceDefinition": {
+        "id": "ckcuest",
+        "type": "dynamic",
+        "capture": [
+          "three_trial_touches",
+          "duration",
+          "tape_distance",
+          "position",
+          "rest",
+          "protocol_version"
+        ],
+        "protocol_status": "verify course protocol before scoring"
+      },
+      "scoringAllowed": false
+    }
+  ],
+  "guardrails": [
+    "No candidate scoring or automatic prescription",
+    "Legacy records remain readable",
+    "Ankle ROM and knee-to-wall not equivalent until protocol verified",
+    "No new exercise engine"
+  ],
+  "validationPending": [
+    "Authoritative protocol sources",
+    "Metric units and validity criteria",
+    "Safety and permissions",
+    "Production integration tests"
+  ]
+}

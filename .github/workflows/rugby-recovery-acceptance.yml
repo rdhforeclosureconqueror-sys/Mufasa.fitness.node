@@ -1,0 +1,22 @@
+name: Rugby recovery acceptance
+on:
+  pull_request:
+    paths:
+      - 'docs/rugby/master-intelligence-v1/**'
+      - 'data/rugby/**'
+      - '.github/workflows/rugby-recovery-acceptance.yml'
+permissions:
+  contents: read
+jobs:
+  prototype-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute recovered prototype suites
+        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs

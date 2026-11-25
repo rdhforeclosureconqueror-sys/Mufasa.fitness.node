@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "status": "proposed_nonproduction",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "data/rugby/master-intelligence-v1/policies/safety-decision-spec.json",
+      "sha": "eb701582eb6d964bb8143c088ed5e60cf3363f77"
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/exercise-purpose-classification.json",
+      "sha": "4e2eccc53177340437735ee54f793e7817264402"
+    },
+    {
+      "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_seed_data.json",
+      "sha": "2986f635bd49d613676e1d62abd475e5046f3442"
+    }
+  ],
+  "precedence": [
+    "pain_or_clinical_concern",
+    "unknown_safety",
+    "age_and_authorization",
+    "exercise_and_variant_approval",
+    "contact_supervision",
+    "readiness_and_competency",
+    "coach_review"
+  ],
+  "decisions": [
+    "REFER",
+    "HOLD",
+    "REVIEW_REQUIRED",
+    "ELIGIBLE_FOR_COACH_REVIEW"
+  ],
+  "progression": {
+    "automatic": false,
+    "options": [
+      "maintain",
+      "progress",
+      "regress"
+    ],
+    "requires": [
+      "approved_protocol",
+      "valid_quality_evidence",
+      "readiness_review",
+      "coach_approval"
+    ],
+    "thresholds": null
+  },
+  "guardrails": [
+    "Adult source records not authorized for youth",
+    "No medical clearance",
+    "No automatic dose",
+    "No unverified canonical aliases",
+    "Trusted server authorization required"
+  ]
+}

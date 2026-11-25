@@ -1,0 +1,1006 @@
+{
+  "version": 1,
+  "status": "preliminary_classification",
+  "runtime_activation": false,
+  "source": {
+    "path": "data/rugby/master-intelligence-v1/policies/exercise-drill-registry.json",
+    "sha": "1380f07662972c31a08a2c6a734e64bf270aff69"
+  },
+  "entries": [
+    {
+      "name": "Snake Run",
+      "keys": [
+        "activate:AD-MD-A-001",
+        "activate:AD-L1-A-002",
+        "activate:AD-L2-A-002",
+        "activate:AD-L3-A-002",
+        "activate:AD-L4-A-002",
+        "activate:AD-L5-A-002",
+        "activate:AD-L6-A-002",
+        "activate:AD-L7-A-002"
+      ],
+      "sourceCategories": [
+        "running_preparation",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Squat Stand with Twist",
+      "keys": [
+        "activate:AD-MD-B-001",
+        "activate:AD-L2-B-003"
+      ],
+      "sourceCategories": [
+        "mobility_stability",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Heel to Toe Walk with Knee Raise",
+      "keys": [
+        "activate:AD-MD-B-002",
+        "activate:AD-L1-B-004",
+        "activate:AD-L2-B-004",
+        "activate:AD-L3-B-004",
+        "activate:AD-L4-B-004",
+        "activate:AD-L7-B-003"
+      ],
+      "sourceCategories": [
+        "mobility_stability",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Balance with Push to Unbalance",
+      "keys": [
+        "activate:AD-MD-B-003",
+        "activate:AD-L4-B-005"
+      ],
+      "sourceCategories": [
+        "balance_perturbation",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Resisted Arm Side Raise",
+      "keys": [
+        "activate:AD-MD-B-004",
+        "activate:AD-L1-B-006",
+        "activate:AD-L2-B-006",
+        "activate:AD-L3-B-006",
+        "activate:AD-L4-B-006",
+        "activate:AD-L7-B-007"
+      ],
+      "sourceCategories": [
+        "upper_body_resistance",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Resisted Arm Rotation",
+      "keys": [
+        "activate:AD-MD-B-005",
+        "activate:AD-L1-B-007",
+        "activate:AD-L2-B-007",
+        "activate:AD-L3-B-007",
+        "activate:AD-L4-B-007",
+        "activate:AD-L7-B-008"
+      ],
+      "sourceCategories": [
+        "upper_body_resistance",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Arabesque",
+      "keys": [
+        "activate:AD-MD-B-006",
+        "activate:AD-L1-B-008"
+      ],
+      "sourceCategories": [
+        "balance_mobility",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Mountain Climber",
+      "keys": [
+        "activate:AD-MD-C-001",
+        "activate:AD-L1-C-009"
+      ],
+      "sourceCategories": [
+        "resistance_power",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Hop and Stick",
+      "keys": [
+        "activate:AD-MD-C-002",
+        "activate:AD-L1-C-010"
+      ],
+      "sourceCategories": [
+        "landing_balance",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Pop Press Up – Alternate",
+      "keys": [
+        "activate:AD-MD-C-003",
+        "activate:AD-L2-C-011"
+      ],
+      "sourceCategories": [
+        "upper_body_power",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Jogging High Ball Jumps",
+      "keys": [
+        "activate:AD-MD-C-004",
+        "activate:AD-L1-C-012"
+      ],
+      "sourceCategories": [
+        "jump_landing",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Diagonal Shuffle to Lunge",
+      "keys": [
+        "activate:AD-MD-C-005",
+        "activate:AD-L1-C-014"
+      ],
+      "sourceCategories": [
+        "change_of_direction_strength",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Shoulder Workout",
+      "keys": [
+        "activate:AD-MD-C-006",
+        "activate:AD-L1-C-013",
+        "activate:AD-L2-C-014",
+        "activate:AD-L5-B-008",
+        "activate:AD-L6-B-008",
+        "activate:AD-L7-C-014"
+      ],
+      "sourceCategories": [
+        "partner_resistance",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Static Neck Contractions",
+      "keys": [
+        "activate:AD-MD-D-001",
+        "activate:AD-L1-D-015",
+        "activate:AD-L2-D-015",
+        "activate:AD-L3-D-015",
+        "activate:AD-L4-D-015",
+        "activate:AD-L5-D-009",
+        "activate:AD-L6-D-009",
+        "activate:AD-L7-D-015"
+      ],
+      "sourceCategories": [
+        "neck_resistance",
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Small-sided Games",
+      "keys": [
+        "activate:AD-L1-A-001",
+        "activate:AD-L2-A-001",
+        "activate:AD-L3-A-001",
+        "activate:AD-L4-A-001",
+        "activate:AD-L5-A-001",
+        "activate:AD-L6-A-001",
+        "activate:AD-L7-A-001"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "tactical_multiplayer",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Squat Stand",
+      "keys": [
+        "activate:AD-L1-B-003"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Balance Back Slaps",
+      "keys": [
+        "activate:AD-L1-B-005"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Pop Press Up – Wide to Narrow",
+      "keys": [
+        "activate:AD-L1-C-011"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Repeated Sprint Conditioning",
+      "keys": [
+        "activate:AD-L1-D-016",
+        "activate:AD-L2-D-016",
+        "activate:AD-L3-D-016",
+        "activate:AD-L4-D-016",
+        "activate:AD-L5-D-010",
+        "activate:AD-L6-D-010",
+        "activate:AD-L7-D-016"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "repeat_effort",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Balance Arm Circles",
+      "keys": [
+        "activate:AD-L2-B-005"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Bent Hip Nordic Hamstring Curl",
+      "keys": [
+        "activate:AD-L2-B-008"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Partner Resisted Quick Steps",
+      "keys": [
+        "activate:AD-L2-C-009"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Diagonal Hop and Stick",
+      "keys": [
+        "activate:AD-L2-C-010",
+        "activate:AD-L4-C-010"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Jogging High Ball Jump and Turn",
+      "keys": [
+        "activate:AD-L2-C-012"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Partner Mirroring",
+      "keys": [
+        "activate:AD-L2-C-013"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Lunge and Reach",
+      "keys": [
+        "activate:AD-L3-B-003"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Balance with Eyes Closed",
+      "keys": [
+        "activate:AD-L3-B-005"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Static Nordic Hamstring Hold",
+      "keys": [
+        "activate:AD-L3-B-008",
+        "activate:AD-L4-B-008"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Pogo Jumps",
+      "keys": [
+        "activate:AD-L3-C-009"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Double Hop and Stick",
+      "keys": [
+        "activate:AD-L3-C-010"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Pop Press Up – Near to Far",
+      "keys": [
+        "activate:AD-L3-C-011"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Lunge Jumps",
+      "keys": [
+        "activate:AD-L3-C-012"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Shoulder Walkout",
+      "keys": [
+        "activate:AD-L3-C-013",
+        "activate:AD-L4-C-013"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Figure of 8",
+      "keys": [
+        "activate:AD-L3-C-014",
+        "activate:AD-L4-C-014"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Lunge and Side Bend",
+      "keys": [
+        "activate:AD-L4-B-003"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Maximum Height Pogo Jumps",
+      "keys": [
+        "activate:AD-L4-C-009"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Plyo Press Up",
+      "keys": [
+        "activate:AD-L4-C-011"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Bounding",
+      "keys": [
+        "activate:AD-L4-C-012"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Dead Leg Sprint",
+      "keys": [
+        "activate:AD-L5-B-003"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "linear_speed",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Kneeling Drop Catch",
+      "keys": [
+        "activate:AD-L5-B-004"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Triple Hop and Stick",
+      "keys": [
+        "activate:AD-L5-B-005"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Backtrack Pivot and Sprint",
+      "keys": [
+        "activate:AD-L5-B-006"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Alternating Single Leg Bounds",
+      "keys": [
+        "activate:AD-L5-B-007"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Pogo Jumps",
+      "keys": [
+        "activate:AD-L6-B-003",
+        "activate:AD-L7-C-010"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Diagonal Triple Hop and Stick",
+      "keys": [
+        "activate:AD-L6-B-004"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Tuck Jumps",
+      "keys": [
+        "activate:AD-L6-B-005"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Run Set Cut",
+      "keys": [
+        "activate:AD-L6-B-006",
+        "activate:AD-L7-C-011"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Kneeling Drop Catch – Press Up",
+      "keys": [
+        "activate:AD-L6-B-007"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Mountain Climber and Twist",
+      "keys": [
+        "activate:AD-L7-B-004"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Single Leg Balance with Eyes Closed and Push to Unbalance",
+      "keys": [
+        "activate:AD-L7-B-005"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Nordic Hamstring Curl",
+      "keys": [
+        "activate:AD-L7-B-006"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "resistance_preparation",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Hop and Stick with Shallow Squat",
+      "keys": [
+        "activate:AD-L7-C-009"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Kneeling Drop Catch – Plyometric Press Up",
+      "keys": [
+        "activate:AD-L7-C-012"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Weaving Tuck Jumps",
+      "keys": [
+        "activate:AD-L7-C-013"
+      ],
+      "sourceCategories": [
+        "to_classify_from_source"
+      ],
+      "proposedDomain": "power_landing",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Ground Fight Sprint Rotation",
+      "keys": [
+        "intro:ground_fight_sprint_rotation"
+      ],
+      "sourceCategories": [
+        [
+          "GRHITT",
+          "contact_conditioning",
+          "wrestling",
+          "repeated_high_intensity_effort"
+        ]
+      ],
+      "proposedDomain": "contact_conditioning",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Beast Mode 3v2 Transition Game",
+      "keys": [
+        "intro:beast_mode_3v2_transition"
+      ],
+      "sourceCategories": [
+        [
+          "small_sided_game",
+          "fatigue_decision_making",
+          "integrated_conditioning"
+        ]
+      ],
+      "proposedDomain": "tactical_multiplayer",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Sand Acceleration Sprints",
+      "keys": [
+        "intro:sand_acceleration_sprints"
+      ],
+      "sourceCategories": [
+        [
+          "surface_resisted_sprint",
+          "acceleration",
+          "stability"
+        ]
+      ],
+      "proposedDomain": "linear_speed",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Sand Cone Change-of-Direction",
+      "keys": [
+        "intro:sand_cone_cod"
+      ],
+      "sourceCategories": [
+        [
+          "COD",
+          "deceleration",
+          "stability",
+          "conditioning"
+        ]
+      ],
+      "proposedDomain": "change_direction_agility",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Sand Ladder Footwork",
+      "keys": [
+        "intro:sand_ladder"
+      ],
+      "sourceCategories": [
+        [
+          "footwork",
+          "coordination",
+          "ankle_stability",
+          "warmup"
+        ]
+      ],
+      "proposedDomain": "movement_control",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Maul Ball",
+      "keys": [
+        "intro:maul_ball"
+      ],
+      "sourceCategories": [
+        [
+          "rugby_specific_circuit",
+          "contact_conditioning"
+        ]
+      ],
+      "proposedDomain": "contact_conditioning",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Forward Drive",
+      "keys": [
+        "intro:forward_drive"
+      ],
+      "sourceCategories": [
+        [
+          "rugby_specific_circuit",
+          "contact_power"
+        ]
+      ],
+      "proposedDomain": "contact_conditioning",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Get Up",
+      "keys": [
+        "intro:get_up"
+      ],
+      "sourceCategories": [
+        [
+          "rugby_specific_circuit",
+          "ground_recovery",
+          "wrestling"
+        ]
+      ],
+      "proposedDomain": "contact_conditioning",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    },
+    {
+      "name": "Tackle Shuttle",
+      "keys": [
+        "intro:tackle_shuttle"
+      ],
+      "sourceCategories": [
+        [
+          "rugby_specific_circuit",
+          "tackle_conditioning"
+        ]
+      ],
+      "proposedDomain": "contact_conditioning",
+      "classificationBasis": "name and source category; mechanics not verified",
+      "reviewRequired": true,
+      "automaticSelectionAllowed": false
+    }
+  ],
+  "counts": {
+    "change_direction_agility": {
+      "names": 7,
+      "records": 17
+    },
+    "movement_control": {
+      "names": 15,
+      "records": 25
+    },
+    "resistance_preparation": {
+      "names": 7,
+      "records": 30
+    },
+    "power_landing": {
+      "names": 24,
+      "records": 29
+    },
+    "tactical_multiplayer": {
+      "names": 2,
+      "records": 8
+    },
+    "repeat_effort": {
+      "names": 1,
+      "records": 7
+    },
+    "linear_speed": {
+      "names": 2,
+      "records": 2
+    },
+    "contact_conditioning": {
+      "names": 5,
+      "records": 5
+    }
+  },
+  "ruleDomainCandidates": {
+    "contact_conditioning": [
+      "ACR-479–508"
+    ],
+    "tactical_multiplayer": [
+      "ACR-691–714"
+    ],
+    "repeat_effort": [
+      "ACR-479–508"
+    ],
+    "linear_speed": [
+      "ACR-748–769"
+    ],
+    "change_direction_agility": [
+      "ACR-770–780"
+    ],
+    "resistance_preparation": [
+      "ACR-543–690"
+    ],
+    "power_landing": [
+      "ACR-269–299"
+    ],
+    "movement_control": [
+      "ACR-119–166"
+    ]
+  },
+  "limitations": [
+    "Broad rule ranges are review candidates, not verified individual rule links",
+    "Names cannot establish biomechanics, stimulus, intensity or safety",
+    "Figure of 8 and dead leg sprint require source definition",
+    "No automatic dosage or activation"
+  ]
+}

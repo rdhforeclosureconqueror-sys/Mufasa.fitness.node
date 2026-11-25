@@ -1,0 +1,125 @@
+{
+  "note": "Module-level master rules reconstructed from retained thread summary.",
+  "rules": [
+    {
+      "rule_id": "M1-01",
+      "domain": "Player Profile",
+      "rule": "Profile before prescription: create a multidimensional athlete profile before generating training.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-02",
+      "domain": "Player Profile",
+      "rule": "Treat body mass as functional mass relative to role; track it with composition and performance rather than assuming bigger is better.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-03",
+      "domain": "Player Profile",
+      "rule": "Store absolute and relative strength because both can matter in rugby.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-04",
+      "domain": "Player Profile",
+      "rule": "Store power as a distinct quality; power reflects force expressed at velocity.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-05",
+      "domain": "Player Profile",
+      "rule": "Separate acceleration from maximal sprint speed and preserve split/test context.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-06",
+      "domain": "Player Profile",
+      "rule": "Separate aerobic fitness, RSA, and RHIE instead of one generic endurance score.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-07",
+      "domain": "Readiness",
+      "rule": "Readiness is contextual and longitudinal: sleep, fatigue, soreness, stress, mental fatigue, mood, fueling and hydration inform but do not diagnose.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-08",
+      "domain": "Readiness",
+      "rule": "Treat social-media/cognitive-load information as optional context, never surveillance.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-09",
+      "domain": "Nutrition",
+      "rule": "Individualize nutrition; use food-first practice, carb periodization where useful, and anti-doping/supplement-contamination safeguards. Do not hard-code a 45-minute anabolic window.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M1-10",
+      "domain": "Privacy",
+      "rule": "Use privacy-by-design, especially for minors and sensitive health information.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-01",
+      "domain": "Movement Screening",
+      "rule": "Distinguish global movement screens, local joint ROM, and dynamic control under speed/load/repetition.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-02",
+      "domain": "Movement Screening",
+      "rule": "Screening produces observations and hypotheses, not medical diagnosis.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-03",
+      "domain": "Movement Screening",
+      "rule": "Pain is a hard gate: stop the automated corrective pathway and refer appropriately.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-04",
+      "domain": "Movement Screening",
+      "rule": "Store protocol, side, result, units, pain, asymmetry, date, assessor, intervention and retest date.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-05",
+      "domain": "Movement Vision",
+      "rule": "Standardize camera position, height, distance, athlete orientation, landmarks, repetition/frame, surface and footwear.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-06",
+      "domain": "Movement Vision",
+      "rule": "Store vision-derived measures with confidence and image-quality flags.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-07",
+      "domain": "Movement Screening",
+      "rule": "Use 'possible contributor', 'suggests', 'may contribute' and 'consistent with'; do not assert unmeasured causal muscle diagnoses.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-08",
+      "domain": "Evidence",
+      "rule": "Repeated consistent findings increase hypothesis confidence; conflicting findings reduce it.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-09",
+      "domain": "Movement Screening",
+      "rule": "Treat 'overactive/underactive' labels as hypotheses only; video observes movement, not muscle activation.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    },
+    {
+      "rule_id": "M2-10",
+      "domain": "Movement Screening",
+      "rule": "Match intervention to the identified limitation; stretching alone does not solve strength/control deficits.",
+      "reconstruction_status": "RECONSTRUCTED_FROM_RETAINED_CONTEXT"
+    }
+  ]
+}

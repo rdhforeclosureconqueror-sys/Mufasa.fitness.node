@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+# Run from the root of your Mufasa Fit Node repo.
+# Example: bash rugby_hq_resource_pack/scripts/install_into_repo.sh
+
+mkdir -p ./docs/rugby-hq
+mkdir -p ./src/rugby-hq/data
+mkdir -p ./src/rugby-hq/prompts
+mkdir -p ./src/rugby-hq/schemas
+
+cp -R rugby_hq_resource_pack/docs/* ./docs/rugby-hq/
+cp -R rugby_hq_resource_pack/data/* ./src/rugby-hq/data/
+cp -R rugby_hq_resource_pack/prompts/* ./src/rugby-hq/prompts/
+cp -R rugby_hq_resource_pack/schemas/* ./src/rugby-hq/schemas/
+cp rugby_hq_resource_pack/src/rugby-hq/index.js ./src/rugby-hq/index.js
+
+echo "Rugby HQ resources installed."

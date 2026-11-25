@@ -1,0 +1,288 @@
+{
+  "scope": "Preserve both versions; do not select canonical meaning or overwrite IDs",
+  "records": [
+    {
+      "id": "M1-01",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 0,
+        "wording": "Profile before prescription: create a multidimensional athlete profile before generating training."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Profile before prescription."
+      },
+      "status": "aligned_summary",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-02",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 1,
+        "wording": "Treat body mass as functional mass relative to role; track it with composition and performance rather than assuming bigger is better."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Rugby performance depends on multiple physical qualities, not one fitness quality."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-03",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 2,
+        "wording": "Store absolute and relative strength because both can matter in rugby."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Physical requirements vary by position and playing level."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-04",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 3,
+        "wording": "Store power as a distinct quality; power reflects force expressed at velocity."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Training should target gaps between the player’s current profile and required profile."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-05",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 4,
+        "wording": "Separate acceleration from maximal sprint speed and preserve split/test context."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Bigger, stronger, or leaner is not automatically better; physical development must remain functional."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-06",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 5,
+        "wording": "Separate aerobic fitness, RSA, and RHIE instead of one generic endurance score."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Strength, power, speed, and endurance must be assessed separately even though they interact."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-07",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 6,
+        "wording": "Readiness is contextual and longitudinal: sleep, fatigue, soreness, stress, mental fatigue, mood, fueling and hydration inform but do not diagnose."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Training decisions should consider both team requirements and individual requirements."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-08",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 7,
+        "wording": "Treat social-media/cognitive-load information as optional context, never surveillance."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Lifestyle factors influence readiness, recovery, and adaptation."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-09",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 8,
+        "wording": "Individualize nutrition; use food-first practice, carb periodization where useful, and anti-doping/supplement-contamination safeguards. Do not hard-code a 45-minute anabolic window."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Lifestyle monitoring should guide conversation and coaching decisions, not diagnose or judge the athlete."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M1-10",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 9,
+        "wording": "Use privacy-by-design, especially for minors and sensitive health information."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "plain_language_rule": "Nutrition, recovery, and conditioning should all be individualized where practical."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-01",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 10,
+        "wording": "Distinguish global movement screens, local joint ROM, and dynamic control under speed/load/repetition."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Screening should progress from broad observation toward more specific testing."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-02",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 11,
+        "wording": "Screening produces observations and hypotheses, not medical diagnosis."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "ROM tests provide local joint-level information."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-03",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 12,
+        "wording": "Pain is a hard gate: stop the automated corrective pathway and refer appropriately."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Dynamic tests show how the athlete controls movement under more demanding conditions."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-04",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 13,
+        "wording": "Store protocol, side, result, units, pain, asymmetry, date, assessor, intervention and retest date."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "A movement finding generates hypotheses; it does not prove a muscular cause."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-05",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 14,
+        "wording": "Standardize camera position, height, distance, athlete orientation, landmarks, repetition/frame, surface and footwear."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Repeated findings across different assessments strengthen a working hypothesis."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-06",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 15,
+        "wording": "Store vision-derived measures with confidence and image-quality flags."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Secondary isolation tests should be used to confirm or challenge suspected contributors."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-07",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 16,
+        "wording": "Use 'possible contributor', 'suggests', 'may contribute' and 'consistent with'; do not assert unmeasured causal muscle diagnoses."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Corrective interventions should match the actual limitation: mobility, strength, stability/control, or technique."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-08",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 17,
+        "wording": "Repeated consistent findings increase hypothesis confidence; conflicting findings reduce it."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Pain changes the pathway from coaching/correction to medical review."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-09",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 18,
+        "wording": "Treat 'overactive/underactive' labels as hypotheses only; video observes movement, not muscle activation."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "Every assessment must be standardized enough to allow reliable longitudinal comparison."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    },
+    {
+      "id": "M2-10",
+      "archive": {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/master-rules.json",
+        "index": 19,
+        "wording": "Match intervention to the identified limitation; stretching alone does not solve strength/control deficits."
+      },
+      "variant": {
+        "source_path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "plain_language_rule": "The original test should be repeated after intervention to verify whether the athlete actually improved."
+      },
+      "status": "identifier_semantics_diverge_review_required",
+      "runtime_activation": false
+    }
+  ],
+  "aligned": 1,
+  "divergent": 19,
+  "runtime_activation": false
+}

@@ -1,0 +1,1330 @@
+{
+  "resource_id": "RUGBY-HQ-RESOURCE-ACTIVATE-BEAST-MODE-2026-11-24",
+  "activate8_cues": [
+    {
+      "id": "ACT8-01",
+      "name": "Head neutral / lifted",
+      "plain_language": "Look to the horizon",
+      "domain": "head_neck_posture"
+    },
+    {
+      "id": "ACT8-02",
+      "name": "Chest up",
+      "plain_language": "Chest to the sky",
+      "domain": "torso_posture"
+    },
+    {
+      "id": "ACT8-03",
+      "name": "Pinch shoulders together",
+      "plain_language": "Pinch shoulder blades together",
+      "domain": "shoulder_position"
+    },
+    {
+      "id": "ACT8-04",
+      "name": "Shoulders level with hips",
+      "plain_language": "Tabletop",
+      "domain": "trunk_alignment"
+    },
+    {
+      "id": "ACT8-05",
+      "name": "Brace through the trunk",
+      "plain_language": "Tree trunk",
+      "domain": "trunk_stiffness"
+    },
+    {
+      "id": "ACT8-06",
+      "name": "Soft knees",
+      "plain_language": "Land like a Ninja",
+      "domain": "landing_absorption"
+    },
+    {
+      "id": "ACT8-07",
+      "name": "Hip, knee, ankle in line",
+      "plain_language": "Keep lower limb chain aligned",
+      "domain": "lower_limb_alignment"
+    },
+    {
+      "id": "ACT8-08",
+      "name": "Knee over toes",
+      "plain_language": "Keep knee in line with toes",
+      "domain": "knee_tracking"
+    }
+  ],
+  "adult_parts": [
+    {
+      "code": "A",
+      "adult_focus": "Running-based preparation and change of direction",
+      "purpose": "Warm body, rehearse running mechanics, coordination and trunk/lower-limb control."
+    },
+    {
+      "code": "B",
+      "adult_focus": "Mobility, resistance and static balance training",
+      "purpose": "Develop strength, stability and mobility across the body."
+    },
+    {
+      "code": "C",
+      "adult_focus": "Resistance, dynamic balance, change of direction and plyometric training",
+      "purpose": "Develop strength, mobility, trunk/lower-limb control and power."
+    },
+    {
+      "code": "D",
+      "adult_focus": "Neck resistance training and sprint conditioning",
+      "purpose": "Improve neck function and anaerobic/repeated sprint conditioning."
+    }
+  ],
+  "beast_mode_stages": [
+    {
+      "id": "BM-01",
+      "name": "Functional Stability",
+      "definition": "Athlete can hold clean positions and perform basic movement patterns with control.",
+      "gate": "Own basic position before speed, load or chaos."
+    },
+    {
+      "id": "BM-02",
+      "name": "Maximum Stability",
+      "definition": "Athlete can maintain clean positions under perturbation, instability, fatigue or contact-like challenge.",
+      "gate": "Stay organized when stability is challenged."
+    },
+    {
+      "id": "BM-03",
+      "name": "Strength Stabilization",
+      "definition": "Athlete can produce force while maintaining alignment and control.",
+      "gate": "Be strong without losing shape."
+    },
+    {
+      "id": "BM-04",
+      "name": "Maximum Strength",
+      "definition": "Athlete can produce high force without losing structure.",
+      "gate": "High force with clean mechanics."
+    },
+    {
+      "id": "BM-05",
+      "name": "Power",
+      "definition": "Athlete can produce force quickly.",
+      "gate": "Fast force without losing Activate standards."
+    },
+    {
+      "id": "BM-06",
+      "name": "Maximum Power",
+      "definition": "Athlete can repeatedly produce explosive outputs while preserving movement quality.",
+      "gate": "Repeat explosive outputs with quality."
+    },
+    {
+      "id": "BM-07",
+      "name": "Beast Mode",
+      "definition": "Repeated controlled violence with clean mechanics under fatigue, chaos, instability and contact-like demands.",
+      "gate": "High rugby power repeatedly without posture, balance, alignment or decision-making breakdown."
+    }
+  ],
+  "quality_scores": {
+    "scale": [
+      {
+        "value": 1,
+        "label": "poor / unsafe"
+      },
+      {
+        "value": 2,
+        "label": "inconsistent / needs regression"
+      },
+      {
+        "value": 3,
+        "label": "acceptable but not ready to progress"
+      },
+      {
+        "value": 4,
+        "label": "good / progression-ready standard"
+      },
+      {
+        "value": 5,
+        "label": "excellent / advanced standard"
+      }
+    ],
+    "fields": [
+      "control",
+      "balance",
+      "technique",
+      "trunk_stability",
+      "lower_limb_alignment",
+      "landing_quality",
+      "change_of_direction_quality",
+      "neck_control",
+      "fatigue_breakdown"
+    ]
+  },
+  "progression_statuses": [
+    "Not assessed",
+    "Learning",
+    "Needs regression",
+    "Hold current level",
+    "Ready with reduced volume",
+    "Ready to progress",
+    "Advanced",
+    "Beast Mode candidate"
+  ],
+  "adult_exercise_registry": [
+    {
+      "id": "AD-MD-A-001",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "A",
+      "name": "Snake Run",
+      "category": "running_preparation",
+      "sets": 1,
+      "reps": "3",
+      "distance_meters": 15,
+      "duration_seconds": null,
+      "intensity_percent": 50,
+      "source_basis": "Adult cue cards p4-5"
+    },
+    {
+      "id": "AD-MD-B-001",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "B",
+      "name": "Squat Stand with Twist",
+      "category": "mobility_stability",
+      "sets": 1,
+      "reps": "12",
+      "source_basis": "Adult cue cards p4"
+    },
+    {
+      "id": "AD-MD-B-002",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "B",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "category": "mobility_stability",
+      "sets": 1,
+      "reps": "2",
+      "distance_meters": 15,
+      "source_basis": "Adult cue cards p4"
+    },
+    {
+      "id": "AD-MD-B-003",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "B",
+      "name": "Single Leg Balance with Push to Unbalance",
+      "category": "balance_perturbation",
+      "sets": 1,
+      "reps": "1 each leg",
+      "duration_seconds": 30,
+      "source_basis": "Adult cue cards p4"
+    },
+    {
+      "id": "AD-MD-B-004",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "B",
+      "name": "Resisted Arm Side Raise",
+      "category": "upper_body_resistance",
+      "sets": 1,
+      "reps": "2 each player",
+      "duration_seconds": 15,
+      "source_basis": "Adult cue cards p4"
+    },
+    {
+      "id": "AD-MD-B-005",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "B",
+      "name": "Resisted Arm Rotation",
+      "category": "upper_body_resistance",
+      "sets": 1,
+      "reps": "2 each player",
+      "duration_seconds": 15,
+      "source_basis": "Adult cue cards p4"
+    },
+    {
+      "id": "AD-MD-B-006",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "B",
+      "name": "Single Leg Arabesque",
+      "category": "balance_mobility",
+      "sets": 1,
+      "reps": "10 each leg",
+      "source_basis": "Adult cue cards p4"
+    },
+    {
+      "id": "AD-MD-C-001",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "C",
+      "name": "Mountain Climber",
+      "category": "resistance_power",
+      "sets": 6,
+      "reps": "5",
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-MD-C-002",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "C",
+      "name": "Forward Hop and Stick",
+      "category": "landing_balance",
+      "sets": 1,
+      "reps": "8 each leg",
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-MD-C-003",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "C",
+      "name": "Pop Press Up \u2013 Alternate",
+      "category": "upper_body_power",
+      "sets": 1,
+      "reps": "15",
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-MD-C-004",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "C",
+      "name": "Jogging High Ball Jumps",
+      "category": "jump_landing",
+      "sets": 2,
+      "reps": "5",
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-MD-C-005",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "C",
+      "name": "Diagonal Shuffle to Lunge",
+      "category": "change_of_direction_strength",
+      "sets": 2,
+      "reps": "5",
+      "intensity_percent": 50,
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-MD-C-006",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "C",
+      "name": "Shoulder Workout",
+      "category": "partner_resistance",
+      "sets": 2,
+      "reps": "1",
+      "duration_seconds": 15,
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-MD-D-001",
+      "programme": "adult_match_day",
+      "level": "match_day",
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "neck_resistance",
+      "sets": 1,
+      "reps": "1 each direction",
+      "duration_seconds": 15,
+      "source_basis": "Adult cue cards p5"
+    },
+    {
+      "id": "AD-L1-A-001",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-A-002",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-B-003",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "B",
+      "name": "Squat Stand",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-B-004",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "B",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-B-005",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "B",
+      "name": "Single Leg Balance Back Slaps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-B-006",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "B",
+      "name": "Resisted Arm Side Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-B-007",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "B",
+      "name": "Resisted Arm Rotation",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-B-008",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "B",
+      "name": "Single Leg Arabesque",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-C-009",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "C",
+      "name": "Mountain Climber",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-C-010",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "C",
+      "name": "Forward Hop and Stick",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-C-011",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "C",
+      "name": "Pop Press Up \u2013 Wide to Narrow",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-C-012",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "C",
+      "name": "Jogging High Ball Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-C-013",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "C",
+      "name": "Shoulder Workout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-C-014",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "C",
+      "name": "Diagonal Shuffle to Lunge",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-D-015",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L1-D-016",
+      "programme": "adult_training",
+      "level": 1,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 1; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-A-001",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-A-002",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-B-003",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "B",
+      "name": "Squat Stand with Twist",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-B-004",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "B",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-B-005",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "B",
+      "name": "Single Leg Balance Arm Circles",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-B-006",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "B",
+      "name": "Resisted Arm Side Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-B-007",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "B",
+      "name": "Resisted Arm Rotation",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-B-008",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "B",
+      "name": "Bent Hip Nordic Hamstring Curl",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-C-009",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "C",
+      "name": "Partner Resisted Quick Steps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-C-010",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "C",
+      "name": "Diagonal Hop and Stick",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-C-011",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "C",
+      "name": "Pop Press Up \u2013 Alternate",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-C-012",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "C",
+      "name": "Jogging High Ball Jump and Turn",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-C-013",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "C",
+      "name": "Partner Mirroring",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-C-014",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "C",
+      "name": "Shoulder Workout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-D-015",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L2-D-016",
+      "programme": "adult_training",
+      "level": 2,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 2; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-A-001",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-A-002",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-B-003",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "B",
+      "name": "Forward Lunge and Reach",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-B-004",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "B",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-B-005",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "B",
+      "name": "Single Leg Balance with Eyes Closed",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-B-006",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "B",
+      "name": "Resisted Arm Side Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-B-007",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "B",
+      "name": "Resisted Arm Rotation",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-B-008",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "B",
+      "name": "Static Nordic Hamstring Hold",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-C-009",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "C",
+      "name": "Forward Pogo Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-C-010",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "C",
+      "name": "Forward Double Hop and Stick",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-C-011",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "C",
+      "name": "Pop Press Up \u2013 Near to Far",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-C-012",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "C",
+      "name": "Forward Lunge Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-C-013",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "C",
+      "name": "Shoulder Walkout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-C-014",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "C",
+      "name": "Figure of 8",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-D-015",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L3-D-016",
+      "programme": "adult_training",
+      "level": 3,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 3; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-A-001",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-A-002",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-B-003",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "B",
+      "name": "Forward Lunge and Side Bend",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-B-004",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "B",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-B-005",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "B",
+      "name": "Single Leg Balance with Push to Unbalance",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-B-006",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "B",
+      "name": "Resisted Arm Side Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-B-007",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "B",
+      "name": "Resisted Arm Rotation",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-B-008",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "B",
+      "name": "Static Nordic Hamstring Hold",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-C-009",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "C",
+      "name": "Maximum Height Pogo Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-C-010",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "C",
+      "name": "Diagonal Hop and Stick",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-C-011",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "C",
+      "name": "Plyo Press Up",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-C-012",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "C",
+      "name": "Forward Bounding",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-C-013",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "C",
+      "name": "Shoulder Walkout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-C-014",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "C",
+      "name": "Figure of 8",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-D-015",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L4-D-016",
+      "programme": "adult_training",
+      "level": 4,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 4; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-A-001",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-A-002",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-B-003",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "B",
+      "name": "Dead Leg Sprint",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-B-004",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "B",
+      "name": "Kneeling Drop Catch",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-B-005",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "B",
+      "name": "Forward Triple Hop and Stick",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-B-006",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "B",
+      "name": "Backtrack Pivot and Sprint",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-B-007",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "B",
+      "name": "Alternating Single Leg Bounds",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-B-008",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "B",
+      "name": "Shoulder Workout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-D-009",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L5-D-010",
+      "programme": "adult_training",
+      "level": 5,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 5; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-A-001",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-A-002",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-B-003",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "B",
+      "name": "Single Leg Pogo Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-B-004",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "B",
+      "name": "Diagonal Triple Hop and Stick",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-B-005",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "B",
+      "name": "Forward Tuck Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-B-006",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "B",
+      "name": "Run Set Cut",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-B-007",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "B",
+      "name": "Kneeling Drop Catch \u2013 Press Up",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-B-008",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "B",
+      "name": "Shoulder Workout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-D-009",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L6-D-010",
+      "programme": "adult_training",
+      "level": 6,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 6; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-A-001",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "A",
+      "name": "Small-sided Games",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-A-002",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "A",
+      "name": "Snake Run",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-B-003",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "B",
+      "name": "Heel to Toe Walk with Knee Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-B-004",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "B",
+      "name": "Mountain Climber and Twist",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-B-005",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "B",
+      "name": "Single Leg Balance with Eyes Closed and Push to Unbalance",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-B-006",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "B",
+      "name": "Nordic Hamstring Curl",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-B-007",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "B",
+      "name": "Resisted Arm Side Raise",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-B-008",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "B",
+      "name": "Resisted Arm Rotation",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-C-009",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "C",
+      "name": "Forward Hop and Stick with Shallow Squat",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-C-010",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "C",
+      "name": "Single Leg Pogo Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-C-011",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "C",
+      "name": "Run Set Cut",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-C-012",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "C",
+      "name": "Kneeling Drop Catch \u2013 Plyometric Press Up",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-C-013",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "C",
+      "name": "Weaving Tuck Jumps",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-C-014",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "C",
+      "name": "Shoulder Workout",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-D-015",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "D",
+      "name": "Static Neck Contractions",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    },
+    {
+      "id": "AD-L7-D-016",
+      "programme": "adult_training",
+      "level": 7,
+      "part": "D",
+      "name": "Repeated Sprint Conditioning",
+      "category": "to_classify_from_source",
+      "source_basis": "Adult cue cards level 7; verify exact dose before using in production",
+      "redistribution_note": "Name and classification only; do not republish official cue-card instructions without permission."
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Rugby HQ Athlete State",
+  "type": "object",
+  "required": [
+    "athlete_id",
+    "as_of",
+    "qualities",
+    "availability"
+  ],
+  "properties": {
+    "athlete_id": {
+      "type": "string"
+    },
+    "as_of": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "availability": {
+      "enum": [
+        "game_eligible",
+        "limited",
+        "medical_hold",
+        "unknown"
+      ]
+    },
+    "phase": {
+      "type": "string"
+    },
+    "next_match": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "qualities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "quality",
+          "state",
+          "confidence"
+        ],
+        "properties": {
+          "quality": {
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "DEVELOP",
+              "MAINTAIN",
+              "RESTORE",
+              "DE-EMPHASIZE"
+            ]
+          },
+          "current": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          },
+          "trend": {
+            "enum": [
+              "improving",
+              "stable",
+              "declining",
+              "unknown"
+            ]
+          },
+          "demand_relevance": {
+            "enum": [
+              "low",
+              "moderate",
+              "high",
+              "very_high"
+            ]
+          },
+          "confidence": {
+            "enum": [
+              "low",
+              "moderate",
+              "moderate_high",
+              "high"
+            ]
+          },
+          "last_valid_assessment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "evidence_rule_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

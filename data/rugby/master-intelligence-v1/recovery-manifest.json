@@ -1,0 +1,1541 @@
+{
+  "version": "1.0.0",
+  "status": "partial_source_transfer",
+  "runtime_activation": false,
+  "source_of_truth": "Mufasa.fitness.node",
+  "archives": [
+    {
+      "name": "Rugby_HQ_Resources_DropIn.zip",
+      "entries": 41,
+      "json_files": 20,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "Pocket_PT_Rugby_Coaching_OS_with_Rugby_HQ_Resources.zip",
+      "entries": 65,
+      "json_files": 23,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
+      "entries": 18,
+      "json_files": 5,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "rugby_hq_activate_harvest.zip",
+      "entries": 8,
+      "json_files": 1,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "mufasa-fit-rugby-hq-resources.zip",
+      "entries": 33,
+      "json_files": 5,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "rugby_hq_resource_pack.zip",
+      "entries": 13,
+      "json_files": 6,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    },
+    {
+      "name": "rugby-hq-resource-007-transfer-package.zip",
+      "entries": 23,
+      "json_files": 9,
+      "integrity": "passed",
+      "json_parse": "passed",
+      "repository_transfer": "pending"
+    }
+  ],
+  "acr": {
+    "expected": 780,
+    "recovered": 614,
+    "missing": 166,
+    "additional_master_rules": 20,
+    "recovered_ranges": [
+      [
+        153,
+        236
+      ],
+      [
+        251,
+        780
+      ]
+    ],
+    "missing_ranges": [
+      [
+        1,
+        152
+      ],
+      [
+        237,
+        250
+      ]
+    ],
+    "classification": "conversation_reconstructed_not_independently_verified",
+    "activation": "blocked_pending_review",
+    "source_transfer": {
+      "status": "branch_readback_verified",
+      "files": [
+        "sources/acr/acr-recoverable-153-780.json",
+        "sources/acr/coverage-manifest.json"
+      ],
+      "checks": {
+        "unique_ids": true,
+        "expected_ranges": true,
+        "coverage_ids": true,
+        "required_fields": true,
+        "provenance": true
+      }
+    },
+    "master_rules_transfer": {
+      "status": "branch_readback_verified",
+      "count": 20,
+      "path": "sources/acr/master-rules.json"
+    },
+    "supporting_sources": {
+      "status": "branch_readback_verified",
+      "files": [
+        "sources/acr/schemas/athlete-state.schema.json",
+        "sources/acr/schemas/recommendation.schema.json",
+        "sources/acr/benchmarks/gym-course-guides.json",
+        "sources/acr/benchmarks/peak-passages.json",
+        "sources/acr/benchmarks/conditioning-templates.json",
+        "sources/acr/benchmarks/u20-game-demands.json"
+      ],
+      "knowledge_documents_pending": 12
+    }
+  },
+  "deduplication": {
+    "drop_in_shared_files": 41,
+    "byte_identical": 41,
+    "other_overlaps": "pending"
+  },
+  "resource_04": {
+    "candidate": "rugby_hq_resource_pack.zip",
+    "course": "Introduction to Conditioning - Adults - Pre-Level 1",
+    "identity": "unconfirmed"
+  },
+  "guardrails": [
+    "Preserve source IDs, provenance and original payloads",
+    "Do not activate reconstructed rules before evidence and safety review",
+    "Do not create a competing scoring engine",
+    "Do not import prototype app scaffolding or execute archive installers",
+    "Resolve conflicts explicitly; do not silently overwrite existing resources"
+  ],
+  "next": [
+    "Audit existing repository resource paths",
+    "Transfer original knowledge payloads without overwrites",
+    "Validate unique rule IDs, schema, provenance and semantic conflicts",
+    "Review and merge preservation-only changes before runtime integration"
+  ],
+  "archive_fidelity_audit": {
+    "algorithm": "git blob SHA-1",
+    "results": [
+      {
+        "path": "sources/acr/acr-recoverable-153-780.json",
+        "expected": "0f2fffb109c63e2173c596584b719fad6455792c",
+        "actual": "0f2fffb109c63e2173c596584b719fad6455792c",
+        "match": true
+      },
+      {
+        "path": "sources/acr/coverage-manifest.json",
+        "expected": "aa1dacd1bb411817311899d517c0de38ed5ea1da",
+        "actual": "aa1dacd1bb411817311899d517c0de38ed5ea1da",
+        "match": true
+      },
+      {
+        "path": "sources/acr/master-rules.json",
+        "expected": "13cc0acc27049738e133952036907eee583ea1bc",
+        "actual": "13cc0acc27049738e133952036907eee583ea1bc",
+        "match": true
+      },
+      {
+        "path": "sources/acr/schemas/athlete-state.schema.json",
+        "expected": "555b3b2c41256ed2d87aea23c72ca01accaa27bd",
+        "actual": "555b3b2c41256ed2d87aea23c72ca01accaa27bd",
+        "match": true
+      },
+      {
+        "path": "sources/acr/schemas/recommendation.schema.json",
+        "expected": "e5930ea18742c572e961108bf1078c690065b261",
+        "actual": "e5930ea18742c572e961108bf1078c690065b261",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/gym-course-guides.json",
+        "expected": "389a4577d2b2f18b9f5b2aa20b696e0065bda104",
+        "actual": "389a4577d2b2f18b9f5b2aa20b696e0065bda104",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/peak-passages.json",
+        "expected": "ad65f06ce2abb8ac8380f41bd6f21ae9706b0ebb",
+        "actual": "ad65f06ce2abb8ac8380f41bd6f21ae9706b0ebb",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/conditioning-templates.json",
+        "expected": "eeabf5633d0da3aafc27c2bdd42d18704318f81e",
+        "actual": "eeabf5633d0da3aafc27c2bdd42d18704318f81e",
+        "match": true
+      },
+      {
+        "path": "sources/acr/benchmarks/u20-game-demands.json",
+        "expected": "fddfcead404c43f16c3655c6d797cd40c6a64904",
+        "actual": "fddfcead404c43f16c3655c6d797cd40c6a64904",
+        "match": true
+      }
+    ],
+    "activation_blocked": true
+  },
+  "incremental_recovery": {
+    "batches": [
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-001-027.json",
+        "count": 27,
+        "range": "ACR-001–027",
+        "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-028-047.json",
+        "count": 20,
+        "range": "ACR-028–047",
+        "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-048-077.json",
+        "count": 30,
+        "range": "ACR-048–077",
+        "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-078-100.json",
+        "count": 23,
+        "range": "ACR-078–100",
+        "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-101-118.json",
+        "count": 18,
+        "range": "ACR-101–118",
+        "readback_verified": true,
+        "master_rule_source_variants": 10
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-119-142.json",
+        "count": 24,
+        "range": "ACR-119–142",
+        "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-143-152.json",
+        "count": 10,
+        "range": "ACR-143–152",
+        "readback_verified": true
+      },
+      {
+        "path": "data/rugby/master-intelligence-v1/sources/acr/recovered-batches/acr-237-250.json",
+        "count": 14,
+        "range": "ACR-237–250",
+        "readback_verified": true,
+        "master_rule_source_variants": 10
+      }
+    ],
+    "total_recovered_identifiers": 780,
+    "remaining": 0,
+    "missing_ranges": [],
+    "original_coverage_manifest_preserved": true,
+    "supporting_narrative_transfer_pending": true,
+    "identifier_coverage_complete": true
+  },
+  "registry_index": {
+    "path": "data/rugby/master-intelligence-v1/registry-index.json",
+    "readback_verified": true,
+    "acr_count": 780,
+    "master_count": 20,
+    "structured_normalization_pending": 166,
+    "runtime_activation": false
+  },
+  "normalization": {
+    "path": "data/rugby/master-intelligence-v1/normalized/recovered-acr-166.json",
+    "count": 166,
+    "readback_verified": true,
+    "status": "field_alignment_complete_semantic_review_pending",
+    "runtime_activation": false
+  },
+  "safety_decision_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/safety-decision-spec.json",
+    "readback_verified": true,
+    "policy_count": 8,
+    "source_rule_count": 22,
+    "test_vector_count": 12,
+    "status": "review_pending_not_executed",
+    "runtime_activation": false
+  },
+  "safety_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/safety-evaluator.cjs",
+    "tested_blob_sha": "c9e8f9d648046ef4ecef732ba4943fc2f878f945",
+    "node_version": "22.16.0",
+    "local_equivalent_cases_passed": 22,
+    "local_equivalent_cases_total": 22,
+    "repository_test_runner_execution": "pending",
+    "defect_fixed": "null and non-object input handling",
+    "runtime_activation": false
+  },
+  "player_profile_decision_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/player-profile-decision-spec.json",
+    "readback_verified": true,
+    "source_rule_count": 77,
+    "domains": 7,
+    "status": "proposed_review_required",
+    "runtime_activation": false
+  },
+  "player_profile_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/player-profile-evaluator.cjs",
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "missing",
+        "pass": true
+      },
+      {
+        "name": "referral",
+        "pass": true
+      },
+      {
+        "name": "hold",
+        "pass": true
+      },
+      {
+        "name": "format mismatch",
+        "pass": true
+      },
+      {
+        "name": "protocol mismatch",
+        "pass": true
+      },
+      {
+        "name": "unreviewed",
+        "pass": true
+      },
+      {
+        "name": "no coach priority",
+        "pass": true
+      },
+      {
+        "name": "invalid value",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      },
+      {
+        "name": "trend",
+        "pass": true
+      },
+      {
+        "name": "incompatible trend",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false
+  },
+  "programme_management_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/programme-management-decision-spec.json",
+    "readback_verified": true,
+    "source_rule_count": 14,
+    "status": "proposed_review_required",
+    "runtime_activation": false
+  },
+  "roadmap": {
+    "path": "docs/rugby/master-intelligence-v1/ROADMAP.md",
+    "readback_verified": true,
+    "maintenance": "Update checklist and manifest with every milestone; require acceptance evidence."
+  },
+  "programme_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/programme-evaluator.cjs",
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "orphan",
+        "pass": true
+      },
+      {
+        "name": "missing objective",
+        "pass": true
+      },
+      {
+        "name": "missing actual",
+        "pass": true
+      },
+      {
+        "name": "unit mismatch",
+        "pass": true
+      },
+      {
+        "name": "calendar change",
+        "pass": true
+      },
+      {
+        "name": "referral",
+        "pass": true
+      },
+      {
+        "name": "modified approved",
+        "pass": true
+      },
+      {
+        "name": "modified unapproved",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "zero actual",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": "In-memory nonmutation only; persistent plan immutability and trusted safety integration pending."
+  },
+  "movement_assessment_spec": {
+    "path": "data/rugby/master-intelligence-v1/policies/movement-assessment-decision-spec.json",
+    "readback_verified": true,
+    "source_rule_count": 72,
+    "assessment_count": 4,
+    "status": "review_required",
+    "runtime_activation": false
+  },
+  "movement_evaluator": {
+    "path": "docs/rugby/master-intelligence-v1/prototypes/movement-evaluator.cjs",
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "pain",
+        "pass": true
+      },
+      {
+        "name": "concern",
+        "pass": true
+      },
+      {
+        "name": "unknown pain",
+        "pass": true
+      },
+      {
+        "name": "invalid technique",
+        "pass": true
+      },
+      {
+        "name": "unverified protocol",
+        "pass": true
+      },
+      {
+        "name": "different retest",
+        "pass": true
+      },
+      {
+        "name": "same retest",
+        "pass": true
+      },
+      {
+        "name": "conflict",
+        "pass": true
+      },
+      {
+        "name": "missing trial",
+        "pass": true
+      },
+      {
+        "name": "three trials",
+        "pass": true
+      },
+      {
+        "name": "hamstring compensation",
+        "pass": true
+      },
+      {
+        "name": "missing faults",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "scoring_enabled": false,
+    "limitations": "Protocol registry, measurement error, trusted safety and full ACR-191–198 mapping pending."
+  },
+  "injury_surveillance": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/injury-surveillance-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/injury-surveillance.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/injury-surveillance.test.cjs"
+    ],
+    "readback_verified": true,
+    "source_rule_count": 38,
+    "movement_addendum_count": 8,
+    "isolated_function_tests": [
+      {
+        "name": "rates",
+        "pass": true
+      },
+      {
+        "name": "unknown days",
+        "pass": true
+      },
+      {
+        "name": "zero exposure",
+        "pass": true
+      },
+      {
+        "name": "duplicate injury",
+        "pass": true
+      },
+      {
+        "name": "duplicate exposure",
+        "pass": true
+      },
+      {
+        "name": "unknown classification",
+        "pass": true
+      },
+      {
+        "name": "negative exposure",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false
+  },
+  "readiness_recovery": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/readiness-recovery-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/readiness-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/readiness-evaluator.test.cjs"
+    ],
+    "source_rule_count": 23,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "youth hold",
+        "pass": true
+      },
+      {
+        "name": "unknown age",
+        "pass": true
+      },
+      {
+        "name": "youth reviewed",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "persistent sleep",
+        "pass": true
+      },
+      {
+        "name": "persistent mental fatigue",
+        "pass": true
+      },
+      {
+        "name": "missing metric",
+        "pass": true
+      },
+      {
+        "name": "invalid hours",
+        "pass": true
+      },
+      {
+        "name": "trend",
+        "pass": true
+      },
+      {
+        "name": "different athlete",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": "Trusted privacy and safety checks, dated longitudinal history, intervention feedback persistence and programme integration pending."
+  },
+  "nutrition": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/nutrition-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/nutrition-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/nutrition-evaluator.test.cjs"
+    ],
+    "source_rule_count": 18,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "valid",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown clinical",
+        "pass": true
+      },
+      {
+        "name": "youth",
+        "pass": true
+      },
+      {
+        "name": "supplement",
+        "pass": true
+      },
+      {
+        "name": "unknown supplement",
+        "pass": true
+      },
+      {
+        "name": "missing context",
+        "pass": true
+      },
+      {
+        "name": "invalid mass",
+        "pass": true
+      },
+      {
+        "name": "trend",
+        "pass": true
+      },
+      {
+        "name": "different protocol",
+        "pass": true
+      },
+      {
+        "name": "different athlete",
+        "pass": true
+      },
+      {
+        "name": "reverse dates",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": "Existing Nutrition Lab interface discovery, trusted safety, performance/body composition review and fueling education integration pending."
+  },
+  "conditioning": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/conditioning-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/conditioning-math.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/conditioning-math.test.cjs"
+    ],
+    "source_rule_count": 108,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "MAS",
+        "pass": true
+      },
+      {
+        "name": "interval",
+        "pass": true
+      },
+      {
+        "name": "zero time",
+        "pass": true
+      },
+      {
+        "name": "negative distance",
+        "pass": true
+      },
+      {
+        "name": "missing protocol",
+        "pass": true
+      },
+      {
+        "name": "lab distinction",
+        "pass": true
+      },
+      {
+        "name": "invalid interval",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "test_correction": "Floating point comparison uses tolerance rather than exact equality.",
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "rolling-window implementation",
+      "RSA/RHIE protocol and decrement conventions",
+      "contact validation",
+      "position benchmarks",
+      "programme and safety integration"
+    ]
+  },
+  "advanced_conditioning": {
+    "paths": [
+      "docs/rugby/master-intelligence-v1/prototypes/advanced-conditioning.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/advanced-conditioning.test.cjs"
+    ],
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "RSA",
+        "pass": true
+      },
+      {
+        "name": "reserve",
+        "pass": true
+      },
+      {
+        "name": "rolling peak",
+        "pass": true
+      },
+      {
+        "name": "oversized window",
+        "pass": true
+      },
+      {
+        "name": "unknown contact",
+        "pass": true
+      },
+      {
+        "name": "gap",
+        "pass": true
+      },
+      {
+        "name": "invalid sprint",
+        "pass": true
+      },
+      {
+        "name": "average sprint rejected",
+        "pass": true
+      },
+      {
+        "name": "missing recovery",
+        "pass": true
+      },
+      {
+        "name": "zero sprint",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "empty",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "Equal-distance RSA time decrement only",
+      "One-second contiguous samples required",
+      "Contact counts require validated upstream classification",
+      "RHIE and limiting-factor inference not implemented",
+      "Trusted safety and benchmark integration pending"
+    ]
+  },
+  "resistance_training": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/resistance-training-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/resistance-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/resistance-evaluator.test.cjs"
+    ],
+    "source_rule_count": 148,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "duration",
+        "pass": true
+      },
+      {
+        "name": "time overrun",
+        "pass": true
+      },
+      {
+        "name": "complex lift",
+        "pass": true
+      },
+      {
+        "name": "order",
+        "pass": true
+      },
+      {
+        "name": "relative strength",
+        "pass": true
+      },
+      {
+        "name": "invalid mass",
+        "pass": true
+      },
+      {
+        "name": "pain",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "unsupported format",
+        "pass": true
+      },
+      {
+        "name": "negative rest",
+        "pass": true
+      },
+      {
+        "name": "coverage",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "exercise library reconciliation",
+      "trusted competency and safety",
+      "force velocity protocols",
+      "coach-approved progression",
+      "station scheduling"
+    ]
+  },
+  "gamespeed": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/gamespeed-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/gamespeed-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/gamespeed-evaluator.test.cjs"
+    ],
+    "source_rule_count": 90,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "acceleration",
+        "pass": true
+      },
+      {
+        "name": "fly average",
+        "pass": true
+      },
+      {
+        "name": "fly missing buildup",
+        "pass": true
+      },
+      {
+        "name": "measured peak",
+        "pass": true
+      },
+      {
+        "name": "average mislabeled",
+        "pass": true
+      },
+      {
+        "name": "closed COD",
+        "pass": true
+      },
+      {
+        "name": "reactive incorrect",
+        "pass": true
+      },
+      {
+        "name": "missing stimulus",
+        "pass": true
+      },
+      {
+        "name": "invalid initiation",
+        "pass": true
+      },
+      {
+        "name": "zero time",
+        "pass": true
+      },
+      {
+        "name": "pain",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "SAQ library reconciliation",
+      "longitudinal exposure and phase planning",
+      "validated peak speed protocols",
+      "trusted safety",
+      "simulator integration"
+    ]
+  },
+  "advanced_programme": {
+    "paths": [
+      "data/rugby/master-intelligence-v1/policies/advanced-programme-decision-spec.json",
+      "docs/rugby/master-intelligence-v1/prototypes/monitoring-evaluator.cjs",
+      "docs/rugby/master-intelligence-v1/prototypes/monitoring-evaluator.test.cjs"
+    ],
+    "source_rule_count": 184,
+    "readback_verified": true,
+    "isolated_function_tests": [
+      {
+        "name": "velocity loss",
+        "pass": true
+      },
+      {
+        "name": "invalid rep",
+        "pass": true
+      },
+      {
+        "name": "metric",
+        "pass": true
+      },
+      {
+        "name": "device",
+        "pass": true
+      },
+      {
+        "name": "load delta",
+        "pass": true
+      },
+      {
+        "name": "missing actual",
+        "pass": true
+      },
+      {
+        "name": "zero actual",
+        "pass": true
+      },
+      {
+        "name": "negative load",
+        "pass": true
+      },
+      {
+        "name": "privacy",
+        "pass": true
+      },
+      {
+        "name": "clinical",
+        "pass": true
+      },
+      {
+        "name": "unknown safety",
+        "pass": true
+      },
+      {
+        "name": "unknown privacy",
+        "pass": true
+      },
+      {
+        "name": "empty",
+        "pass": true
+      },
+      {
+        "name": "null",
+        "pass": true
+      }
+    ],
+    "repository_runner_pending": true,
+    "runtime_activation": false,
+    "limitations": [
+      "trusted safety and authorization",
+      "longitudinal measurement reliability",
+      "calendar and team variation integration",
+      "existing programme engine reconciliation"
+    ]
+  },
+  "mapping_audit": {
+    "unique_acr": 780,
+    "missing": [],
+    "policy_count": 11,
+    "overlap_count": 22,
+    "source_pointer_audit": "data/rugby/master-intelligence-v1/source-pointer-audit.json",
+    "verified_source_pointers": 780,
+    "broken_source_pointers": 0,
+    "master_audit": "data/rugby/master-intelligence-v1/master-reconciliation-audit.json",
+    "master_pointers_verified": 20,
+    "master_aligned": 1,
+    "master_divergent": 19,
+    "runtime_activation": false
+  },
+  "master_resolution": {
+    "path": "data/rugby/master-intelligence-v1/master-qualified-registry.json",
+    "qualified_records": 40,
+    "legacy_ids": 20,
+    "isolated_tests_passed": 6,
+    "readback_verified": true,
+    "canonical_semantics_approved": false,
+    "runtime_activation": false,
+    "repository_runner_pending": true
+  },
+  "canonical_principles": {
+    "path": "data/rugby/master-intelligence-v1/canonical-principles-proposal.json",
+    "groups": 13,
+    "source_clauses": 40,
+    "unique_source_references": 40,
+    "readback_verified": true,
+    "canonical_semantics_approved": false,
+    "runtime_activation": false
+  },
+  "knowledge_archive_transfer": {
+    "source": "Rugby_HQ_Resources_DropIn.zip",
+    "expected_count": 12,
+    "verified_count": 12,
+    "files": [
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/11-course-completion-context.md",
+        "archive_blob_sha": "eefe8eecdf2b1c98700c4edce022fd65e4eb1a66",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/00-system-philosophy.md",
+        "archive_blob_sha": "c0d2eddb68a764074f66f71614ffaaf9bf81a270",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/09-integration-map.md",
+        "archive_blob_sha": "eb779aeddff13108275230bfbce22fbd510fce84",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/03-injury-health-safety.md",
+        "archive_blob_sha": "568e2e5f9515f95e7e8e9d54a6bf421d1d2bca67",
+        "verified": true,
+        "actual": "568e2e5f9515f95e7e8e9d54a6bf421d1d2bca67"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/02-movement-screening.md",
+        "archive_blob_sha": "58ec6361cb099c03b119db3f267c715a90b40daf",
+        "verified": true,
+        "actual": "58ec6361cb099c03b119db3f267c715a90b40daf"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/01-player-profile-readiness.md",
+        "archive_blob_sha": "56531ab3a7997ee0ffdd406e5acb4b608cd27afe",
+        "verified": true,
+        "actual": "56531ab3a7997ee0ffdd406e5acb4b608cd27afe"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/04-programme-management.md",
+        "archive_blob_sha": "07ca5d908f971cb555668f6680c46aa0a474fbb3",
+        "verified": true,
+        "actual": "07ca5d908f971cb555668f6680c46aa0a474fbb3"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/05-game-demand-conditioning.md",
+        "archive_blob_sha": "1e15f696e94c3e1d911e7dee5a31ded35def304b",
+        "verified": true,
+        "actual": "1e15f696e94c3e1d911e7dee5a31ded35def304b"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/06-gym-strength-power.md",
+        "archive_blob_sha": "ac6030f8cea3ec2f3aca861831390c9b9d25044f",
+        "verified": true,
+        "actual": "ac6030f8cea3ec2f3aca861831390c9b9d25044f"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/07-gamespeed-speed-agility.md",
+        "archive_blob_sha": "c7723c6c2b6f11232eeded6152958f6c861f01f9",
+        "verified": true,
+        "actual": "c7723c6c2b6f11232eeded6152958f6c861f01f9"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/10-course-corrections-and-guardrails.md",
+        "archive_blob_sha": "4bbd3720d9712da554441801130e34c2d5e81b9f",
+        "verified": true,
+        "actual": "4bbd3720d9712da554441801130e34c2d5e81b9f"
+      },
+      {
+        "path": "docs/rugby/master-intelligence-v1/knowledge/08-data-monitoring-ai.md",
+        "archive_blob_sha": "c53ab7498cd55b5e909195723cad73e625efcea2",
+        "verified": true,
+        "actual": "c53ab7498cd55b5e909195723cad73e625efcea2"
+      }
+    ],
+    "runtime_activation": false,
+    "complete": true
+  },
+  "activate_archive_transfer": {
+    "source": "mufasa_fitness_node_rugby_hq_activate_transfer.zip",
+    "payload_files": 16,
+    "verified_count": 16,
+    "files": [
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COACH_TRACKING_SPEC.md",
+        "expected": "30c51a3847d19819941a8545818cd0118da9df92",
+        "actual": "30c51a3847d19819941a8545818cd0118da9df92",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/ACR_RULE_REGISTRY_STATUS.md",
+        "expected": "c77f052de02a065f141b12ccb86d85bb5b296bf6",
+        "actual": "c77f052de02a065f141b12ccb86d85bb5b296bf6",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/BOT_CONTEXT.md",
+        "expected": "30792f6ae4dbb1623d5fca58cde862f5a3c1c9df",
+        "actual": "30792f6ae4dbb1623d5fca58cde862f5a3c1c9df",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/BEAST_MODE_FRAMEWORK.md",
+        "expected": "bcac1065472c2b447120521bf5fe240309734a46",
+        "actual": "bcac1065472c2b447120521bf5fe240309734a46",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/ENGINE_ARCHITECTURE.md",
+        "expected": "34f68dab86b6575586ae36149235661232ead761",
+        "actual": "34f68dab86b6575586ae36149235661232ead761",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/SOURCE_SEPARATION.md",
+        "expected": "1a0bcf57783d3fb70c288199883db4a5f5e6a03a",
+        "actual": "1a0bcf57783d3fb70c288199883db4a5f5e6a03a",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/RESOURCE_INVENTORY.md",
+        "expected": "7aac4f33b65acca28ab0af076afb150c1385214a",
+        "actual": "7aac4f33b65acca28ab0af076afb150c1385214a",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/README.md",
+        "expected": "be2109848c101fde6b5d27a05a6b0b26e44bba0a",
+        "actual": "be2109848c101fde6b5d27a05a6b0b26e44bba0a",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/COVERAGE_MANIFEST.md",
+        "expected": "fa5882394c4e1b66629c7805d3925fd165220864",
+        "actual": "fa5882394c4e1b66629c7805d3925fd165220864",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_context.json",
+        "expected": "e1d928c6c82885b7503a73c69634189b70c428ae",
+        "actual": "e1d928c6c82885b7503a73c69634189b70c428ae",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/IMPLEMENTATION_HANDOFF.md",
+        "expected": "2dd76ca0f6731218479b7f989cee5bbe8c88ecff",
+        "actual": "2dd76ca0f6731218479b7f989cee5bbe8c88ecff",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/rugby-hq-resource-activate-beast-mode-2026-11-24/SYSTEM_ACTIVATION_MAP.md",
+        "expected": "e65c84243bd98389a0f5f0b01e6aa6a221e7590e",
+        "actual": "e65c84243bd98389a0f5f0b01e6aa6a221e7590e",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_coverage_manifest.json",
+        "expected": "193c9c6735647b80e09ed155a125a1103fd4f560",
+        "actual": "193c9c6735647b80e09ed155a125a1103fd4f560",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_system_activation_map.json",
+        "expected": "f7ddac9641a3d0153ea7d11c128552acd1a3462b",
+        "actual": "f7ddac9641a3d0153ea7d11c128552acd1a3462b",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_schema.sql",
+        "expected": "0a1c3d115f8be0b500bd9f495008bb86de9e662f",
+        "actual": "0a1c3d115f8be0b500bd9f495008bb86de9e662f",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/activate-beast-mode-2026-11-24/activate_beast_mode_seed_data.json",
+        "expected": "2986f635bd49d613676e1d62abd475e5046f3442",
+        "actual": "2986f635bd49d613676e1d62abd475e5046f3442",
+        "verified": true
+      }
+    ],
+    "runtime_activation": false,
+    "installer_executed": false,
+    "inventory_note": "ZIP contains 11 docs and 5 data files, plus transfer manifest and installer; original inventory omits BOT_CONTEXT.md.",
+    "coverage_discrepancy": "Coverage manifest reports seven progression statuses; inventory and coach tracking list eight. Preserve both pending reconciliation.",
+    "safety_review": "Original pain regression pseudocode is not approved for runtime; clinical safety precedence required.",
+    "complete": true,
+    "seed_counts": {
+      "exercise_entries": 114,
+      "unique_ids": 114,
+      "match_day": 14,
+      "training": 100,
+      "progression_statuses": 8
+    }
+  },
+  "backs_archive_transfer": {
+    "source": "rugby-hq-resource-007-transfer-package.zip",
+    "archive_entries": 23,
+    "payload_files": 22,
+    "verified_count": 22,
+    "files": [
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/resource-inventory.md",
+        "expected": "69415317682589d928c27660fcb9be3ec0d4c632",
+        "actual": "69415317682589d928c27660fcb9be3ec0d4c632",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/research-gaps.md",
+        "expected": "ddde2399f31ae52de3557041c74bd1d5e372850c",
+        "actual": "ddde2399f31ae52de3557041c74bd1d5e372850c",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/README.md",
+        "expected": "f67b4f821fd08f10c0c8d9f5d9d7cd44564e9cd1",
+        "actual": "f67b4f821fd08f10c0c8d9f5d9d7cd44564e9cd1",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/missing-rules-manifest.json",
+        "expected": "d0285612bcf2ea11a6b2b17eb67b6cc4c8b3e16a",
+        "actual": "d0285612bcf2ea11a6b2b17eb67b6cc4c8b3e16a",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/evaluation-rubric.json",
+        "expected": "4df3a7750a73afbf22647d063ba70327000b291e",
+        "actual": "4df3a7750a73afbf22647d063ba70327000b291e",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/athletic-index.md",
+        "expected": "0155c33f581d2e4371df749d567f84fe05ba5039",
+        "actual": "0155c33f581d2e4371df749d567f84fe05ba5039",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/source-boundaries.md",
+        "expected": "1ca33e2eb884d7e398176f8e3bf91e2ba7bbff31",
+        "actual": "1ca33e2eb884d7e398176f8e3bf91e2ba7bbff31",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/backs-rugby-ready.schema.json",
+        "expected": "0f9523f3af66f83e72c5bf115b383a8da8f0e6ef",
+        "actual": "0f9523f3af66f83e72c5bf115b383a8da8f0e6ef",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/backs-rugby-ready.md",
+        "expected": "552968eac0a13650fbebf8fcb5a07e444621a8da",
+        "actual": "552968eac0a13650fbebf8fcb5a07e444621a8da",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/sample-evaluation-record.json",
+        "expected": "2b94d46c214eea16199bf5d553091c3a5bc53e2a",
+        "actual": "2b94d46c214eea16199bf5d553091c3a5bc53e2a",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/coverage-manifest.json",
+        "expected": "a03f2eb82fcf0e271a00cc9cdfc466bd98616d8f",
+        "actual": "a03f2eb82fcf0e271a00cc9cdfc466bd98616d8f",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/machine-context.json",
+        "expected": "33b64a0ee0056b39476ec57055f6210f44d70cd7",
+        "actual": "33b64a0ee0056b39476ec57055f6210f44d70cd7",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/resource-inventory.json",
+        "expected": "f63c066b1262357d61a6254b5b62cee2b1a76210",
+        "actual": "f63c066b1262357d61a6254b5b62cee2b1a76210",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/bot-activation-prompt.md",
+        "expected": "aa9a64f41fac8edd97924255ad0f64269afbbd9d",
+        "actual": "aa9a64f41fac8edd97924255ad0f64269afbbd9d",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/implementation-handoff.md",
+        "expected": "6dd1253198c1a3c1b1e34e6d8ddd7360ab5c5306",
+        "actual": "6dd1253198c1a3c1b1e34e6d8ddd7360ab5c5306",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/contractor-implementation-tasks.md",
+        "expected": "42437ee1d88ae635726077f0b9c7873d21001af1",
+        "actual": "42437ee1d88ae635726077f0b9c7873d21001af1",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/integration-map.md",
+        "expected": "9b4d51065bb0c431cc7fd9c5d35f2a2892491532",
+        "actual": "9b4d51065bb0c431cc7fd9c5d35f2a2892491532",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/system-activation-map.md",
+        "expected": "ff9fc7878467a83538f2c5c40deef3136ba38977",
+        "actual": "ff9fc7878467a83538f2c5c40deef3136ba38977",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/activation-map.json",
+        "expected": "93fedd5e4237bcab4fdb1d5a0ea2a57ee1892681",
+        "actual": "93fedd5e4237bcab4fdb1d5a0ea2a57ee1892681",
+        "verified": true
+      },
+      {
+        "path": "data/rugby/backs-readiness-resource-007/integration-map.json",
+        "expected": "8c68cd376a0fbe86303173f4d75ad427cc6fcf9d",
+        "actual": "8c68cd376a0fbe86303173f4d75ad427cc6fcf9d",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/handoff.md",
+        "expected": "0adfd287be091028bde49034488ffdcacfcbc7a6",
+        "actual": "0adfd287be091028bde49034488ffdcacfcbc7a6",
+        "verified": true
+      },
+      {
+        "path": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/spec-rugby-hq-backs-readiness.md",
+        "expected": "f1760bfbd8ee6c45667809713ea0a2b58da5da79",
+        "actual": "f1760bfbd8ee6c45667809713ea0a2b58da5da79",
+        "verified": true
+      }
+    ],
+    "runtime_activation": false,
+    "reconciliation_notes": [
+      "Narrative example uses scrimmage, timestamp, evaluator and date; schema uses controlled_scrimmage, clipTimestamp, evaluatorId/evaluatorName and evaluatedAt. Preserve originals; normalize only in integration.",
+      "Narrative score 64 is described as close to match-ready; rubric classifies 60–69 as developmental.",
+      "Coverage and machine context include explicit coach approval gate; evaluation rubric instead lists defensive IQ review gate. Preserve both; reconcile before runtime. Inventory dataFiles omits resource-inventory.json itself.",
+      "Original bot prompt and contractor tasks reference legacy resources/rugby-hq paths; resolve to consolidated paths before activation. Original pilot-store option is not approved for production architecture.",
+      "Activation map relative paths ../../docs resolve under data, not repo root; use verified root-relative paths in future loader.",
+      "Original handoff example labels 76 starter eligible despite rubric 70–79 rotation. Handoff adds registration, unresolved return-to-play and position-specific high-ball/last-line tackle restrictions; reconcile with trusted safety and competition eligibility.",
+      "Final specification algorithm omits explicit coach approval, registration, role-specific restrictions and unknown safety handling; proposed SQL not executed. Reconcile with existing identity and permissions before activation."
+    ],
+    "complete": true
+  },
+  "intro_conditioning_archive": {
+    "audit_path": "data/rugby/master-intelligence-v1/resource-04-candidate-audit.json",
+    "accounted_for": 13,
+    "exact_verified": 11,
+    "redacted_verified": 2,
+    "resource_number_confirmed": false,
+    "course_identity_archive_confirmed": true,
+    "overlap_audit_pending": true,
+    "runtime_activation": false,
+    "crosswalk": {
+      "path": "data/rugby/master-intelligence-v1/intro-conditioning-crosswalk.json",
+      "rows": 40,
+      "verified": true,
+      "status": "preliminary_domain_crosswalk"
+    }
+  },
+  "assessment_protocol_registry": {
+    "path": "data/rugby/master-intelligence-v1/policies/assessment-protocol-registry.json",
+    "count": 18,
+    "legacy": 5,
+    "candidates": 13,
+    "readback_verified": true,
+    "runtime_activation": false
+  },
+  "exercise_drill_registry": {
+    "path": "data/rugby/master-intelligence-v1/policies/exercise-drill-registry.json",
+    "count": 123,
+    "activate": 114,
+    "intro": 9,
+    "readback_verified": true,
+    "name_overlap_groups": 22,
+    "runtime_activation": false
+  },
+  "exercise_variant_audit": {
+    "path": "data/rugby/master-intelligence-v1/exercise-variant-audit.json",
+    "groups": 22,
+    "records": 82,
+    "distinct": 22,
+    "identicalExceptId": 0,
+    "doseDifferences": 14,
+    "source_pointer_checks": 123,
+    "readback_verified": true,
+    "runtime_activation": false
+  },
+  "exercise_catalog_match": {
+    "path": "data/rugby/master-intelligence-v1/exercise-catalog-match-audit.json",
+    "matched": 0,
+    "unmatched": 123,
+    "catalog_count": 884,
+    "readback_verified": true,
+    "runtime_activation": false
+  },
+  "exercise_purpose_classification": {
+    "path": "data/rugby/master-intelligence-v1/exercise-purpose-classification.json",
+    "names": 63,
+    "records": 123,
+    "counts": {
+      "change_direction_agility": {
+        "names": 7,
+        "records": 17
+      },
+      "movement_control": {
+        "names": 15,
+        "records": 25
+      },
+      "resistance_preparation": {
+        "names": 7,
+        "records": 30
+      },
+      "power_landing": {
+        "names": 24,
+        "records": 29
+      },
+      "tactical_multiplayer": {
+        "names": 2,
+        "records": 8
+      },
+      "repeat_effort": {
+        "names": 1,
+        "records": 7
+      },
+      "linear_speed": {
+        "names": 2,
+        "records": 2
+      },
+      "contact_conditioning": {
+        "names": 5,
+        "records": 5
+      }
+    },
+    "readback_verified": true,
+    "runtime_activation": false
+  },
+  "exercise_eligibility": {
+    "path": "data/rugby/master-intelligence-v1/policies/exercise-eligibility-decision-spec.json",
+    "prototype": "docs/rugby/master-intelligence-v1/prototypes/exercise-eligibility.cjs",
+    "readback_verified": true,
+    "tests_pending": false,
+    "runtime_activation": false,
+    "tests": {
+      "path": "docs/rugby/master-intelligence-v1/prototypes/exercise-eligibility.test.cjs",
+      "passed": 17,
+      "failed": 0,
+      "execution": "isolated node --test; evaluator blob verified",
+      "repository_ci_pending": true
+    }
+  },
+  "beast_mode_progression": {
+    "path": "data/rugby/master-intelligence-v1/policies/beast-mode-progression-spec.json",
+    "prototype": "docs/rugby/master-intelligence-v1/prototypes/beast-mode-progression.cjs",
+    "stages": 7,
+    "quality_fields": 9,
+    "source_statuses": 8,
+    "readback_verified": true,
+    "tests_pending": false,
+    "runtime_activation": false,
+    "tests": {
+      "path": "docs/rugby/master-intelligence-v1/prototypes/beast-mode-progression.test.cjs",
+      "passed": 19,
+      "failed": 0,
+      "evaluator_sha": "95dde0ed2dcf9a9effc4577e8e6d33ef9688a6bb",
+      "test_sha": "37195bff07dc2f894385480078abe4bca4a8b12f",
+      "execution": "local node --test",
+      "repository_ci_pending": true
+    }
+  },
+  "longitudinal_athlete_evidence": {
+    "path": "data/rugby/master-intelligence-v1/policies/longitudinal-athlete-evidence-contract.json",
+    "readback_verified": true,
+    "runtime_activation": false,
+    "implementation_pending": true
+  }
+}

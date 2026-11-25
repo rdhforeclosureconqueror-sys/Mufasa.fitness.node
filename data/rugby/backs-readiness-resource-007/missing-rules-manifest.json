@@ -1,0 +1,9 @@
+{
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "acrRegistryPresentInThread": false,
+  "acrRulesRecovered": 0,
+  "sourceVerifiedRules": [],
+  "reconstructedRules": [],
+  "missingRuleIdentifiersPreserved": [],
+  "instruction": "Do not fabricate ACR identifiers. If another Rugby HQ resource pack contains ACR rules, reconcile there and keep source-verified and reconstructed rules distinguishable."
+}

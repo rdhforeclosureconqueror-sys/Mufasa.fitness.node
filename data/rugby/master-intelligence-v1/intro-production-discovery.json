@@ -1,0 +1,486 @@
+{
+  "status": "exact_and_alias_searches_complete_catalog_review_pending",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "src/routes/rugbyProfileRoutes.js",
+      "sha": "163a5c9a1c20a1d043cc57dc97735ac60a935505"
+    },
+    {
+      "path": "public/motion/contracts/overhead-squat-assessment.v1.json",
+      "sha": "0940c09bf913637a0c1e13709c7f97d87ef6d297"
+    },
+    {
+      "path": "docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md",
+      "sha": "64f305436f3d069c13469fe851e093e1ffc271a1"
+    },
+    {
+      "path": "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
+      "sha": "48c81c82d03328b843035336fd585218509c2bb4"
+    },
+    {
+      "path": "src/rugby/assessmentValidation.js",
+      "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+    }
+  ],
+  "findings": [
+    {
+      "source_id": "overhead_squat",
+      "status": "existing_assessment_contract_candidate",
+      "target": "public/motion/contracts/overhead-squat-assessment.v1.json",
+      "requirement": "Compare protocol and capture semantics before aliasing; exercise entry is not an assessment."
+    },
+    {
+      "source_id": "shoulder_clearance",
+      "status": "not_found_by_exact_search",
+      "requirement": "Search aliases and inspect full library before declaring missing."
+    },
+    {
+      "source_id": "sand_acceleration_sprints",
+      "status": "not_found_by_exact_search",
+      "requirement": "Search aliases and inspect exercise library before declaring missing."
+    },
+    {
+      "source_id": "beast_mode_3v2_transition",
+      "status": "related_concept_found",
+      "target": "docs/rugby/rugby-hq-coaching-os-handoff.md",
+      "requirement": "Concept match is not drill identity."
+    },
+    {
+      "source_id": "hands_behind_head_squat",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "lat_tightness_wall_test",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "heels_raised_overhead_squat",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "ankle_rom",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "thomas_test",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "glute_bridge_leg_extension",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "shoulder_mobility",
+      "status": "search_candidates_require_review",
+      "matches": [
+        {
+          "path": "src/youth-fitness/profiles/constants.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/youth-fitness/profiles/constants.js"
+        }
+      ],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "ground_fight_sprint_rotation",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "sand_cone_cod",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "sand_ladder",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "maul_ball",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "forward_drive",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "get_up",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    },
+    {
+      "source_id": "tackle_shuttle",
+      "status": "not_found_by_exact_search",
+      "matches": [],
+      "requirement": "Verify semantic identity; absence of exact search match does not establish absence."
+    }
+  ],
+  "remaining": "Full catalog inventory, semantic alias review, protocol and permissions validation.",
+  "guardrails": [
+    "No duplicate engine",
+    "No runtime changes",
+    "Search absence is not proof of missing functionality"
+  ],
+  "alias_searches": [
+    {
+      "source_id": "ankle_rom",
+      "query": "ankle_knee_to_wall",
+      "matches": [
+        {
+          "path": "src/rugby/assessmentValidation.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/rugby/assessmentValidation.js"
+        },
+        {
+          "path": "public/rugby-records.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-records.js"
+        },
+        {
+          "path": "public/rugby-player.html",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-player.html"
+        }
+      ]
+    },
+    {
+      "source_id": "thomas_test",
+      "query": "Thomas Test",
+      "matches": []
+    },
+    {
+      "source_id": "glute_bridge_leg_extension",
+      "query": "Glute Bridge",
+      "matches": [
+        {
+          "path": "public/exercise-db/Barbell_Glute_Bridge.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Barbell_Glute_Bridge.json"
+        },
+        {
+          "path": "public/exercise-db/Single_Leg_Glute_Bridge.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Single_Leg_Glute_Bridge.json"
+        },
+        {
+          "path": "_reference/aligned-yoga/imported/01_lego_training_blocks.txt",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/_reference/aligned-yoga/imported/01_lego_training_blocks.txt"
+        },
+        {
+          "path": "src/youth-fitness/activities/registry.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/youth-fitness/activities/registry.js"
+        },
+        {
+          "path": "_reference/aligned-yoga/imported/03_nasm_overhead_squat_assessment.txt",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/_reference/aligned-yoga/imported/03_nasm_overhead_squat_assessment.txt"
+        }
+      ]
+    },
+    {
+      "source_id": "hands_behind_head_squat",
+      "query": "hands behind head",
+      "matches": [
+        {
+          "path": "public/exercise-db/Behind_Head_Chest_Stretch.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Behind_Head_Chest_Stretch.json"
+        },
+        {
+          "path": "public/exercise-db/Wide-Grip_Pulldown_Behind_The_Neck.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Wide-Grip_Pulldown_Behind_The_Neck.json"
+        },
+        {
+          "path": "public/exercise-db/Catch_and_Overhead_Throw.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Catch_and_Overhead_Throw.json"
+        },
+        {
+          "path": "public/exercise-db/Triceps_Overhead_Extension_with_Rope.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Triceps_Overhead_Extension_with_Rope.json"
+        },
+        {
+          "path": "public/exercise-db/Supine_Two-Arm_Overhead_Throw.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Supine_Two-Arm_Overhead_Throw.json"
+        }
+      ]
+    },
+    {
+      "source_id": "lat_tightness_wall_test",
+      "query": "lat tightness",
+      "matches": [
+        {
+          "path": "docs/rugby/conditioning/ATHLETE_001_PRESEASON_CASE.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/conditioning/ATHLETE_001_PRESEASON_CASE.md"
+        },
+        {
+          "path": "public/exercise-db/Box_Squat_with_Bands.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Box_Squat_with_Bands.json"
+        }
+      ]
+    },
+    {
+      "source_id": "heels_raised_overhead_squat",
+      "query": "heels raised",
+      "matches": [
+        {
+          "path": "public/exercise-db/Smith_Machine_Reverse_Calf_Raises.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Smith_Machine_Reverse_Calf_Raises.json"
+        }
+      ]
+    },
+    {
+      "source_id": "shoulder_mobility",
+      "query": "shoulder mobility",
+      "matches": [
+        {
+          "path": "public/motion/overhead-squat-assessment-motion-spec.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/motion/overhead-squat-assessment-motion-spec.js"
+        },
+        {
+          "path": "src/youth-fitness/profiles/constants.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/youth-fitness/profiles/constants.js"
+        },
+        {
+          "path": "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/conditioning/ASSESSMENT_ENGINE.md"
+        },
+        {
+          "path": "data/yoga/sessions.v1.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/data/yoga/sessions.v1.json"
+        },
+        {
+          "path": "docs/rugby/rugby-hq-coaching-os-handoff.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/rugby-hq-coaching-os-handoff.md"
+        }
+      ]
+    },
+    {
+      "source_id": "shoulder_clearance",
+      "query": "shoulder clearance",
+      "matches": [
+        {
+          "path": "exercise-generation/COACH_OPERATIONS_GUIDE.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/exercise-generation/COACH_OPERATIONS_GUIDE.md"
+        },
+        {
+          "path": "docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md"
+        },
+        {
+          "path": "docs/rugby/conditioning/ASSESSMENT_ENGINE.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/conditioning/ASSESSMENT_ENGINE.md"
+        },
+        {
+          "path": "docs/rugby/rugby-hq-coaching-os-handoff.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/rugby-hq-coaching-os-handoff.md"
+        },
+        {
+          "path": "exercise-generation/page.tsx",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/exercise-generation/page.tsx"
+        }
+      ]
+    },
+    {
+      "source_id": "sand_acceleration_sprints",
+      "query": "sand sprint",
+      "matches": [
+        {
+          "path": "public/rugby-player.html",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-player.html"
+        }
+      ]
+    },
+    {
+      "source_id": "ground_fight_sprint_rotation",
+      "query": "ground fight",
+      "matches": [
+        {
+          "path": "docs/rugby/attack-intelligence/002-four-ps-maritime-pilot.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/attack-intelligence/002-four-ps-maritime-pilot.md"
+        },
+        {
+          "path": "curriculum/eight-pillars-african-wisdom/stories/week-02-unbreakable-chain.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/curriculum/eight-pillars-african-wisdom/stories/week-02-unbreakable-chain.md"
+        },
+        {
+          "path": "public/motion/registry/movement-lego-scavenger.v1.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/motion/registry/movement-lego-scavenger.v1.json"
+        },
+        {
+          "path": "docs/plans/mirror-motion-thread-harvest-closure-plan-20260905.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/plans/mirror-motion-thread-harvest-closure-plan-20260905.md"
+        },
+        {
+          "path": "public/eight-pillars-review-stories.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/eight-pillars-review-stories.json"
+        }
+      ]
+    },
+    {
+      "source_id": "beast_mode_3v2_transition",
+      "query": "3v2",
+      "matches": [
+        {
+          "path": "public/rugby-three-v-two.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-three-v-two.js"
+        },
+        {
+          "path": "docs/rugby/quin-nation-3d-arena-contract.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/quin-nation-3d-arena-contract.md"
+        },
+        {
+          "path": "public/rugby-arena.html",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-arena.html"
+        },
+        {
+          "path": "public/rugby-player.html",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-player.html"
+        },
+        {
+          "path": "docs/rugby/rugby-hq-coaching-os-handoff.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/rugby-hq-coaching-os-handoff.md"
+        }
+      ]
+    },
+    {
+      "source_id": "sand_cone_cod",
+      "query": "sand cone",
+      "matches": []
+    },
+    {
+      "source_id": "sand_ladder",
+      "query": "sand ladder",
+      "matches": []
+    },
+    {
+      "source_id": "maul_ball",
+      "query": "maul ball",
+      "matches": [
+        {
+          "path": "docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md"
+        },
+        {
+          "path": "exercise-generation/page.tsx",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/exercise-generation/page.tsx"
+        },
+        {
+          "path": "exercise-generation/COACH_OPERATIONS_GUIDE.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/exercise-generation/COACH_OPERATIONS_GUIDE.md"
+        },
+        {
+          "path": "docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/architecture/RUGBY_COACHING_OS_INTEGRATION_PLAN.md"
+        },
+        {
+          "path": "exercise-generation/coach-guide.html",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/exercise-generation/coach-guide.html"
+        }
+      ]
+    },
+    {
+      "source_id": "forward_drive",
+      "query": "forward drive",
+      "matches": [
+        {
+          "path": "docs/rugby/attack-intelligence/002-four-ps-maritime-pilot.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/attack-intelligence/002-four-ps-maritime-pilot.md"
+        },
+        {
+          "path": "exercise-generation/kettlebellchallenge/kettlebellchallengebreakdown",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/exercise-generation/kettlebellchallenge/kettlebellchallengebreakdown"
+        },
+        {
+          "path": "public/exercise-db/Tire_Flip.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Tire_Flip.json"
+        },
+        {
+          "path": "docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/docs/rugby/resources-5/THREAD_HARVEST_HANDOFF.md"
+        },
+        {
+          "path": "public/exercise-db/Box_Skip.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Box_Skip.json"
+        }
+      ]
+    },
+    {
+      "source_id": "get_up",
+      "query": "get up",
+      "matches": [
+        {
+          "path": "src/services/challengeParticipantService.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/services/challengeParticipantService.js"
+        },
+        {
+          "path": "public/exercise-db/Kettlebell_Turkish_Get-Up_Squat_style.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Kettlebell_Turkish_Get-Up_Squat_style.json"
+        },
+        {
+          "path": "public/exercise-db/Kettlebell_Turkish_Get-Up_Lunge_style.json",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/exercise-db/Kettlebell_Turkish_Get-Up_Lunge_style.json"
+        },
+        {
+          "path": "src/services/memberExperienceCapabilityService.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/src/services/memberExperienceCapabilityService.js"
+        },
+        {
+          "path": "public/rugby-attack-intelligence.js",
+          "url": "https://github.com/rdhforeclosureconqueror-sys/Mufasa.fitness.node/blob/fde89ca433ba628dee9a81a9c981a44538c232b7/public/rugby-attack-intelligence.js"
+        }
+      ]
+    },
+    {
+      "source_id": "tackle_shuttle",
+      "query": "tackle shuttle",
+      "matches": []
+    }
+  ],
+  "validator_contract": {
+    "path": "src/rugby/assessmentValidation.js",
+    "types": {
+      "sprint_10m": "seconds",
+      "sprint_20m": "seconds",
+      "ankle_knee_to_wall": "cm",
+      "agility_505_left": "seconds",
+      "agility_505_right": "seconds"
+    },
+    "limitations": [
+      "scalar only",
+      "no protocol version",
+      "no pain flag",
+      "no assessor verification",
+      "no observation array"
+    ],
+    "ankle_rom": "Related existing test; fixed four-inch source setup differs from scalar cm recording; do not alias without protocol comparison."
+  },
+  "catalog_inspection": {
+    "evidence": [
+      {
+        "path": "src/exercise-intelligence/exerciseCatalog.js",
+        "sha": "0c6b9c939c8fb2d8e17163832e1e572bd346d634"
+      },
+      {
+        "path": "src/exercise-intelligence/exerciseSchema.js",
+        "sha": "f44d88c021c017c2a95e01bdbdb30ca98005295a"
+      }
+    ],
+    "status": "catalog_implementation_and_schema_inspected",
+    "contract": "data/rugby/master-intelligence-v1/policies/unified-assessment-contract.json",
+    "full_inventory_pending": true
+  }
+}

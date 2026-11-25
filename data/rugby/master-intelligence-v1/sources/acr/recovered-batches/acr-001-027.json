@@ -1,0 +1,144 @@
+{
+  "source": "User-supplied Lost retrieval part 7, batch 1",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-001",
+      "plain_language_rule": "Rugby requires development of multiple physical qualities.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-002",
+      "plain_language_rule": "Training should consider both general rugby demands and position-specific demands.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-003",
+      "plain_language_rule": "Coaches should identify a player’s physical qualities before determining training priorities.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-004",
+      "plain_language_rule": "Physical qualities can compete, so programming requires prioritisation rather than maximising everything simultaneously.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-005",
+      "plain_language_rule": "Physical development should ultimately contribute to improved on-field performance.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-006",
+      "plain_language_rule": "Lifestyle factors outside formal training can affect training and game performance.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-007",
+      "plain_language_rule": "Coaches should maintain awareness of relevant external stresses and provide appropriate support/advice.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-008",
+      "plain_language_rule": "Physical preparation is one component of holistic rugby development alongside technical, tactical, and mental development.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-009",
+      "plain_language_rule": "S&C should prioritize physical characteristics that meaningfully support game performance.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-010",
+      "plain_language_rule": "Comparison with the general population can help identify characteristics associated with rugby participation.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-011",
+      "plain_language_rule": "Characteristics that distinguish higher playing levels may be especially valuable for player development.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-012",
+      "plain_language_rule": "Players should be compared with relevant competition-level benchmarks where reliable normative data exist.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-013",
+      "plain_language_rule": "Rugby physical profiles evolve as laws, playing styles, training practices, and game demands change.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-014",
+      "plain_language_rule": "Physical benchmarks must therefore be contextual rather than permanently fixed.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-015",
+      "plain_language_rule": "Athlete profiling should incorporate current ability, position, playing level, and development target.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-016",
+      "plain_language_rule": "A physical characteristic associated with elite performance should not automatically be maximized; the objective is an appropriate overall profile.",
+      "source_module": "Player Profile",
+      "classification": "coaching safeguard"
+    },
+    {
+      "rule_id": "ACR-017",
+      "plain_language_rule": "Body size includes stature and body mass and can influence rugby performance.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-018",
+      "plain_language_rule": "Increased body mass can improve resistance to displacement during contact.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-019",
+      "plain_language_rule": "Collision momentum depends on both mass and velocity.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-020",
+      "plain_language_rule": "Increasing velocity can increase momentum without increasing body mass.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-021",
+      "plain_language_rule": "Increased muscular mass can contribute to greater force-production capacity.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-022",
+      "plain_language_rule": "Body mass differs across playing levels and has increased historically as rugby has evolved.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-023",
+      "plain_language_rule": "Greater body mass is not automatically better.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-024",
+      "plain_language_rule": "The target should be functional body mass appropriate to the player’s position and game demands.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-025",
+      "plain_language_rule": "Changes in body mass should be interpreted alongside speed, strength, power, conditioning, and rugby performance.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-026",
+      "plain_language_rule": "The system should monitor longitudinal body-mass trends rather than relying only on single measurements.",
+      "source_module": "Player Profile"
+    },
+    {
+      "rule_id": "ACR-027",
+      "plain_language_rule": "Body mass alone should not be used as a proxy for injury protection or overall physical readiness.",
+      "source_module": "Player Profile",
+      "classification": "coaching safeguard"
+    }
+  ]
+}

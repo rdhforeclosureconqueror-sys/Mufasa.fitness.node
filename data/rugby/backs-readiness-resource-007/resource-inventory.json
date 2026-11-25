@@ -1,0 +1,46 @@
+{
+  "resourceId": "RUGBY-HQ-RESOURCE-007",
+  "docsPath": "docs/rugby/RUGBY-HQ-RESOURCE-007-BACKS-READINESS-HARVEST/",
+  "dataPath": "data/rugby/backs-readiness-resource-007/",
+  "documentationFiles": [
+    "README.md",
+    "athletic-index.md",
+    "backs-rugby-ready.md",
+    "bot-activation-prompt.md",
+    "contractor-implementation-tasks.md",
+    "handoff.md",
+    "implementation-handoff.md",
+    "integration-map.md",
+    "research-gaps.md",
+    "resource-inventory.md",
+    "source-boundaries.md",
+    "spec-rugby-hq-backs-readiness.md",
+    "system-activation-map.md"
+  ],
+  "dataFiles": [
+    "activation-map.json",
+    "backs-rugby-ready.schema.json",
+    "coverage-manifest.json",
+    "evaluation-rubric.json",
+    "integration-map.json",
+    "machine-context.json",
+    "missing-rules-manifest.json",
+    "sample-evaluation-record.json"
+  ],
+  "sourceFilesRecoveredFromPriorPack": [
+    "README.md",
+    "athletic-index.md",
+    "backs-rugby-ready.md",
+    "backs-rugby-ready.schema.json",
+    "bot-activation-prompt.md",
+    "contractor-implementation-tasks.md",
+    "evaluation-rubric.json",
+    "handoff.md",
+    "spec-rugby-hq.md"
+  ],
+  "uploadedPrototypeFilesInspected": [
+    "Pocket-PT-Rugby-Coaching-OS(1).zip/README.md",
+    "Pocket-PT-Rugby-Coaching-OS(1).zip/app/page.tsx"
+  ],
+  "notes": "This inventory is additive and public-repo safe."
+}

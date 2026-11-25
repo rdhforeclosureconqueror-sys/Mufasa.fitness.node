@@ -1,0 +1,67 @@
+{
+  "source": "User-supplied Lost retrieve part 2, batch 7",
+  "classification": "RECOVERED_PRIOR_THREAD_WORDING_NOT_INDEPENDENTLY_COURSE_VERIFIED",
+  "runtime_activation": false,
+  "rules": [
+    {
+      "rule_id": "ACR-143",
+      "plain_language_rule": "The Hamstring Popliteal Test assesses hamstring-related knee-extension ROM with the hip maintained at approximately 90° flexion.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-144",
+      "plain_language_rule": "The non-tested leg and pelvis must remain controlled because compensation can falsely inflate the measured ROM.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-145",
+      "plain_language_rule": "Goniometric measurement is preferable to visual estimation when available.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-146",
+      "plain_language_rule": "The course reference of >70° may be used as a contextual benchmark, not as a universal diagnostic threshold.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-147",
+      "plain_language_rule": "Left and right hamstring ROM should be recorded separately.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-148",
+      "plain_language_rule": "Previous hamstring injury is a more established risk factor for future hamstring strain than flexibility alone.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-149",
+      "plain_language_rule": "Hamstring flexibility should be interpreted alongside strength, eccentric capacity, pelvic control, asymmetry, symptoms, and injury history.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-150",
+      "plain_language_rule": "Hamstring ROM restriction without pain may enter a corrective mobility pathway.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-151",
+      "plain_language_rule": "Pain during the test should stop the coach-only corrective pathway and trigger appropriate referral.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    },
+    {
+      "rule_id": "ACR-152",
+      "plain_language_rule": "Corrective stretching should be reassessed rather than continued indefinitely without evidence of change.",
+      "source_module": "Functional Screening and Dynamic Testing",
+      "domain": "Hamstring ROM"
+    }
+  ]
+}

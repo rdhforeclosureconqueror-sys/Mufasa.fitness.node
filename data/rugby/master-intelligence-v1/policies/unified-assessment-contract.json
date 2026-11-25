@@ -1,0 +1,128 @@
+{
+  "version": "1.0.0",
+  "status": "proposed_contract_not_runtime",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "src/exercise-intelligence/exerciseCatalog.js",
+      "sha": "0c6b9c939c8fb2d8e17163832e1e572bd346d634"
+    },
+    {
+      "path": "src/exercise-intelligence/exerciseSchema.js",
+      "sha": "f44d88c021c017c2a95e01bdbdb30ca98005295a"
+    },
+    {
+      "path": "src/rugby/assessmentValidation.js",
+      "sha": "29b356ee78daca3f190fd269abe3ef4285656c5b"
+    },
+    {
+      "path": "src/routes/rugbyProfileRoutes.js",
+      "sha": "163a5c9a1c20a1d043cc57dc97735ac60a935505"
+    }
+  ],
+  "architecture": {
+    "exercise_authority": "src/exercise-intelligence/exerciseCatalog.js",
+    "assessment_route": "src/routes/rugbyProfileRoutes.js",
+    "legacy_validator": "src/rugby/assessmentValidation.js",
+    "strategy": "Extend existing identity, storage and routes through versioned validation; no second scoring engine.",
+    "multiplayer_drills": "Separate session block metadata referencing canonical exercises where applicable; do not force multiplayer drills into rep-only exercise schema."
+  },
+  "protocol": {
+    "required": [
+      "protocolId",
+      "protocolVersion",
+      "sourceRef",
+      "status",
+      "metricDefinitions",
+      "setup",
+      "validityCriteria",
+      "safetyReview"
+    ],
+    "allowedStatus": [
+      "candidate",
+      "reviewed",
+      "approved",
+      "retired"
+    ],
+    "approval": "Independent evidence and owner review before use."
+  },
+  "event": {
+    "required": [
+      "eventId",
+      "athleteId",
+      "occurredAt",
+      "protocolId",
+      "protocolVersion",
+      "source",
+      "validity",
+      "painFlag",
+      "measurements",
+      "observations",
+      "visibilityDomain"
+    ],
+    "serverOwned": [
+      "eventId",
+      "athleteId",
+      "recordedAt",
+      "assessorId",
+      "verificationStatus",
+      "visibilityDomain"
+    ],
+    "measurement": {
+      "required": [
+        "metricId",
+        "value",
+        "unit"
+      ],
+      "optional": [
+        "side",
+        "device",
+        "confidence",
+        "trial"
+      ]
+    },
+    "source": [
+      "athlete_self_report",
+      "authorized_coach",
+      "device_capture"
+    ],
+    "verificationStatus": [
+      "unverified",
+      "review_required",
+      "verified"
+    ],
+    "painFlag": [
+      true,
+      false,
+      null
+    ],
+    "unknownPain": "hold_for_review",
+    "correction": "Append superseding event; preserve original.",
+    "legacy": "Preserve scalar records as unverified; do not infer protocol version or pain status."
+  },
+  "catalogConstraints": [
+    "Canonical exercise ID and schema version required",
+    "Generic rep/set/rest defaults must not become rugby prescriptions",
+    "Existing camera support is restricted to explicitly supported exercises",
+    "Assessment demonstration is not validated scoring",
+    "Contact and multiplayer blocks require supervision, role, space and safety metadata"
+  ],
+  "acceptance": [
+    "Legacy five types remain readable",
+    "Unauthorized coach verification rejected",
+    "Unknown pain holds review",
+    "Pain blocks automated programming",
+    "Unknown protocol blocks scoring",
+    "Incompatible unit rejected",
+    "Correction preserves original",
+    "Cross-athlete access denied",
+    "No default contact dose",
+    "No duplicate canonical exercise IDs"
+  ],
+  "remaining": [
+    "Full catalog inventory and semantic alias review",
+    "Protocol evidence verification",
+    "Trusted authorization and persistence design",
+    "Repository tests and deployment acceptance"
+  ]
+}

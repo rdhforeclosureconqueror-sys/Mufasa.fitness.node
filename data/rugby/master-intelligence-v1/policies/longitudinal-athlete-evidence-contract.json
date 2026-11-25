@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "status": "proposed_integration_contract",
+  "runtime_activation": false,
+  "evidence": [
+    {
+      "path": "data/rugby/master-intelligence-v1/policies/beast-mode-progression-spec.json",
+      "sha": "01856edd9dc8cfa577d92a61fc3867acbcf23aaf"
+    },
+    {
+      "path": "data/rugby/master-intelligence-v1/policies/unified-assessment-contract.json",
+      "sha": "c807f038d30c0cb9df8ebcab7b49ed6bc38ad958"
+    },
+    {
+      "path": "src/routes/rugbyProfileRoutes.js",
+      "sha": "163a5c9a1c20a1d043cc57dc97735ac60a935505"
+    }
+  ],
+  "events": [
+    "assessment_recorded",
+    "quality_observed",
+    "session_completed",
+    "attendance_recorded",
+    "coach_reviewed",
+    "stage_change_authorized"
+  ],
+  "required": [
+    "eventId",
+    "athleteId",
+    "occurredAt",
+    "recordedAt",
+    "eventType",
+    "sourceRef",
+    "verificationStatus"
+  ],
+  "serverOwned": [
+    "athleteId",
+    "recordedAt",
+    "assessorId",
+    "verificationStatus",
+    "authorization"
+  ],
+  "policy": [
+    "Append only; corrections supersede prior events",
+    "Reject cross-athlete evidence",
+    "Reject future dated evidence and invalid dates",
+    "No inferred attendance from missing records",
+    "No stage changes from self-report",
+    "No automatic progression",
+    "Use approved stage-specific evidence windows; none approved yet",
+    "Pain or clinical concern overrides progression"
+  ],
+  "acceptance": [
+    "Chronological history",
+    "Duplicate event rejection",
+    "Cross-athlete rejection",
+    "Invalid and future date rejection",
+    "Superseded evidence excluded from current view",
+    "Coach authorization checked server-side",
+    "Legacy records preserved"
+  ],
+  "remaining": [
+    "Implement trusted persistence and authorization",
+    "Validate evidence windows and criteria",
+    "Run integration tests"
+  ]
+}

@@ -1,0 +1,64 @@
+{
+  "session_order": [
+    "RAMP warm-up",
+    "speed/power/agility while fresh",
+    "strength or skill priority",
+    "integrated conditioning",
+    "cooldown/recovery",
+    "RPE and wellness logging"
+  ],
+  "season_phase_rules": {
+    "pre_season_general": {
+      "volume": "high",
+      "intensity": "low_to_moderate",
+      "focus": [
+        "work capacity",
+        "hypertrophy",
+        "movement quality",
+        "aerobic base",
+        "basic speed mechanics"
+      ]
+    },
+    "transition_specific_preparation": {
+      "volume": "moderate and decreasing",
+      "intensity": "increasing",
+      "focus": [
+        "GRHITT",
+        "small-sided games",
+        "rugby circuits",
+        "contact conditioning",
+        "skills under fatigue"
+      ]
+    },
+    "in_season": {
+      "volume": "low",
+      "intensity": "high quality",
+      "focus": [
+        "maintain strength speed power",
+        "technical/tactical",
+        "recovery",
+        "match readiness"
+      ]
+    }
+  },
+  "unload": {
+    "common_pattern": "3 loading weeks + 1 unload week",
+    "method": "reduce volume significantly while keeping some quality"
+  },
+  "taper": {
+    "purpose": "peak for important game/tournament",
+    "method": "reduce volume/contact fatigue, maintain sharp speed and skills"
+  },
+  "monitoring": {
+    "session_load": "session_rpe * duration_minutes",
+    "wellness_total": "fatigue + sleep_quality + muscle_soreness + stress + mood"
+  },
+  "red_flags": [
+    "pain during screen",
+    "concussion symptoms",
+    "repeated wellness decline",
+    "large weekly load spike",
+    "sharp performance drop",
+    "unusual soreness/fatigue"
+  ]
+}

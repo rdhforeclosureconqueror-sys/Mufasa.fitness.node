@@ -1,0 +1,48 @@
+{
+  "version": "1.0.0",
+  "runtime_activation": false,
+  "source_ids": [
+    "ACR-078",
+    "ACR-079",
+    "ACR-080",
+    "ACR-081",
+    "ACR-082",
+    "ACR-083",
+    "ACR-084",
+    "ACR-085",
+    "ACR-086",
+    "ACR-087",
+    "ACR-088",
+    "ACR-089",
+    "ACR-090",
+    "ACR-091",
+    "ACR-092",
+    "ACR-093",
+    "ACR-094",
+    "ACR-095",
+    "ACR-096",
+    "ACR-097",
+    "ACR-098",
+    "ACR-099",
+    "ACR-100"
+  ],
+  "fields": {
+    "sleepHours": "hours",
+    "sleepQuality": "1 poor to 5 excellent",
+    "physicalFatigue": "1 low to 5 high",
+    "mentalFatigue": "1 low to 5 high",
+    "soreness": "1 low to 5 high",
+    "stress": "1 low to 5 high",
+    "wellbeing": "1 poor to 5 excellent",
+    "hydration": "good/unsure/poor"
+  },
+  "guardrails": [
+    "No universal readiness score or sleep injury threshold",
+    "No device surveillance",
+    "Separate mental fatigue from wellbeing",
+    "Youth privacy review before processing",
+    "Persistent concerns require human follow-up",
+    "Record intervention feedback; no automatic prescription"
+  ],
+  "trend_policy": "Compare same athlete, same metric and scale; descriptive only; no automatic thresholds."
+}
