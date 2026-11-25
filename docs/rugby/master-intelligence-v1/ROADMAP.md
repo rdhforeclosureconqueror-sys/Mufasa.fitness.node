@@ -86,3 +86,6 @@ Recovery PR #1406 merged. Evidence core CI: 214/214 passed. Authenticated assess
 
 ## Coach evidence checkpoint — PR #1411
 PR #1410 merged at 83e042108bf16ae19a9bb7270060b74e61ce5f40; 217/217 CI tests passed. Coach service 227/227 CI tests passed at 02f2512008c74f355f0056bab89b5a1b6c6648b1. Canonical assignment store and authorization resolver reused; review queue and write endpoint default disabled. Three additional queue tests and route inventory committed; latest CI and live acceptance pending. No automatic progression. Original milestone count unchanged.
+
+## Safety and readiness integration checkpoint
+PR #1411 merged at 71ca4b05318c3cee1879420ffc1cb3187083539e; 230/230 prototype tests and 11 workflows passed. Stored readiness, optional versioned recovery validation and fail-closed eligibility adapter implemented; 17 new regression cases pending CI. No runtime eligibility activation or automatic progression. Original milestone count unchanged.
