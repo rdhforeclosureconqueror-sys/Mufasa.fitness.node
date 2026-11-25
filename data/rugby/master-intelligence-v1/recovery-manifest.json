@@ -1545,7 +1545,15 @@
     "athlete_evidence_merge": "83e042108bf16ae19a9bb7270060b74e61ce5f40",
     "feature_flag": "ENABLE_RUGBY_COACH_EVIDENCE",
     "default_enabled": false,
-    "latest_ci_pending": true,
-    "live_verified": false
+    "latest_ci_pending": false,
+    "live_verified": false,
+    "ci_passed": 230,
+    "merge_sha": "71ca4b05318c3cee1879420ffc1cb3187083539e"
+  },
+  "stored_readiness": {
+    "implementation": "committed",
+    "new_tests": 17,
+    "ci_pending": true,
+    "runtime_eligibility_activation": false
   }
 }
