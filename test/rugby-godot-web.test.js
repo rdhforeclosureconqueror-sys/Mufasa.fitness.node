@@ -53,3 +53,17 @@ test('immersive shell retains a fallback, exit and resize handling',()=>{
   assert.ok(!html.includes('canvas.requestFullscreen()'));
  }
 });
+
+test('mobile render density is bounded and desktop sizing remains unchanged',()=>{
+ const vm=require('node:vm');
+ for(const p of ['godot/rugby-hq-web/web-shell.html','public/game/rugby-hq/index.html']){
+  const html=read(p),source=html.slice(html.indexOf('function renderDimensions('),html.indexOf('function resizeCanvas()'));
+  const dims=vm.runInNewContext(source+';renderDimensions');
+  const a=dims(390,220,3,true);assert.equal(a.w,780);assert.equal(a.h,440);
+  const b=dims(844,390,3,true);assert.equal(b.w,1688);assert.equal(b.h,780);
+  const c=dims(1400,900,3,true);assert.ok(c.w*c.h<=1602000);assert.ok(c.w<=2048);
+  const d=dims(1280,720,2,false);assert.equal(d.w,1280);assert.equal(d.h,720);
+  assert.match(html,/window\.devicePixelRatio/);
+  assert.match(html,/grid-template:minmax\(0,1fr\)\/minmax\(0,1fr\)/);
+ }
+});
