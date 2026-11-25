@@ -1,0 +1,16 @@
+'use strict';
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
+const {appendSelfReport:append,currentEvidence:view}=require('../src/rugby/athleteEvidence');
+const now='2026-11-25T00:00:00.000Z', earlier='2026-11-24T00:00:00.000Z';
+const input={eventType:'assessment_recorded',occurredAt:earlier,sourceRef:'assessment:1'};
+const first=()=>append([],input,'a',now,'e1');
+test('server-owned unverified evidence',()=>assert.deepEqual(first()[0],{eventId:'e1',athleteId:'a',occurredAt:earlier,recordedAt:now,eventType:'assessment_recorded',sourceRef:'assessment:1',verificationStatus:'unverified'}));
+for(const [name,patch] of Object.entries({future:{occurredAt:'2026-11-26T00:00:00.000Z'},invalid:{occurredAt:'2026-02-30T00:00:00.000Z'},forged:{verificationStatus:'verified'},identity:{athleteId:'b'},coach:{eventType:'coach_reviewed'},stage:{eventType:'stage_change_authorized'},attendance:{eventType:'attendance_recorded'},source:{sourceRef:''}}))test(name,()=>assert.throws(()=>append([],{...input,...patch},'a',now,'e1')));
+test('duplicate',()=>assert.throws(()=>append(first(),input,'a',now,'e1')));
+test('cross athlete',()=>assert.throws(()=>append(first(),input,'b',now,'e2')));
+test('correction preserves history',()=>{const h=first(),next=append(h,{...input,supersedes:'e1'},'a',now,'e2');assert.equal(h.length,1);assert.equal(next.length,2);assert.deepEqual(view(next,'a').map(e=>e.eventId),['e2']);});
+test('unknown correction',()=>assert.throws(()=>append(first(),{...input,supersedes:'missing'},'a',now,'e2')));
+test('duplicate correction',()=>{const h=append(first(),{...input,supersedes:'e1'},'a',now,'e2');assert.throws(()=>append(h,{...input,supersedes:'e1'},'a',now,'e3'));});
+test('chronological view',()=>{const h=append(first(),{...input,occurredAt:'2026-11-23T00:00:00.000Z'},'a',now,'e2');assert.deepEqual(view(h,'a').map(e=>e.eventId),['e2','e1']);});
+test('view rejects cross athlete',()=>assert.throws(()=>view(first(),'b')));
