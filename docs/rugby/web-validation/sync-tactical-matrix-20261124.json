@@ -1,0 +1,1222 @@
+[
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Receiver touched | Press and cover",
+    "target": 4.0,
+    "time": 1.775,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Press and cover",
+    "target": 4.0,
+    "time": 3.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Press and cover",
+    "target": -4.0,
+    "time": 3.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Press and cover",
+    "target": -4.0,
+    "time": 3.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": 4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": 4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": -4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": -4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Receiver touched | Outside drift",
+    "target": 4.0,
+    "time": 2.20833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Receiver touched | Outside drift",
+    "target": 4.0,
+    "time": 2.29166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Outside drift",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Outside drift",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Receiver touched | Press with deep cover",
+    "target": 4.0,
+    "time": 2.56666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Receiver touched | Press with deep cover",
+    "target": 4.0,
+    "time": 2.94999999999999,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Press with deep cover",
+    "target": -4.0,
+    "time": 3.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Press with deep cover",
+    "target": -4.0,
+    "time": 3.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": 4.0,
+    "time": 3.70833333333332,
+    "timing": 1
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Carrier touched | Double blitz",
+    "target": 4.0,
+    "time": 1.00833333333333,
+    "timing": 2
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": 4.0,
+    "time": 3.70833333333332,
+    "timing": 1
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Carrier touched | Double blitz",
+    "target": 4.0,
+    "time": 1.00833333333333,
+    "timing": 2
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": -4.0,
+    "time": 3.70833333333332,
+    "timing": 1
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Carrier touched | Double blitz",
+    "target": -4.0,
+    "time": 1.00833333333333,
+    "timing": 2
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Double blitz",
+    "target": -4.0,
+    "time": 3.70833333333332,
+    "timing": 1
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Carrier touched | Double blitz",
+    "target": -4.0,
+    "time": 1.00833333333333,
+    "timing": 2
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": 4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": 4.0,
+    "time": 0.991666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": -4.0,
+    "time": 0.999999999999999,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Press and cover",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": 4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": 4.0,
+    "time": 0.991666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": -4.0,
+    "time": 0.999999999999999,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Try | Press and cover",
+    "target": -4.0,
+    "time": 5.09166666666671,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": 4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": 4.0,
+    "time": 0.999999999999999,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": -4.0,
+    "time": 0.999999999999999,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press and cover",
+    "target": -4.0,
+    "time": 1.33333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press and cover",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press and cover",
+    "target": 4.0,
+    "time": 1.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press and cover",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press and cover",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Double blitz",
+    "target": 4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Double blitz",
+    "target": 4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Double blitz",
+    "target": -4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Double blitz",
+    "target": -4.0,
+    "time": 3.70833333333332,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": 4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": 4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": -4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": -4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": 4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": 4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": -4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Double blitz",
+    "target": -4.0,
+    "time": 1.00833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Double blitz",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Double blitz",
+    "target": 4.0,
+    "time": 1.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Double blitz",
+    "target": -4.0,
+    "time": 1.91666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 1,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Double blitz",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Receiver touched | Outside drift",
+    "target": 4.0,
+    "time": 2.20833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Receiver touched | Outside drift",
+    "target": 4.0,
+    "time": 2.29166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Outside drift",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Try | Outside drift",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": 4.0,
+    "time": 1.7,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": 4.0,
+    "time": 1.71666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": -4.0,
+    "time": 1.7,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": -4.0,
+    "time": 1.71666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": 4.0,
+    "time": 1.775,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": 4.0,
+    "time": 1.99166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": -4.0,
+    "time": 2.09166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Outside drift",
+    "target": -4.0,
+    "time": 1.71666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Outside drift",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Outside drift",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Attack recovered kick | Outside drift",
+    "target": -4.0,
+    "time": 2.06666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Outside drift",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": 4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": 4.0,
+    "time": 1.19166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": -4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": -4.0,
+    "time": 1.19166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": 4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": 4.0,
+    "time": 1.19166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": -4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": -4.0,
+    "time": 1.19166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": 4.0,
+    "time": 1.01666666666667,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": 4.0,
+    "time": 3.54166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": -4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 3,
+    "status": "2v2 | Carrier touched | Press with deep cover",
+    "target": -4.0,
+    "time": 1.15,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press with deep cover",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press with deep cover",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press with deep cover",
+    "target": -4.0,
+    "time": 2.0,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 3,
+    "status": "2v2 | Defense recovered kick | Press with deep cover",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": 4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": 4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": -4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": -4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": 4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": 4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": -4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": -4.0,
+    "time": 1.03333333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": 4.0,
+    "time": 1.025,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": 4.0,
+    "time": 1.04166666666667,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": -4.0,
+    "time": 1.04166666666667,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Carrier rush",
+    "target": -4.0,
+    "time": 1.025,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Defense recovered kick | Carrier rush",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Attack recovered kick | Carrier rush",
+    "target": 4.0,
+    "time": 2.06666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Attack recovered kick | Carrier rush",
+    "target": -4.0,
+    "time": 2.06666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 0,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Defense recovered kick | Carrier rush",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Try | Hold the pass lane",
+    "target": 4.0,
+    "time": 3.99166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Try | Hold the pass lane",
+    "target": 4.0,
+    "time": 3.99166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Try | Hold the pass lane",
+    "target": -4.0,
+    "time": 3.99166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 4,
+    "status": "2v1 | Try | Hold the pass lane",
+    "target": -4.0,
+    "time": 3.99166666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Try | Hold the pass lane",
+    "target": 4.0,
+    "time": 5.09166666666671,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Hold the pass lane",
+    "target": 4.0,
+    "time": 2.26666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Hold the pass lane",
+    "target": -4.0,
+    "time": 2.26666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 1,
+    "phase": 4,
+    "status": "2v1 | Try | Hold the pass lane",
+    "target": -4.0,
+    "time": 5.09166666666671,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Hold the pass lane",
+    "target": 4.0,
+    "time": 1.95833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Hold the pass lane",
+    "target": 4.0,
+    "time": 1.95833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Hold the pass lane",
+    "target": -4.0,
+    "time": 1.95833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 2,
+    "phase": 4,
+    "status": "2v1 | Carrier touched | Hold the pass lane",
+    "target": -4.0,
+    "time": 1.95833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Defense recovered kick | Hold the pass lane",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Defense recovered kick | Hold the pass lane",
+    "target": 4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": -1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Defense recovered kick | Hold the pass lane",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 3,
+    "draw": 1.0,
+    "finish": 3,
+    "phase": 4,
+    "status": "2v1 | Defense recovered kick | Hold the pass lane",
+    "target": -4.0,
+    "time": 1.85833333333333,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Outside drift",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  },
+  {
+    "defense": 2,
+    "draw": 1.0,
+    "finish": 0,
+    "phase": 5,
+    "status": "3v2 | Try | Outside drift",
+    "target": -4.0,
+    "time": 4.11666666666666,
+    "timing": 0
+  }
+]

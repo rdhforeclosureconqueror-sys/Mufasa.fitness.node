@@ -1,13 +1,13 @@
 [gd_scene load_steps=16 format=3]
 
 [ext_resource type="Script" path="res://scripts/game/training_drill.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/game/web_status.gd" id="6_web"]
 [ext_resource type="PackedScene" path="res://scenes/characters/rashad_player.tscn" id="2_player"]
 [ext_resource type="PackedScene" path="res://scenes/ball/rugby_ball.tscn" id="3_ball"]
 [ext_resource type="PackedScene" path="res://addons/virtual_joystick_cf/virtual_joystick_cf.tscn" id="4_joystick"]
 
 [ext_resource type="PackedScene" path="res://scenes/quin_nation_perimeter.tscn" id="5_walls"]
 
-[ext_resource type="Script" path="res://scripts/game/web_status.gd" id="6_web"]
 [sub_resource type="BoxShape3D" id="PitchCollision"]
 size = Vector3(32, 0.2, 24)
 
@@ -134,16 +134,6 @@ offset_right = -25.0
 offset_bottom = -35.0
 text = "PASS"
 
-[node name="RestartButton" type="Button" parent="HUD"]
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -148.0
-offset_top = 14.0
-offset_right = -24.0
-offset_bottom = 70.0
-mouse_filter = 0
-text = "RESTART"
-
 [node name="VirtualJoystick" parent="HUD" instance=ExtResource("4_joystick")]
 anchor_top = 1.0
 anchor_bottom = 1.0
@@ -158,6 +148,6 @@ action_down = &"move_back"
 
 [node name="Perimeter" parent="." instance=ExtResource("5_walls")]
 
-
 [node name="WebStatus" type="Node" parent="."]
 script = ExtResource("6_web")
+

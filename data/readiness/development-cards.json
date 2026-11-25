@@ -922,6 +922,20 @@
       "createdAt": "2026-11-21T17:40:41.784Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-sync-v8b",
+      "board": "launch",
+      "canonical": false,
+      "title": "Rugby HQ V8B production synchronization",
+      "category": "RUGBY HQ",
+      "description": "Synchronize saved V8B checkpoint into Web project; validate tactical simulation, mobile controls, navigation and live deployment; defer coaching engine.",
+      "priority": "CRITICAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-24T23:37:49.715Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

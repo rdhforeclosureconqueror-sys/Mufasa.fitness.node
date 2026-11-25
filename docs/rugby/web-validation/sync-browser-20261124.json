@@ -1,0 +1,43 @@
+{
+  "base": "http://127.0.0.1:8782",
+  "results": [
+    {
+      "mode": "desktop",
+      "pass": true,
+      "checks": [
+        "WASD/arrows, camera-relative displacement, facing, Run and fixed physics yaw",
+        "sustained motion and animated skeleton",
+        "Shift Walk and sustained boundary collision",
+        "Space pass, catch, R reset",
+        "Training -> Playbook with full formation",
+        "3v2 selection, actual simulation, replay/reset",
+        "Playbook -> Training"
+      ],
+      "errors": []
+    },
+    {
+      "mode": "landscape",
+      "pass": true,
+      "checks": [
+        "two-finger joystick/PASS/RESTART and exactly-once pass",
+        "single-finger PASS and restart",
+        "Training -> Playbook with full formation",
+        "3v2 selection, actual simulation, replay/reset",
+        "Playbook -> Training"
+      ],
+      "errors": []
+    },
+    {
+      "mode": "portrait",
+      "pass": true,
+      "checks": [
+        "two-finger joystick/PASS/RESTART and exactly-once pass",
+        "single-finger PASS and restart",
+        "Training -> Playbook with full formation",
+        "3v2 selection, actual simulation, replay/reset",
+        "Playbook -> Training"
+      ],
+      "errors": []
+    }
+  ]
+}

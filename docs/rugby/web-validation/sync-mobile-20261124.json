@@ -1,0 +1,31 @@
+{
+  "base": "http://127.0.0.1:8782",
+  "results": [
+    {
+      "mode": "landscape",
+      "pass": true,
+      "checks": [
+        "two-finger joystick/PASS/RESTART and exactly-once pass",
+        "single-finger PASS and restart",
+        "game-over pass feedback and reset recovery",
+        "Training -> Playbook with full formation",
+        "3v2 selection, actual simulation, replay/reset",
+        "Playbook -> Training"
+      ],
+      "errors": []
+    },
+    {
+      "mode": "portrait",
+      "pass": true,
+      "checks": [
+        "two-finger joystick/PASS/RESTART and exactly-once pass",
+        "single-finger PASS and restart",
+        "game-over pass feedback and reset recovery",
+        "Training -> Playbook with full formation",
+        "3v2 selection, actual simulation, replay/reset",
+        "Playbook -> Training"
+      ],
+      "errors": []
+    }
+  ]
+}

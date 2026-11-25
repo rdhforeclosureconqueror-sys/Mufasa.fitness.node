@@ -313,6 +313,23 @@ func _draw() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree():
+		return
+
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.device != InputEvent.DEVICE_ID_EMULATION:
+		var touch := InputEventScreenTouch.new()
+		touch.index = 1000
+		touch.position = event.position
+		touch.pressed = event.pressed
+		_input(touch)
+		return
+
+	if event is InputEventMouseMotion and _touch_index == 1000:
+		var drag := InputEventScreenDrag.new()
+		drag.index = 1000
+		drag.position = event.position
+		_input(drag)
+		return
 	if Engine.is_editor_hint():
 		return
 	
@@ -507,3 +524,14 @@ func _update_stick(new_position: Vector2) -> void:
 func _vibrate(duration_ms: int = 30) -> void:
 	if OS.has_feature("mobile") and vibration_enabled:
 		Input.vibrate_handheld(duration_ms * vibration_force)
+
+
+func cancel_controller_touch() -> void:
+	_touch_index = -1
+	_input_direction = Vector2.ZERO
+	_update_input_actions()
+	_reset_stick()
+	if _is_dynamic_mode():
+		_set_dynamic_visibility(0.0)
+	direction_changed.emit(Vector2.ZERO)
+	released.emit()
