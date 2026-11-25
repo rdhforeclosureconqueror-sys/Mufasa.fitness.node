@@ -28,6 +28,15 @@ function createCoachEvidenceService({assignmentStore,userStore,authorizationReso
   });
   return {...result};
  }
- return {review};
+ function list(auth,athleteId){
+  access(auth,athleteId);
+  const user=userStore.loadUser(athleteId);
+  const history=currentEvidence(user.rugbyEvidence||[],athleteId);
+  return history.filter(e=>e.eventType==='assessment_recorded').map(e=>{
+   const a=(user.rugbyAssessments||[]).find(a=>'assessment:'+a.id===e.sourceRef);
+   return {eventId:e.eventId,occurredAt:e.occurredAt,measurement:a?{type:a.type,value:a.value,unit:a.unit,date:a.date}:null,review:history.find(r=>r.eventType==='coach_reviewed'&&r.sourceRef==='evidence:'+e.eventId)?.finding||null};
+  });
+ }
+ return {review,list};
 }
 module.exports={createCoachEvidenceService};
