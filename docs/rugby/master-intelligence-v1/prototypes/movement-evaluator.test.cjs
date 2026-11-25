@@ -1,3 +1,5 @@
+const {test}=require('node:test');
+const assert=require('node:assert/strict');
 const {evaluateMovement}=require('./movement-evaluator.cjs');
 function run(fn,cases){return cases.map(([name,input,expected])=>{const before=JSON.stringify(input),r=fn(input);return {name,pass:r.status===expected&&r.automatedPrescriptionAllowed===false&&r.runtimeActivation===false&&before===JSON.stringify(input)&&(name!=="different retest"||r.retestMetadataCompatible===false)&&(name!=="same retest"||r.retestMetadataCompatible===true&&r.change===null)&&(name!=="conflict"||r.conflictingEvidence===true&&r.hypothesisEvidence.conflict[0]==="b")&&(name!=="three trials"||r.score===null)&&(name!=="missing trial"||r.reason==="invalid_trials")}})}
 const results=run(evaluateMovement,[
@@ -303,4 +305,4 @@ const results=run(evaluateMovement,[
     "REVIEW_REQUIRED"
   ]
 ]);
-console.log(JSON.stringify(results,null,2));if(results.some(r=>!r.pass))process.exitCode=1;
+for(const r of results)test(r.name,()=>assert.ok(r.pass,JSON.stringify(r)));
