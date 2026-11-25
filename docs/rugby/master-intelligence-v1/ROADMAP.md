@@ -80,3 +80,6 @@ Batch exit gate: implementation and tests where applicable; source and runtime e
 
 ## Maintenance rule
 For each subsequent change, update this roadmap and recovery-manifest.json with actual acceptance evidence, remaining work and activation status. Do not mark a design specification as an executed test or production integration.
+
+## Phase 1B checkpoint — PR #1410
+Recovery PR #1406 merged. Evidence core CI: 214/214 passed. Authenticated assessment evidence persistence and private read route implemented on PR #1410; three new route cases pending CI. Legacy assessments preserved, not backfilled. Coach authorization and production acceptance pending. Original milestone count unchanged.
