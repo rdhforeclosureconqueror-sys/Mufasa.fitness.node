@@ -83,3 +83,6 @@ For each subsequent change, update this roadmap and recovery-manifest.json with 
 
 ## Phase 1B checkpoint — PR #1410
 Recovery PR #1406 merged. Evidence core CI: 214/214 passed. Authenticated assessment evidence persistence and private read route implemented on PR #1410; three new route cases pending CI. Legacy assessments preserved, not backfilled. Coach authorization and production acceptance pending. Original milestone count unchanged.
+
+## Coach evidence checkpoint — PR #1411
+PR #1410 merged at 83e042108bf16ae19a9bb7270060b74e61ce5f40; 217/217 CI tests passed. Coach service 227/227 CI tests passed at 02f2512008c74f355f0056bab89b5a1b6c6648b1. Canonical assignment store and authorization resolver reused; review queue and write endpoint default disabled. Three additional queue tests and route inventory committed; latest CI and live acceptance pending. No automatic progression. Original milestone count unchanged.

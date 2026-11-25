@@ -1537,5 +1537,15 @@
     "readback_verified": true,
     "runtime_activation": false,
     "implementation_pending": true
+  },
+  "coach_evidence": {
+    "pr": 1411,
+    "prior_ci_passed": 227,
+    "prior_ci_head": "02f2512008c74f355f0056bab89b5a1b6c6648b1",
+    "athlete_evidence_merge": "83e042108bf16ae19a9bb7270060b74e61ce5f40",
+    "feature_flag": "ENABLE_RUGBY_COACH_EVIDENCE",
+    "default_enabled": false,
+    "latest_ci_pending": true,
+    "live_verified": false
   }
 }
