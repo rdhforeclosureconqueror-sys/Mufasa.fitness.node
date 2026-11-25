@@ -42,7 +42,7 @@
     "coverage_reconciliation_pending": false
   },
   "repository_visibility": "public",
-  "merge_hold": "Archive privacy and intellectual property review; production integration and repository-wide regression remain separate acceptance gates.",
+  "merge_hold": null,
   "expanded_ci": {
     "head": "8761efa6589287c0573ada0eba1eb79fab5781ce",
     "run": 45558700391,
@@ -52,5 +52,6 @@
     "skipped": 0,
     "registered_test_files": 15,
     "readback_verified": true
-  }
+  },
+  "owner_decision": "Defer proprietary-content lockdown until system build; retain credential and personal-data safeguards. Recovery merge authorized; runtime activation remains separate."
 }
