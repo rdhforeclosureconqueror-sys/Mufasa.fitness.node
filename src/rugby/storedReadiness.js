@@ -24,6 +24,6 @@ function evaluateStoredReadiness(user,athleteId,today,ageGroup){
  if(current.readiness==='fatigued'||current.teamHighLoad)return out('HOLD','reported_fatigue_or_team_load',{date:current.date});
  // Legacy check-ins cannot establish detailed recovery or clinical clearance.
  const readiness=evaluateReadiness({ageGroup,clinicalConcern:false,current:current.recovery?{...current.recovery,athleteId}:null,previous:records[1]?.recovery?{...records[1].recovery,athleteId}:null});
- return out('REVIEW_REQUIRED','detailed_readiness_and_safety_evidence_missing',{date:current.date,reportedReadiness:current.readiness,detailedReadinessStatus:readiness.status,changes:readiness.changes??null,comparisonDate:readiness.comparable?records[1].date:null});
+ return out('REVIEW_REQUIRED',readiness.status==='DESCRIPTIVE_ONLY'?'coach_safety_review_required':'detailed_readiness_or_privacy_review_required',{date:current.date,reportedReadiness:current.readiness,detailedReadinessStatus:readiness.status,changes:readiness.changes??null,comparisonDate:readiness.comparable?records[1].date:null});
 }
 module.exports={evaluateStoredReadiness};
