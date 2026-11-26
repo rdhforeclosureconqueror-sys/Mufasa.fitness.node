@@ -84,7 +84,117 @@ jobs:
           fi
           if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx '.github/workflows/readiness-evidence.yml' >/dev/null; then
             CARD=launch-development-rugby-simba-migration
-            FILES=.github/workflows/readiness-evidence.yml
+            FILES=$(git diff --name-only "$CHANGED_BASE" HEAD | grep -E '^(scripts/rugby/simba-policy-(migration|preflight)[.]sql|[.]github/workflows/(rugby-simba-migration[^/]*|readiness-evidence)[.]yml|docs/rugby/master-intelligence-v1/(ROADMAP|simba-migration-runbook)[.]md)
+            WORKFLOW='Rugby Simba migration rehearsal'
+          fi
+          if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            for attempt in {1..30}; do
+              TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r --arg workflow "$WORKFLOW" '[.workflow_runs[] | select(.name == $workflow and .conclusion == "success")][0].id // empty')
+              [[ -n "$TEST_RUN" ]] && break
+              sleep 10
+            done
+            [[ -n "$TEST_RUN" ]]
+            NOTE="Automated $WORKFLOW; owner live acceptance pending."
+          fi
+          if [[ -z "$TEST_RUN" ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/45761701245" | jq -e '.head_sha == "41ef3da6c6a11a001c1d7676f9ec033f6615e569" and .status == "completed" and .conclusion == "success" and .name == "Rugby HQ acceptance tests"' >/dev/null
+            echo "Verified historical test fixture; no current PASS asserted."
+          fi
+          if [[ -n "$TEST_RUN" ]]; then
+            [[ "$TEST_RUN" =~ ^[0-9]+$ ]]
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" --arg workflow "$WORKFLOW" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name == $workflow' >/dev/null
+            result=(--result PASS)
+            NOTE="$NOTE; verified successful workflow run $TEST_RUN"
+          fi
+          # Backfill the verified production preflight without granting migration or human acceptance.
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx '.github/workflows/readiness-evidence.yml' >/dev/null; then
+            PREFLIGHT_RUN=45786852601
+            PREFLIGHT_SHA=02db51bc14fa883a37f8f5c0eb3882085d693743
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN" | jq -e --arg sha "$PREFLIGHT_SHA" '.head_sha == $sha and .head_branch == "main" and .event == "workflow_dispatch" and .name == "Rugby Simba migration" and .status == "completed" and .conclusion == "success"' >/dev/null
+            JOB_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN/jobs" | jq -er '[.jobs[] | select(.name == "migrate" and .conclusion == "success")] | if length == 1 then .[0].id else error("Unexpected preflight jobs") end')
+            gh api --allow-escape-sequences "repos/$GITHUB_REPOSITORY/actions/jobs/$JOB_ID/logs" | sed -E 
+            grep -Eq 'OPERATION: preflight[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'PGSSLMODE: verify-full[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Read-only preflight passed[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Z ROLLBACK[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            rm -f "$RUNNER_TEMP/simba-preflight.log"
+            npm run readiness:update -- --board launch --card launch-development-rugby-simba-migration --action evidence --files '.github/workflows/rugby-simba-migration.yml,scripts/rugby/simba-policy-preflight.sql' --pr 1421 --commit "$PREFLIGHT_SHA" --note "Production read-only preflight run $PREFLIGHT_RUN passed; TLS verify-full, database name, CREATE privilege, absent Rugby schema and rollback verified. Independent instance identity, isolated restore, migration and owner acceptance pending." --result PASS
+          fi
+          npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$HEAD_SHA" --note "$NOTE" "${result[@]}"
+          if [[ -n "$BASE" ]]; then npm run readiness:validate -- --base "$BASE"; else npm run readiness:validate; fi
+          git diff --stat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-readiness-evidence
+          path: |
+            data/readiness/development-evidence.json
+            data/readiness/development-cards.json
+          if-no-files-found: error
+ | paste -sd, -)
+            WORKFLOW='Rugby Simba migration rehearsal'
+          fi
+          if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            for attempt in {1..30}; do
+              TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r --arg workflow "$WORKFLOW" '[.workflow_runs[] | select(.name == $workflow and .conclusion == "success")][0].id // empty')
+              [[ -n "$TEST_RUN" ]] && break
+              sleep 10
+            done
+            [[ -n "$TEST_RUN" ]]
+            NOTE="Automated $WORKFLOW; owner live acceptance pending."
+          fi
+          if [[ -z "$TEST_RUN" ]]; then
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/45761701245" | jq -e '.head_sha == "41ef3da6c6a11a001c1d7676f9ec033f6615e569" and .status == "completed" and .conclusion == "success" and .name == "Rugby HQ acceptance tests"' >/dev/null
+            echo "Verified historical test fixture; no current PASS asserted."
+          fi
+          if [[ -n "$TEST_RUN" ]]; then
+            [[ "$TEST_RUN" =~ ^[0-9]+$ ]]
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" --arg workflow "$WORKFLOW" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name == $workflow' >/dev/null
+            result=(--result PASS)
+            NOTE="$NOTE; verified successful workflow run $TEST_RUN"
+          fi
+          # Backfill the verified production preflight without granting migration or human acceptance.
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx '.github/workflows/readiness-evidence.yml' >/dev/null; then
+            PREFLIGHT_RUN=45786852601
+            PREFLIGHT_SHA=02db51bc14fa883a37f8f5c0eb3882085d693743
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN" | jq -e --arg sha "$PREFLIGHT_SHA" '.head_sha == $sha and .head_branch == "main" and .event == "workflow_dispatch" and .name == "Rugby Simba migration" and .status == "completed" and .conclusion == "success"' >/dev/null
+            JOB_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN/jobs" | jq -er '[.jobs[] | select(.name == "migrate" and .conclusion == "success")] | if length == 1 then .[0].id else error("Unexpected preflight jobs") end')
+            gh api "repos/$GITHUB_REPOSITORY/actions/jobs/$JOB_ID/logs" > "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'OPERATION: preflight[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'PGSSLMODE: verify-full[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Read-only preflight passed[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Z ROLLBACK[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            rm -f "$RUNNER_TEMP/simba-preflight.log"
+            npm run readiness:update -- --board launch --card launch-development-rugby-simba-migration --action evidence --files '.github/workflows/rugby-simba-migration.yml,scripts/rugby/simba-policy-preflight.sql' --pr 1421 --commit "$PREFLIGHT_SHA" --note "Production read-only preflight run $PREFLIGHT_RUN passed; TLS verify-full, database name, CREATE privilege, absent Rugby schema and rollback verified. Independent instance identity, isolated restore, migration and owner acceptance pending." --result PASS
+          fi
+          npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$HEAD_SHA" --note "$NOTE" "${result[@]}"
+          if [[ -n "$BASE" ]]; then npm run readiness:validate -- --base "$BASE"; else npm run readiness:validate; fi
+          git diff --stat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-readiness-evidence
+          path: |
+            data/readiness/development-evidence.json
+            data/readiness/development-cards.json
+          if-no-files-found: error
+s/\x1b\\[[0-9;]*[A-Za-z]//g' > "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'OPERATION: preflight[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'PGSSLMODE: verify-full[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Read-only preflight passed[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Z ROLLBACK[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            rm -f "$RUNNER_TEMP/simba-preflight.log"
+            npm run readiness:update -- --board launch --card launch-development-rugby-simba-migration --action evidence --files '.github/workflows/rugby-simba-migration.yml,scripts/rugby/simba-policy-preflight.sql' --pr 1421 --commit "$PREFLIGHT_SHA" --note "Production read-only preflight run $PREFLIGHT_RUN passed; TLS verify-full, database name, CREATE privilege, absent Rugby schema and rollback verified. Independent instance identity, isolated restore, migration and owner acceptance pending." --result PASS
+          fi
+          npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$HEAD_SHA" --note "$NOTE" "${result[@]}"
+          if [[ -n "$BASE" ]]; then npm run readiness:validate -- --base "$BASE"; else npm run readiness:validate; fi
+          git diff --stat
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-readiness-evidence
+          path: |
+            data/readiness/development-evidence.json
+            data/readiness/development-cards.json
+          if-no-files-found: error
+ | paste -sd, -)
             WORKFLOW='Rugby Simba migration rehearsal'
           fi
           if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
