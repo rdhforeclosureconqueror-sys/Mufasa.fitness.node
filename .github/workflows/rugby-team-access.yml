@@ -1,0 +1,26 @@
+name: Rugby team access acceptance
+on:
+  pull_request:
+    paths:
+      - 'src/routes/quinsProtectedRoutes.js'
+      - 'src/services/quinsRavensPlaybook.js'
+      - 'src/middleware/auth.js'
+      - 'test/quins-protected-routes.test.js'
+      - 'test/quins-ravens-real-playbook.test.js'
+      - '.github/workflows/rugby-team-access.yml'
+      - 'server.js'
+permissions:
+  contents: read
+jobs:
+  team-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test protected tactical routes and playbook regressions
+        run: node --test test/quins-protected-routes.test.js test/quins-ravens-real-playbook.test.js
