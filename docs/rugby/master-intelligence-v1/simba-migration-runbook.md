@@ -13,3 +13,6 @@ After COMMIT a Git revert does not reverse DDL. Affected objects: rugby_intellig
 
 ## Evidence
 Rehearsal run 45772767772 and recovery regression run 45772767590 passed at caf696b554db6bb721584adc9b846142b9e0650f. Production execution, environment protections, backup and owner acceptance remain unverified.
+
+## Read-only preflight
+Select operation `preflight` (default), leave confirmation empty, run on main and approve the protected environment. The same TLS-verified connection and URI guard are used as for migration. The preflight uses a read-only transaction and checks database name, CREATE privilege and absence of the Rugby schema. A successful preflight is not restore testing or independent confirmation of instance identity. Migration requires operation `migrate` and confirmation `MIGRATE_RUGBY_SIMBA`; it repeats preflight before DDL. Rollback of this workflow-only change is a reviewed revert and redeploy; no schema changes occur in preflight.
