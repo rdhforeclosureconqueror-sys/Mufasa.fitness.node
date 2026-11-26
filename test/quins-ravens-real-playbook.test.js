@@ -39,7 +39,7 @@ test('no jersey circles overlap after phase placement',()=>{
 });
 test('same RAVENS UI offers attack-only and responsive-defense experiments',()=>{
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
- for(const term of ['data-defense-toggle','data-strategy','data-crash','data-wide','data-reset-defense','defenseReport','With Defense'])assert.ok(js.includes(term),term);
+ for(const term of ['data-defense-toggle','data-strategy','data-crash','data-wide','data-reset-defense','defenseReport'])assert.ok(js.includes(term),term);
 });
 
 test('defensive decisions advance only coach-authored stages',()=>{
@@ -60,7 +60,10 @@ test('ball transfer visual identifies documented carriers and avoids inventing r
 
 test('iPhone pitch controls appear before long defensive report and are responsive',()=>{
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
- assert.ok(js.indexOf('class="pitch-controls"')<js.indexOf('class="decision"'));
+ const controls=js.indexOf('aria-label="RAVENS pitch playback and decisions"');
+ const report=js.indexOf('<div class="decision"><label>Defense response');
+ assert.ok(controls>=0&&report>controls,'main playback controls precede defensive report');
+ assert.match(js,/data-defense-toggle>\s*Defense<\/label>/);
  assert.ok(js.includes('grid-template-columns:repeat(3,minmax(0,1fr))'));
  assert.ok(js.includes("if(!$('[data-defense-toggle]').checked){$('[data-defense-toggle]').checked=true;}"));
  assert.ok(js.includes('data-action-status'));
