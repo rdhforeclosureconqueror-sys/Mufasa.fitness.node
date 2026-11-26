@@ -86,3 +86,50 @@ jobs:
           path: ${{ runner.temp }}/rugby-web/
           if-no-files-found: error
           retention-days: 7
+
+  publish-v8c-candidate:
+    # Only this same-repository development branch can receive the candidate.
+    # Never push main or execute PR source with a write token.
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/rugby-v8c-mobile-cards' && github.event.pull_request.base.ref == 'main'
+    needs: compile-export
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          lfs: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: rugby-hq-web-candidate
+          path: ${{ runner.temp }}/validated-rugby
+      - name: Verify and publish candidate to development branch only
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          branch=feat/rugby-v8c-mobile-cards
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git ls-remote origin "refs/heads/$branch" | cut -f1)" = "$EXPECTED_HEAD"
+          python3 - "$RUNNER_TEMP/validated-rugby" <<'PY'
+          import hashlib,json,pathlib,sys,shutil
+          src=pathlib.Path(sys.argv[1])
+          dst=pathlib.Path('public/game/rugby-hq')
+          manifest=json.loads((src/'build-manifest.json').read_text())
+          expected=set(json.loads((dst/'build-manifest.json').read_text())['files'])
+          if set(manifest['files']) != expected:
+              raise SystemExit('Unexpected candidate asset list')
+          for name, meta in manifest['files'].items():
+              if pathlib.Path(name).name != name: raise SystemExit('Unsafe asset name')
+              data=(src/name).read_bytes()
+              if len(data)!=meta['bytes'] or hashlib.sha256(data).hexdigest()!=meta['sha256']:
+                  raise SystemExit('Asset integrity failure: '+name)
+              (dst/name).write_bytes(data)
+          shutil.copyfile(src/'build-manifest.json',dst/'build-manifest.json')
+          PY
+          git add -- public/game/rugby-hq/
+          if git diff --cached --quiet; then exit 0; fi
+          git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Publish validated V8C Web candidate"
+          git push origin "HEAD:refs/heads/$branch"
