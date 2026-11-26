@@ -43,6 +43,9 @@ var dummy_count := 0
 var scenario_mode := 0
 var support_two: RugbyPlayer
 var defender_two: RugbyPlayer
+const MobileCardLayer = preload("res://scripts/ui/mobile_card_layer.gd")
+var _mobile_cards: MobileCardLayer
+var _mobile_play_button: Button
 var scenario_selector: OptionButton
 var start_play_button: Button
 var receiver_selector: OptionButton
@@ -142,8 +145,12 @@ func _ready() -> void:
 	$CameraRig/SpringArm3D.add_excluded_object(ball.get_rid())
 	_diagnostics = "--rugby-diagnostics" in OS.get_cmdline_user_args()
 	_reset_drill()
+	_setup_mobile_play_card()
 
 func _input(event: InputEvent) -> void:
+	# Modal GUI must receive its own input; do not invoke raw gameplay gestures.
+	if is_instance_valid(_mobile_cards) and _mobile_cards.is_open():
+		return
 	# Keep native menu touch emulation, but consume its duplicate PASS/RESTART
 	# mouse events. These two controls also work with a second joystick finger.
 	if event is InputEventMouseButton and event.device == -1:
@@ -924,6 +931,9 @@ func _prepare_scenario() -> void:
 	pending_receiver = null
 	waiting_to_start = true
 	scenario_selector.disabled = false
+	if is_instance_valid(_mobile_play_button):
+		_mobile_play_button.disabled = false
+		_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
 	start_play_button.show()
 	control_mode_button.disabled = false
 
@@ -944,6 +954,8 @@ func _start_scenario() -> void:
 	go_remaining = 0.0
 
 	scenario_selector.disabled = true
+	if is_instance_valid(_mobile_play_button):
+		_mobile_play_button.disabled = true
 	carrier_selector.disabled = true
 	difficulty_selector.disabled = true
 	start_play_button.hide()
@@ -2092,3 +2104,50 @@ func _return_to_playbook() -> void:
 	var result: Error = get_tree().change_scene_to_file("res://playbook/playbook_arena.tscn")
 	if result != OK:
 		_update_status("Unable to open Playbook Arena")
+
+# V8C first adapter: reuse the real scenario selector and its existing signal.
+func _setup_mobile_play_card() -> void:
+	if not MobileCardLayer.is_mobile():
+		return
+	_mobile_cards = MobileCardLayer.new()
+	add_child(_mobile_cards)
+	_mobile_cards.card_closed.connect(_restore_mobile_play_controls)
+	_mobile_play_button = Button.new()
+	_mobile_play_button.name = "MobilePickYourPlay"
+	_mobile_play_button.focus_mode = Control.FOCUS_NONE
+	_mobile_play_button.add_theme_font_size_override("font_size", 24)
+	$HUD.add_child(_mobile_play_button)
+	_mobile_play_button.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_mobile_play_button.offset_left = -145.0
+	_mobile_play_button.offset_right = 145.0
+	_mobile_play_button.offset_top = 126.0
+	_mobile_play_button.offset_bottom = 164.0
+	_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
+	_mobile_play_button.pressed.connect(_open_mobile_play_card)
+	scenario_selector.hide()
+
+func _open_mobile_play_card() -> void:
+	if not waiting_to_start or countdown_running or scenario_selector.disabled:
+		return
+	_reset_advanced_gestures()
+	_pass_touch_index = -1
+	$HUD/VirtualJoystick.cancel_controller_touch()
+	controlled_player.touch_direction = Vector2.ZERO
+	controlled_player.turbo_touch = false
+	_joystick_held = false
+	$HUD/VirtualJoystick.hide()
+	var entries: Array[Dictionary] = []
+	for index in range(scenario_selector.item_count):
+		var selected_prefix := "• " if index == scenario_selector.selected else ""
+		entries.append({"label": selected_prefix + scenario_selector.get_item_text(index), "action": _select_mobile_play.bind(index), "enabled": not scenario_selector.is_item_disabled(index)})
+	_mobile_cards.open_card("PICK YOUR PLAY", entries, _mobile_play_button)
+
+func _select_mobile_play(index: int) -> void:
+	if scenario_selector.disabled or not waiting_to_start or countdown_running:
+		return
+	scenario_selector.select(index)
+	scenario_selector.item_selected.emit(index)
+	_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
+
+func _restore_mobile_play_controls() -> void:
+	$HUD/VirtualJoystick.visible = _mobile_controller
