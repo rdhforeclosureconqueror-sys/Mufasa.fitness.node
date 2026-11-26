@@ -6919,6 +6919,38 @@
       "prNumber": 1421,
       "commitSha": "d276e5bf21ba279c59b8f17ef1a3148ae4315966",
       "timestamp": "2026-11-26T08:40:03.703Z"
+    },
+    {
+      "operationId": "5e94a4fe-44de-422f-b2a5-1e76ce6f533e",
+      "board": "launch",
+      "cardId": "launch-development-rugby-simba-migration",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/rugby-simba-migration.yml",
+        "scripts/rugby/simba-policy-preflight.sql"
+      ],
+      "automated": "PASS",
+      "evidence": "Production read-only preflight run 45786852601 passed; TLS verify-full, database name, CREATE privilege, absent Rugby schema and rollback verified. Independent instance identity, isolated restore, migration and owner acceptance pending.",
+      "prNumber": 1421,
+      "commitSha": "02db51bc14fa883a37f8f5c0eb3882085d693743",
+      "timestamp": "2026-11-26T09:01:59.051Z"
+    },
+    {
+      "operationId": "3dbe7c7c-2376-4d32-ab61-01a6e9a552d5",
+      "board": "launch",
+      "cardId": "launch-development-rugby-simba-migration",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/readiness-evidence.yml",
+        ".github/workflows/rugby-simba-migration-test.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated Rugby Simba migration rehearsal; owner live acceptance pending.; verified successful workflow run 45788136025",
+      "prNumber": 1422,
+      "commitSha": "347c8d2ba58e48e66c15788a30b2df68e414cab2",
+      "timestamp": "2026-11-26T09:01:59.236Z"
     }
   ]
 }

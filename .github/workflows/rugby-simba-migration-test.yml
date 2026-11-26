@@ -2,6 +2,7 @@ name: Rugby Simba migration rehearsal
 on:
   pull_request:
     paths:
+      - '.github/workflows/readiness-evidence.yml'
       - 'scripts/rugby/simba-policy-migration.sql'
       - 'scripts/rugby/simba-policy-preflight.sql'
       - '.github/workflows/rugby-simba-migration*.yml'

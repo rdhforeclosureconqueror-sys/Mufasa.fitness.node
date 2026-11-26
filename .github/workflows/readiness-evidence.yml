@@ -82,6 +82,11 @@ jobs:
               npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby Simba migration' --category 'RUGBY HQ' --description 'Isolated migration rehearsal; protected production execution remains operator gated' --started true --current true --humanRequired true
             fi
           fi
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx '.github/workflows/readiness-evidence.yml' >/dev/null; then
+            CARD=launch-development-rugby-simba-migration
+            FILES=$(git diff --name-only "$CHANGED_BASE" HEAD | grep -E '^(scripts/rugby/simba-policy-(migration|preflight)[.]sql|[.]github/workflows/(rugby-simba-migration[^/]*|readiness-evidence)[.]yml|docs/rugby/master-intelligence-v1/(ROADMAP|simba-migration-runbook)[.]md)$' | paste -sd, -)
+            WORKFLOW='Rugby Simba migration rehearsal'
+          fi
           if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
             for attempt in {1..30}; do
               TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r --arg workflow "$WORKFLOW" '[.workflow_runs[] | select(.name == $workflow and .conclusion == "success")][0].id // empty')
@@ -100,6 +105,20 @@ jobs:
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" --arg workflow "$WORKFLOW" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name == $workflow' >/dev/null
             result=(--result PASS)
             NOTE="$NOTE; verified successful workflow run $TEST_RUN"
+          fi
+          # Backfill the verified production preflight without granting migration or human acceptance.
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx '.github/workflows/readiness-evidence.yml' >/dev/null; then
+            PREFLIGHT_RUN=45786852601
+            PREFLIGHT_SHA=02db51bc14fa883a37f8f5c0eb3882085d693743
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN" | jq -e --arg sha "$PREFLIGHT_SHA" '.head_sha == $sha and .head_branch == "main" and .event == "workflow_dispatch" and .name == "Rugby Simba migration" and .status == "completed" and .conclusion == "success"' >/dev/null
+            JOB_ID=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$PREFLIGHT_RUN/jobs" | jq -er '[.jobs[] | select(.name == "migrate" and .conclusion == "success")] | if length == 1 then .[0].id else error("Unexpected preflight jobs") end')
+            gh api --allow-escape-sequences "repos/$GITHUB_REPOSITORY/actions/jobs/$JOB_ID/logs" | sed -E 's/\x1b\[[0-9;]*[A-Za-z]//g' > "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'OPERATION: preflight[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'PGSSLMODE: verify-full[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Read-only preflight passed[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            grep -Eq 'Z ROLLBACK[[:space:]]*$' "$RUNNER_TEMP/simba-preflight.log"
+            rm -f "$RUNNER_TEMP/simba-preflight.log"
+            npm run readiness:update -- --board launch --card launch-development-rugby-simba-migration --action evidence --files '.github/workflows/rugby-simba-migration.yml,scripts/rugby/simba-policy-preflight.sql' --pr 1421 --commit "$PREFLIGHT_SHA" --note "Production read-only preflight run $PREFLIGHT_RUN passed; TLS verify-full, database name, CREATE privilege, absent Rugby schema and rollback verified. Independent instance identity, isolated restore, migration and owner acceptance pending." --result PASS
           fi
           npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$HEAD_SHA" --note "$NOTE" "${result[@]}"
           if [[ -n "$BASE" ]]; then npm run readiness:validate -- --base "$BASE"; else npm run readiness:validate; fi
