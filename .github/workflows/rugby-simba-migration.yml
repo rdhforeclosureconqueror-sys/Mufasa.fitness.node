@@ -29,4 +29,17 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$DATABASE_URL"
+          # Accept only a standard PostgreSQL URI with no query options or fragment.
+          # This prevents URI parameters overriding the required TLS settings.
+          python3 - <<'PY'
+          import os, urllib.parse
+          try:
+              u = urllib.parse.urlsplit(os.environ["DATABASE_URL"])
+              assert u.scheme in ("postgres", "postgresql")
+              assert u.hostname and u.username and u.password
+              assert u.path == "/simba_db_jda4"
+              assert not u.query and not u.fragment
+          except Exception:
+              raise SystemExit("Invalid migration connection configuration")
+          PY
           psql -X --dbname="$DATABASE_URL" --file=scripts/rugby/simba-policy-migration.sql
