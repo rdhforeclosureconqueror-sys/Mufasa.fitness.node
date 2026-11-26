@@ -32,3 +32,10 @@ Production godot/rugby-hq-web/playbook/playbook_arena.gd has _show_reaction_feed
 
 ## Resume pointer
 P01 source trace and negative access matrix. P02 can use generic synthetic scenarios in parallel, but no private uploads until P01 passes. Do not redesign V8C or modify production access without verified scope.
+
+## P01 checkpoint — explicit preview opt-in
+- Confirmed source: src/routes/quinsProtectedRoutes.js default previously allowed any authenticated account unless preview explicitly false. Existing tests codified permissive behavior.
+- Correction staged on fix/rugby-p01-explicit-preview: only exact true enables preview; unset/invalid denies unenrolled users, existing explicit allowlists and verified admin behavior preserved.
+- Regression tests staged for both endpoints, anonymous/unrelated/removed enrollment, malformed preview flags and no-store. These are handler-level tests, not live HTTP identity verification.
+- Render service metadata does not expose environment values; actual preview flag and enrollment readiness remain unverified. Do not merge/deploy this behavior change until authorized roster continuity is established. No sensitive identifiers in this file.
+- Next: run targeted CI; verify canonical server auth registration, membership and static/export exposure. Confirm deployed preview state and enrollment readiness via authorized configuration inspection. P01 remains open.
