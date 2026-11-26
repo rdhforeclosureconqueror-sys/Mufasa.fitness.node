@@ -2,8 +2,8 @@
 
 ## Before execution
 - Confirm Render Simba instance dpg-d8o7kajeo5us73dtfdn0-a and database simba_db_jda4 using trusted dashboard metadata. Verify external TLS hostname and CA; do not disable certificate verification.
-- DBA verifies backup and restore capability, and confirms schema and table are absent or exactly match the approved migration. If unexpected objects exist, stop and investigate.
-- Configure GitHub environment rugby-simba-production restricted to main with required reviewer where supported. Store RUGBY_SIMBA_MIGRATION_URL only as an environment secret, with an authorized temporary migration identity. Ensure connection URI enforces verify-full, not a weaker sslmode. Never log the URI.
+- DBA verifies backup and restore capability, and confirms schema and table are absent; migration refuses an existing schema. If unexpected objects exist, stop and investigate.
+- Configure GitHub environment rugby-simba-production restricted to main with required reviewer where supported. Store RUGBY_SIMBA_MIGRATION_URL only as an environment secret, with an authorized temporary migration identity. Use a PostgreSQL URI with no query parameters or fragment; workflow enforces PGSSLMODE=verify-full. Configure a trusted CA on the runner before execution if required. Never log the URI.
 - Run Rugby Simba migration on main with confirmation MIGRATE_RUGBY_SIMBA after review and approval. No automatic deploy-time DDL.
 - Verify schema/table, constraints, ownership and ACLs independently. Provision dedicated runtime LOGIN separately, with USAGE on rugby_intelligence and SELECT/INSERT on the policy table only. Verify no unrelated data access, no UPDATE/DELETE/TRUNCATE, no inherited privileged roles. Use separate runtime secret and explicit search path. Do not enable application writes before these checks.
 
