@@ -105,3 +105,13 @@ Original 53-milestone count unchanged. No runtime activation.
 - [ ] Canonical readiness registration via CLI (outstanding; owner authorized PR-specific merge exception if necessary, not human acceptance).
 - [ ] Drafts, alternative pathways, trusted evidence, version pinning, production database configuration, privacy correction and admin interface.
 No production migration, runtime activation or owner device acceptance. Original 53-milestone denominator unchanged. Rollback: reviewed revert of squash commit and redeploy; no database schema or data change in this PR.
+
+### Simba production activation — PR #1420
+
+- [x] Read-only production audit: Simba database `simba_db_jda4` available; Rugby schema and policy table absent; current connector read-only.
+- [x] Implement main-only manually dispatched migration and isolated PostgreSQL rehearsal.
+- [ ] Verify rehearsal, readiness evidence and technical review; merge.
+- [ ] Configure protected production environment, migration secret, backup and TLS verification; execute approved migration.
+- [ ] Verify schema, dedicated runtime role and denial of unrelated data access; connect API and owner dashboard.
+
+This activation checklist does not alter the original 53-milestone denominator. No production migration or human acceptance asserted.
