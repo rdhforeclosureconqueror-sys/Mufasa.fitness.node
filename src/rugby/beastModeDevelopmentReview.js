@@ -13,6 +13,7 @@ function reviewDevelopmentCycle(input){
  const sessions=programme.sessions;
  if(new Set(sessions.map(s=>s?.id)).size!==sessions.length||sessions.some(s=>!s||typeof s.id!=='string'||!s.id||!date(s.date)||s.date<=baseline.date||s.date>retest.date||!['completed','coach_modified','planned_recovery','missed','unknown'].includes(s.status)))return out('REVIEW_REQUIRED','invalid_programme_evidence');
  if(sessions.some(s=>['missed','unknown'].includes(s.status)))return out('HOLD','programme_consistency_review');
+ if(!sessions.some(s=>s.status==='completed'||s.status==='coach_modified'))return out('HOLD','active_training_evidence_required');
  if(!Array.isArray(fieldObservations)||!fieldObservations.length||fieldObservations.some(o=>!same(o)||!date(o.date)||o.date<=baseline.date||o.date>retest.date||o.context!=='rugby_field'||o.finding!=='demonstrated'))return out('REVIEW_REQUIRED','field_transfer_required');
  return out('REVIEW_REQUIRED','candidate_cycle_complete_trusted_review_required');
 }
