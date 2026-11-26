@@ -10,6 +10,7 @@ on:
       - 'test/rugby-stored-readiness.test.js'
       - 'test/rugby-beast-mode-candidate.test.js'
       - 'test/rugby-beast-mode-development.test.js'
+      - 'test/rugby-beast-mode-policy.test.js'
       - '.github/workflows/rugby-recovery-acceptance.yml'
 permissions:
   contents: read
@@ -25,4 +26,4 @@ jobs:
         with:
           node-version: '22'
       - name: Execute recovered prototype suites
-        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js test/rugby-coach-evidence.test.js test/rugby-stored-readiness.test.js test/rugby-beast-mode-candidate.test.js test/rugby-beast-mode-development.test.js
+        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js test/rugby-coach-evidence.test.js test/rugby-stored-readiness.test.js test/rugby-beast-mode-candidate.test.js test/rugby-beast-mode-development.test.js test/rugby-beast-mode-policy.test.js
