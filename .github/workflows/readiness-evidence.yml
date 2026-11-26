@@ -5,6 +5,7 @@ on:
       - '.github/workflows/readiness-evidence.yml'
       - 'src/routes/rugbyProfileRoutes.js'
       - 'scripts/rugby/simba-policy-migration.sql'
+      - 'scripts/rugby/simba-policy-preflight.sql'
       - '.github/workflows/rugby-simba-migration*.yml'
   workflow_dispatch:
     inputs:
@@ -73,9 +74,9 @@ jobs:
               npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby recovery privacy safeguards' --category 'RUGBY HQ' --description 'Block detailed recovery collection until trusted consent; preserve legacy check-ins' --started true --current true --humanRequired true
             fi
           fi
-          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx 'scripts/rugby/simba-policy-migration.sql' >/dev/null; then
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -E '^scripts/rugby/simba-policy-(migration|preflight)[.]sql$|^[.]github/workflows/rugby-simba-migration[^/]*[.]yml$' >/dev/null; then
             CARD=launch-development-rugby-simba-migration
-            FILES=$(git diff --name-only "$CHANGED_BASE" HEAD | grep -E '^(scripts/rugby/simba-policy-migration[.]sql|[.]github/workflows/(rugby-simba-migration[^/]*|readiness-evidence)[.]yml|docs/rugby/master-intelligence-v1/(ROADMAP|simba-migration-runbook)[.]md)$' | paste -sd, -)
+            FILES=$(git diff --name-only "$CHANGED_BASE" HEAD | grep -E '^(scripts/rugby/simba-policy-(migration|preflight)[.]sql|[.]github/workflows/(rugby-simba-migration[^/]*|readiness-evidence)[.]yml|docs/rugby/master-intelligence-v1/(ROADMAP|simba-migration-runbook)[.]md)$' | paste -sd, -)
             WORKFLOW='Rugby Simba migration rehearsal'
             if ! jq -e --arg id "$CARD" '.. | objects | select(.id? == $id)' data/readiness/development-cards.json >/dev/null; then
               npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby Simba migration' --category 'RUGBY HQ' --description 'Isolated migration rehearsal; protected production execution remains operator gated' --started true --current true --humanRequired true

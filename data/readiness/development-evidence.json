@@ -6899,6 +6899,26 @@
       "prNumber": 1420,
       "commitSha": "70491901ce8cdc03c5f11092641adce0537f7209",
       "timestamp": "2026-11-26T07:21:27.905Z"
+    },
+    {
+      "operationId": "c7f376d8-5b9c-4961-a7a1-ca115d56c56f",
+      "board": "launch",
+      "cardId": "launch-development-rugby-simba-migration",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/readiness-evidence.yml",
+        ".github/workflows/rugby-simba-migration-test.yml",
+        ".github/workflows/rugby-simba-migration.yml",
+        "docs/rugby/master-intelligence-v1/ROADMAP.md",
+        "docs/rugby/master-intelligence-v1/simba-migration-runbook.md",
+        "scripts/rugby/simba-policy-preflight.sql"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated Rugby Simba migration rehearsal; owner live acceptance pending.; verified successful workflow run 45784986730",
+      "prNumber": 1421,
+      "commitSha": "d276e5bf21ba279c59b8f17ef1a3148ae4315966",
+      "timestamp": "2026-11-26T08:40:03.703Z"
     }
   ]
 }
