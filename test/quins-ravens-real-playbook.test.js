@@ -14,7 +14,8 @@ test('protected play endpoint rejects anonymous requests',()=>{
  let status=200,body;const res={set(){return this;},status(n){status=n;return this;},json(p){body=p;return this;}};
  routes['/api/quins/ravens/play'][1]({auth:null,query:{}},res);
  assert.equal(status,403);assert.equal(body.error,'QUINS_TEAM_ACCESS_REQUIRED');
- assert.equal(allowed({auth:{userId:'x'}},{}),true);
+ assert.equal(allowed({auth:{userId:'x'}},{}),false);
+ assert.equal(allowed({auth:{userId:'x'}},{QUINS_BUILD_PREVIEW:'true'}),true);
 });
 test('public script has no private coach play details',()=>{
  const js=fs.readFileSync(path.join(__dirname,'../public/rugby-ravens-protected.js'),'utf8');
