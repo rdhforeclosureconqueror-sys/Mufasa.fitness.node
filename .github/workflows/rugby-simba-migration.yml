@@ -26,15 +26,22 @@ jobs:
           DATABASE_URL: ${{ secrets.RUGBY_SIMBA_MIGRATION_URL }}
           PGSSLMODE: verify-full
           PGCONNECT_TIMEOUT: '10'
+          PGSSLROOTCERT: /etc/ssl/certs/ca-certificates.crt
         run: |
           set -euo pipefail
           test -n "$DATABASE_URL"
           # Accept only a standard PostgreSQL URI with no query options or fragment.
           # This prevents URI parameters overriding the required TLS settings.
           python3 - <<'PY'
-          import os, urllib.parse
+          import os, re, urllib.parse
           try:
-              u = urllib.parse.urlsplit(os.environ["DATABASE_URL"])
+              raw = os.environ["DATABASE_URL"]
+              assert raw.isascii() and not any(ord(c) <= 32 or ord(c) == 127 for c in raw)
+              assert "?" not in raw and "#" not in raw and "\\" not in raw
+              u = urllib.parse.urlsplit(raw)
+              assert re.fullmatch(r"[A-Za-z0-9.-]+", u.hostname or "")
+              assert u.netloc.count("@") == 1
+              assert u.port in (None, 5432)
               assert u.scheme in ("postgres", "postgresql")
               assert u.hostname and u.username and u.password
               assert u.path == "/simba_db_jda4"
