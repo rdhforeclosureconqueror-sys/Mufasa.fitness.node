@@ -2,7 +2,7 @@
 // Candidate development review only; input provenance must be established by a trusted service before activation.
 function reviewDevelopmentCycle(input){
  const out=(status,reason)=>({status,reason,retestAllowed:status!=='REFER'&&status!=='HOLD_SAFETY',stageChangeAuthorized:false,automaticProgressionAllowed:false});
- if(!input||typeof input!=='object')return out('REVIEW_REQUIRED','missing_cycle');
+ if(!input||typeof input!=='object'||Array.isArray(input))return out('HOLD_SAFETY','missing_cycle');
  if(input.pain===true||input.clinicalConcern===true)return out('REFER','safety_concern');
  if(input.pain!==false||input.clinicalConcern!==false)return out('HOLD_SAFETY','unknown_safety');
  const {athleteId,stageId,baseline,retest,programme,fieldObservations}=input;
