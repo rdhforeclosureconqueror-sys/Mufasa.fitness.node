@@ -89,3 +89,12 @@ PR #1410 merged at 83e042108bf16ae19a9bb7270060b74e61ce5f40; 217/217 CI tests pa
 
 ## Safety and readiness integration checkpoint
 PR #1411 merged at 71ca4b05318c3cee1879420ffc1cb3187083539e; 230/230 prototype tests and 11 workflows passed. Stored readiness, optional versioned recovery validation and fail-closed eligibility adapter implemented; 17 new regression cases pending CI. No runtime eligibility activation or automatic progression. Original milestone count unchanged.
+
+## Beast Mode configurable development checkpoint
+- [x] Owner-directed baseline/programme/adherence/field transfer/retest policy recorded on development branch.
+- [x] Candidate stage criteria validation and pure append-only policy ledger implemented on development branch.
+- [ ] Verify 28 new regression cases in CI; previous verified baseline 247.
+- [ ] Trusted evidence provenance and complete programme records.
+- [ ] Dedicated owner authorization, atomic persistent policy storage, drafts and alternative pathways.
+- [ ] Admin dashboard, policy pinning, privacy review, deployment and live acceptance.
+Original 53-milestone count unchanged. No runtime activation.

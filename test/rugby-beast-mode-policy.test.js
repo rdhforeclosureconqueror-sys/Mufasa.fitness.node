@@ -1,0 +1,12 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {initialLedger,publish,restore}=require('../src/rugby/beastModePolicyLedger');
+const {defaultPolicy,validatePolicy}=require('../src/rugby/beastModePolicy');
+const now='2026-11-25T00:00:00.000Z';
+test('publish preserves original version',()=>{const l=initialLedger(),p=defaultPolicy();p.stages[0].minimumScore=5;const n=publish(l,{policy:p,expectedVersion:1,reason:'revision'},'owner',now);assert.equal(l.length,1);assert.equal(n[0].policy.stages[0].minimumScore,4);assert.equal(n[1].policy.stages[0].minimumScore,5);});
+test('stale publish rejected',()=>assert.throws(()=>publish(initialLedger(),{policy:defaultPolicy(),expectedVersion:0,reason:'revision'},'owner',now)));
+test('restore creates new version',()=>{const l=initialLedger(),p=defaultPolicy();p.stages[0].minimumScore=5;const n=publish(l,{policy:p,expectedVersion:1,reason:'revision'},'owner',now);const r=restore(n,{version:1,expectedVersion:2,reason:'restore'},'owner',now);assert.equal(r[2].version,3);assert.deepEqual(r[2].policy,l[0].policy);});
+test('unsafe score rejected',()=>{const p=defaultPolicy();p.stages[0].minimumScore=1;assert.throws(()=>validatePolicy(p));});
+test('stage skipping rejected',()=>{const p=defaultPolicy();p.stages.reverse();assert.throws(()=>validatePolicy(p));});
+test('activation flags cannot be enabled',()=>assert.equal(validatePolicy({...defaultPolicy(),activation:true,automaticProgression:true}).activation,false));
+test('missing audit reason rejected',()=>assert.throws(()=>publish(initialLedger(),{policy:defaultPolicy(),expectedVersion:1,reason:''},'owner',now)));

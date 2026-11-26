@@ -1,0 +1,21 @@
+'use strict';
+const {test}=require('node:test'),assert=require('node:assert/strict');
+const {reviewCandidate}=require('../src/rugby/beastModeCandidateReview');
+const {evaluateAthleteProgression}=require('../src/rugby/athleteProgression');
+const policy=require('../data/rugby/master-intelligence-v1/policies/beast-mode-stage-criteria-candidate.json');
+const today='2026-11-25',ctx={athleteId:'a',today};
+function obs(stage,date,context,extra={}){return {athleteId:'a',stageId:stage.id,date,context,pain:false,clinicalConcern:false,...Object.fromEntries(stage.proposedDimensions.map(k=>[k,4])),...extra};}
+const s=policy.stages[0],a=obs(s,'2026-11-24','basic_control'),b=obs(s,today,'basic_control');
+test('candidate pass never authorizes',()=>{const r=reviewCandidate(s.id,[a,b],ctx);assert.equal(r.reason,'candidate_quality_met_approval_and_verified_evidence_required');assert.equal(r.stageChangeAuthorized,false);});
+test('same day cannot count twice',()=>assert.equal(reviewCandidate(s.id,[a,a],ctx).reason,'candidate_observation_window_not_met'));
+test('low score cannot be averaged away',()=>assert.equal(reviewCandidate(s.id,[a,{...b,control:3}],ctx).status,'HOLD'));
+test('pain overrides scores',()=>assert.equal(reviewCandidate(s.id,[a,{...b,pain:true}],ctx).status,'REFER'));
+test('unknown safety holds',()=>assert.equal(reviewCandidate(s.id,[a,{...b,pain:undefined}],ctx).status,'HOLD'));
+test('cross athlete denied',()=>assert.equal(reviewCandidate(s.id,[a,{...b,athleteId:'b'}],ctx).status,'HOLD'));
+test('future observation denied',()=>assert.equal(reviewCandidate(s.id,[a,{...b,date:'2026-11-26'}],ctx).status,'HOLD'));
+test('wrong stage denied',()=>assert.equal(reviewCandidate(s.id,[a,{...b,stageId:'BM-02'}],ctx).status,'HOLD'));
+test('missing context denied',()=>assert.equal(reviewCandidate(s.id,[{...a,context:'other'},{...b,context:'other'}],ctx).reason,'candidate_context_missing'));
+test('advanced stage needs longer observation',()=>{const x=policy.stages[5];assert.equal(reviewCandidate(x.id,[obs(x,'2026-11-24','repeated_explosive_effort'),obs(x,today,'repeated_explosive_effort')],ctx).reason,'candidate_observation_window_not_met');});
+test('all stages preserve sequential order',()=>policy.stages.forEach((x,i)=>assert.equal(x.nextStage,policy.stages[i+1]?.id??null)));
+test('stored pain propagates to progression',()=>{const r=evaluateAthleteProgression({rugbyCheckins:[{date:today,readiness:'pain',injuryConcern:false,teamHighLoad:false}]},'a',today,'adult');assert.equal(r.progression.decision,'REFER');assert.equal(r.stageChangeAuthorized,false);});
+test('missing evidence never advances',()=>assert.equal(evaluateAthleteProgression({},'a',today,'adult').stageChangeAuthorized,false));

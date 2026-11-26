@@ -1,0 +1,49 @@
+{
+  "version": 1,
+  "status": "owner_requested_design",
+  "runtimeActivation": false,
+  "authority": {
+    "read": "authorized rugby administrator",
+    "publish": "dedicated server-side rugby policy permission; owner initially",
+    "ordinaryCoachCanPublish": false
+  },
+  "editable": [
+    "stage competency dimensions",
+    "assessment protocols",
+    "minimum quality scores",
+    "minimum distinct observation days",
+    "minimum observation span",
+    "programme adherence criteria",
+    "field transfer contexts",
+    "alternative evidence pathways"
+  ],
+  "immutableSafeguards": [
+    "pain and clinical safety precedence",
+    "trusted athlete identity and evidence provenance",
+    "no automatic stage advancement",
+    "no stage skipping",
+    "authorized coach review",
+    "privacy and consent controls"
+  ],
+  "lifecycle": [
+    "draft",
+    "validate",
+    "preview impact",
+    "publish immutable version",
+    "retire or restore by publishing new version"
+  ],
+  "versioning": {
+    "pinAssessmentAndProgrammePolicyVersion": true,
+    "retroactiveRegrading": false,
+    "recordActorTimestampReasonAndDiff": true,
+    "optimisticConcurrency": true,
+    "rollbackCreatesNewVersion": true
+  },
+  "alternativeEvidence": {
+    "requiresExplicitCriteria": true,
+    "requiresFieldTransfer": true,
+    "requiresCoachReview": true,
+    "doesNotBypassSafety": true
+  },
+  "note": "No live admin route or permission granted by this specification."
+}
