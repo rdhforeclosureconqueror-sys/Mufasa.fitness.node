@@ -8,9 +8,16 @@ BEGIN
 END
 $guard$;
 SELECT pg_advisory_xact_lock(1381320537, 2);
-CREATE SCHEMA IF NOT EXISTS rugby_intelligence;
+DO $guard$
+BEGIN
+ IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname='rugby_intelligence') THEN
+   RAISE EXCEPTION 'Rugby schema already exists; inspect prior migration before proceeding';
+ END IF;
+END
+$guard$;
+CREATE SCHEMA rugby_intelligence;
 REVOKE ALL ON SCHEMA rugby_intelligence FROM PUBLIC;
-CREATE TABLE IF NOT EXISTS rugby_intelligence.rugby_beast_mode_policy_versions (
+CREATE TABLE rugby_intelligence.rugby_beast_mode_policy_versions (
  version integer PRIMARY KEY CHECK (version >= 1),
  policy jsonb NOT NULL,
  actor text NOT NULL CHECK (length(actor) > 0),
