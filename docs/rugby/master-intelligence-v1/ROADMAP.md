@@ -110,8 +110,10 @@ No production migration, runtime activation or owner device acceptance. Original
 
 - [x] Read-only production audit: Simba database `simba_db_jda4` available; Rugby schema and policy table absent; current connector read-only.
 - [x] Implement main-only manually dispatched migration and isolated PostgreSQL rehearsal.
-- [ ] Verify rehearsal, readiness evidence and technical review; merge.
+- [x] Verify rehearsal, readiness evidence and technical review; merge PR #1420 (`a98e05d331242ebaf7cf71da2fd836322f552e71`); both Render services verified live.
 - [ ] Configure protected production environment, migration secret, backup and TLS verification; execute approved migration.
 - [ ] Verify schema, dedicated runtime role and denial of unrelated data access; connect API and owner dashboard.
 
 This activation checklist does not alter the original 53-milestone denominator. No production migration or human acceptance asserted.
+
+- [ ] Read-only production connection preflight: owner reported environment and secret configured; screenshots show main-only rule, owner reviewer, administrator bypass disabled and fresh export November 26 at 2:08 AM. Saved protection rules, actual restore and external TLS connection remain unverified.
