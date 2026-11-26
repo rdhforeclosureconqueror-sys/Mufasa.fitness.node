@@ -19,7 +19,8 @@ Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve al
 - [x] Initial reusable card layer source committed (not compiled).
 - [ ] Compile reusable component; validate mobile detection and actual CSS-equivalent touch targets.
 - [x] Initial Training Pick Your Play source adapter committed: existing scenario selection signal, ready-state guard, joystick cancellation and raw scene-input guard.
-- [ ] Compile and verify Training scenario adapter, including underlying GUI input isolation; finish settings, controls, mode and layout adapters.
+- [x] Initial Training settings, mode, advanced and controls source adapters committed; normal mobile HUD status omits keyboard instructions.
+- [ ] Compile and verify Training adapters, including underlying GUI input isolation, safe help availability, responsive shortcuts, restart overlap, and touch target sizes. Existing defense behavior retained; no new defense choices implemented.
 - [ ] Wire Playbook adapter and feedback; preserve existing tactical logic.
 - [ ] Hide desktop-only instructions on mobile in both source shell and exported shell.
 - [ ] Responsive layout, safe areas, focus handling, rotation, no overlap; validate desktop unchanged.
