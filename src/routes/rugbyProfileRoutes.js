@@ -13,6 +13,8 @@ function installRugbyProfileRoutes({app,requireAuth,userStore}) {
  });
  app.post('/api/me/rugby/checkins',requireAuth,(req,res)=>{
   res.set('Cache-Control','private, no-store');
+  // Detailed recovery collection remains disabled until trusted age/consent policy is implemented.
+  if(req.body && Object.prototype.hasOwnProperty.call(req.body,'recovery'))return res.status(403).json({ok:false,error:{message:'Detailed recovery collection is not enabled'}});
   let input;
   try{input=validateCheckin(req.body);}catch(error){return res.status(400).json({ok:false,error:{message:error.message}});}
   // No club match schedule has been verified for this player yet. Do not assume a match-free week.
