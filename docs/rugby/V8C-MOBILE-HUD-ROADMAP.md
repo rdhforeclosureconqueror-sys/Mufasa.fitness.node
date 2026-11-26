@@ -27,7 +27,9 @@ Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve al
 - [ ] Regenerate exported shell and manifest from source; verify mobile instructions are hidden in the live build.
 - [x] Initial responsive layout source: compact ready-state menu, hide during rep, enlarged gameplay controls, inset joystick, wrapping Playbook shortcuts.
 - [ ] Verify actual CSS-pixel targets, safe areas, focus handling, rotation, no overlap, and desktop unchanged. Portrait canvas still uses 16:9; a full portrait-native layout remains outstanding.
-- [ ] Godot 4.5.1 headless import, automated game tests, Web export and manifest regeneration.
+- [x] Add isolated GitHub Actions Godot 4.5.1 compile/export workflow (read-only repository permissions; candidate artifact only).
+- [ ] Confirm first cloud workflow run; correct import, runtime or export errors; add explicit mobile-card behavior tests. Existing scene smoke is desktop/headless, not mobile acceptance.
+- [ ] Retrieve validated candidate, publish matching binary and shell files to PR, run automated game tests and package contracts.
 - [ ] Browser smoke and physical iPhone acceptance (touch accuracy, readability, performance, cards, replay).
 - [ ] Review, merge, deploy and verify canonical milelefit.com; retain rollback checkpoint.
 
