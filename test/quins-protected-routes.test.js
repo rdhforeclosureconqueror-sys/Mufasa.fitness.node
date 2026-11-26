@@ -1,8 +1,11 @@
 "use strict";
 const test=require("node:test");const assert=require("node:assert/strict");
 const {allowed,installQuinsProtectedRoutes}=require("../src/routes/quinsProtectedRoutes");
-test("signed-in preview is enabled; anonymous users remain blocked",()=>{
- assert.equal(allowed({auth:{userId:"player",email:"p@example.com"}},{}),true);
+test("preview requires explicit opt-in; anonymous users remain blocked",()=>{
+ const member={auth:{userId:"player",email:"p@example.com"}};
+ for(const flag of [undefined,"","false","TRUE","typo"]) assert.equal(allowed(member,{QUINS_BUILD_PREVIEW:flag}),false);
+ assert.equal(allowed(member,{QUINS_BUILD_PREVIEW:"true"}),true);
+ assert.equal(allowed({auth:null},{QUINS_BUILD_PREVIEW:"true"}),false);
  assert.equal(allowed({auth:null},{QUINS_AUTHORIZED_USER_IDS:"player"}),false);
 });
 test("explicit id and email enrollments only",()=>{
@@ -30,4 +33,16 @@ test("verified platform administrators bypass redundant Quin enrollment",()=>{
  assert.equal(allowed({auth:{userId:"owner"},authz:{role:"member"}},{QUINS_BUILD_PREVIEW:"false"}),false);
  assert.equal(allowed({auth:null,authz:{role:"admin"}},{}),false);
  assert.equal(allowed({auth:{userId:"owner",role:"admin"},authz:{role:"member"}},{QUINS_BUILD_PREVIEW:"false"}),false);
+});
+
+test("both tactical endpoints deny unlisted and removed members before returning payload",()=>{
+ const routes={}; const guard=()=>{}; const env={QUINS_AUTHORIZED_USER_IDS:"approved"};
+ installQuinsProtectedRoutes({app:{get(p,...h){routes[p]=h;}},requireAuth:guard,env});
+ for(const path of ["/api/quins/ravens/status","/api/quins/ravens/play"]){
+  assert.equal(routes[path][0],guard);
+  const invoke=(auth)=>{let status=200,body,headers;const res={set(v){headers=v;return this;},status(v){status=v;return this;},json(v){body=v;return this;}};routes[path][1]({auth,query:{}},res);return {status,body,headers};};
+  assert.equal(invoke({userId:"approved"}).status,200);
+  for(const auth of [null,{userId:"unrelated"}]){const out=invoke(auth);assert.equal(out.status,403);assert.deepEqual(out.body,{error:"QUINS_TEAM_ACCESS_REQUIRED"});assert.equal(out.headers["Cache-Control"],"private, no-store");}
+  env.QUINS_AUTHORIZED_USER_IDS="";assert.equal(invoke({userId:"approved"}).status,403);env.QUINS_AUTHORIZED_USER_IDS="approved";
+ }
 });
