@@ -1139,8 +1139,12 @@ func _setup_mobile_playbook(panel: VBoxContainer, controls: HBoxContainer, selec
 	selector.hide()
 	ribbons_button.hide()
 	training_button.hide()
-	var row := HBoxContainer.new()
+	var row := HFlowContainer.new()
 	panel.add_child(row)
+	row.add_theme_constant_override("h_separation", 8)
+	row.add_theme_constant_override("v_separation", 6)
+	panel.custom_minimum_size.x = minf(1080.0, get_viewport().get_visible_rect().size.x - 40.0)
+	get_viewport().size_changed.connect(func(): panel.custom_minimum_size.x = minf(1080.0, get_viewport().get_visible_rect().size.x - 40.0))
 	_button(row, "PICK PLAY", _open_mobile_playbook_menu)
 	_button(row, "VIEW SETTINGS", _open_mobile_view_settings)
 	_button(row, "TRAINING", func(): training_button.pressed.emit())
@@ -1152,11 +1156,16 @@ func _setup_mobile_playbook(panel: VBoxContainer, controls: HBoxContainer, selec
 		for child in container.get_children():
 			if child is Button:
 				var button := child as Button
-				button.custom_minimum_size.y = 58
-				button.add_theme_font_size_override("font_size", 22)
+				button.custom_minimum_size.y = 70
+				button.add_theme_font_size_override("font_size", 26)
 	# Keep Preview and Play/Replay in the original reaction area.
 	(reaction_support_choice.get_parent() as Control).hide()
 	pass_timing_choice.hide()
+	for child in pass_timing_choice.get_parent().get_children():
+		if child is Button:
+			var button := child as Button
+			button.custom_minimum_size.y = 76
+			button.add_theme_font_size_override("font_size", 26)
 
 func _mobile_playbook_idle() -> bool:
 	return not playing and not previewing_defense
