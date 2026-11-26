@@ -23,8 +23,10 @@ Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve al
 - [ ] Compile and verify Training adapters, including underlying GUI input isolation, safe help availability, responsive shortcuts, restart overlap, and touch target sizes. Existing defense behavior retained; no new defense choices implemented.
 - [x] Initial Playbook source adapters: formation, set plays, decision training, ribbons, Training return, support/draw/finish/timing choices and scrollable coaching review. Existing scenario and outcome functions retained.
 - [ ] Compile and verify Playbook adapters, including modal focus/input isolation, replay, automatic review timing, responsive control sizes and all original decision options.
-- [ ] Hide desktop-only instructions on mobile in both source shell and exported shell.
-- [ ] Responsive layout, safe areas, focus handling, rotation, no overlap; validate desktop unchanged.
+- [x] Hide desktop-only instructions in mobile source shell; compact header and generic loading title.
+- [ ] Regenerate exported shell and manifest from source; verify mobile instructions are hidden in the live build.
+- [x] Initial responsive layout source: compact ready-state menu, hide during rep, enlarged gameplay controls, inset joystick, wrapping Playbook shortcuts.
+- [ ] Verify actual CSS-pixel targets, safe areas, focus handling, rotation, no overlap, and desktop unchanged. Portrait canvas still uses 16:9; a full portrait-native layout remains outstanding.
 - [ ] Godot 4.5.1 headless import, automated game tests, Web export and manifest regeneration.
 - [ ] Browser smoke and physical iPhone acceptance (touch accuracy, readability, performance, cards, replay).
 - [ ] Review, merge, deploy and verify canonical milelefit.com; retain rollback checkpoint.
