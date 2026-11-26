@@ -47,6 +47,8 @@ const MobileCardLayer = preload("res://scripts/ui/mobile_card_layer.gd")
 var _mobile_cards: MobileCardLayer
 var _mobile_play_button: Button
 var _mobile_settings_buttons: Array[Button] = []
+var _mobile_help_button: Button
+var _mobile_menu: HBoxContainer
 var scenario_selector: OptionButton
 var start_play_button: Button
 var receiver_selector: OptionButton
@@ -936,6 +938,8 @@ func _prepare_scenario() -> void:
 		_mobile_play_button.disabled = false
 		for button in _mobile_settings_buttons:
 			button.disabled = false
+		_mobile_help_button.disabled = false
+		_mobile_menu.show()
 		_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
 	start_play_button.show()
 	control_mode_button.disabled = false
@@ -961,6 +965,8 @@ func _start_scenario() -> void:
 		_mobile_play_button.disabled = true
 		for button in _mobile_settings_buttons:
 			button.disabled = true
+		_mobile_help_button.disabled = true
+		_mobile_menu.hide()
 	carrier_selector.disabled = true
 	difficulty_selector.disabled = true
 	start_play_button.hide()
@@ -2140,7 +2146,8 @@ func _setup_mobile_play_card() -> void:
 	_mobile_settings_buttons.append(_mobile_shortcut("DRILL SETTINGS", 15.0, _open_mobile_drill_settings))
 	_mobile_settings_buttons.append(_mobile_shortcut("TRAINING MODE", 79.0, _open_mobile_training_mode))
 	_mobile_settings_buttons.append(_mobile_shortcut("SETTINGS / PLAYBOOK", 143.0, _open_mobile_advanced_settings))
-	_mobile_shortcut("CONTROLS", 207.0, _open_mobile_controls)
+	_mobile_help_button = _mobile_shortcut("CONTROLS", 207.0, _open_mobile_controls)
+	_setup_mobile_layout()
 
 func _open_mobile_play_card() -> void:
 	if not waiting_to_start or countdown_running or scenario_selector.disabled:
@@ -2234,3 +2241,77 @@ func _open_mobile_controls() -> void:
 		{"label": "START PLAY: begin; RESTART: reset", "enabled": false}
 	]
 	_open_mobile_card("MOBILE CONTROLS", entries)
+
+# V8C compact ready-state shortcuts; keep the field free during the rep.
+func _setup_mobile_layout() -> void:
+	_mobile_menu = HBoxContainer.new()
+	$HUD.add_child(_mobile_menu)
+	_mobile_menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_mobile_menu.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_mobile_menu.add_theme_constant_override("separation", 8)
+	var shortcuts: Array[Button] = [_mobile_play_button]
+	shortcuts.append_array(_mobile_settings_buttons)
+	shortcuts.append(_mobile_help_button)
+	for button in shortcuts:
+		button.reparent(_mobile_menu, false)
+		button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		button.custom_minimum_size = Vector2(0, 70)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 24)
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_mobile_settings_buttons[0].text = "DRILL"
+	_mobile_settings_buttons[1].text = "MODE"
+	_mobile_settings_buttons[2].text = "SETTINGS"
+	get_viewport().size_changed.connect(_resize_mobile_layout)
+	_resize_mobile_layout()
+
+func _resize_mobile_layout() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var width := maxf(1.0, viewport_size.x)
+	var height := maxf(1.0, viewport_size.y)
+	var menu_width := minf(width - 32.0, 1100.0)
+	_mobile_menu.offset_left = -menu_width * 0.5
+	_mobile_menu.offset_right = menu_width * 0.5
+	_mobile_menu.offset_top = 76.0
+	_mobile_menu.offset_bottom = 146.0
+	# These bounds also drive the existing raw PASS/RESTART touch hit tests.
+	var action_size := clampf(height * 0.15, 80.0, 108.0)
+	var action_width := clampf(width * 0.14, 145.0, 190.0)
+	_mobile_place_bottom_right($HUD/PassButton, action_width, action_size, 20.0)
+	_mobile_place_bottom_right(kick_button, action_width, action_size, 32.0 + action_size)
+	var joystick_size := clampf(height * 0.27, 144.0, 180.0)
+	var joystick: Control = $HUD/VirtualJoystick
+	joystick.offset_left = 20.0
+	joystick.offset_right = 20.0 + joystick_size
+	joystick.offset_top = -20.0 - joystick_size
+	joystick.offset_bottom = -20.0
+	_joystick_hint.hide()
+	var restart: Button = $HUD/RestartButton
+	restart.offset_left = -170.0
+	restart.offset_right = -20.0
+	restart.offset_top = 8.0
+	restart.offset_bottom = 72.0
+	restart.add_theme_font_size_override("font_size", 24)
+	tactical_camera_button.offset_left = -110.0
+	tactical_camera_button.offset_right = 110.0
+	tactical_camera_button.offset_top = 8.0
+	tactical_camera_button.offset_bottom = 72.0
+	tactical_camera_button.add_theme_font_size_override("font_size", 24)
+	start_play_button.offset_top = -38.0
+	start_play_button.offset_bottom = 38.0
+	start_play_button.offset_left = -125.0
+	start_play_button.offset_right = 125.0
+	start_play_button.add_theme_font_size_override("font_size", 28)
+	status_label.offset_left = 16.0
+	status_label.offset_right = maxf(120.0, width * 0.5 - 120.0)
+	status_label.offset_top = 8.0
+	status_label.offset_bottom = 72.0
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.add_theme_font_size_override("font_size", 24)
+
+func _mobile_place_bottom_right(button: Button, button_width: float, button_height: float, bottom: float) -> void:
+	button.offset_left = -20.0 - button_width
+	button.offset_right = -20.0
+	button.offset_top = -bottom - button_height
+	button.offset_bottom = -bottom
+	button.add_theme_font_size_override("font_size", 30)
