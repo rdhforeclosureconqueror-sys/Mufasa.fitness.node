@@ -18,7 +18,8 @@ Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve al
 - [x] Existing HUD source audit and screenshot mapping.
 - [x] Initial reusable card layer source committed (not compiled).
 - [ ] Compile reusable component; validate mobile detection and actual CSS-equivalent touch targets.
-- [ ] Wire Training adapter to existing controls and state; ensure modal blocks raw gameplay input and clears active gestures.
+- [x] Initial Training Pick Your Play source adapter committed: existing scenario selection signal, ready-state guard, joystick cancellation and raw scene-input guard.
+- [ ] Compile and verify Training scenario adapter, including underlying GUI input isolation; finish settings, controls, mode and layout adapters.
 - [ ] Wire Playbook adapter and feedback; preserve existing tactical logic.
 - [ ] Hide desktop-only instructions on mobile in both source shell and exported shell.
 - [ ] Responsive layout, safe areas, focus handling, rotation, no overlap; validate desktop unchanged.
@@ -26,4 +27,4 @@ Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve al
 - [ ] Browser smoke and physical iPhone acceptance (touch accuracy, readability, performance, cards, replay).
 - [ ] Review, merge, deploy and verify canonical milelefit.com; retain rollback checkpoint.
 
-No runtime integration or export is claimed by the initial component commit. Do not merge partial source with stale game binaries as a completed HUD release.
+Initial Training integration is source-only; no runtime validation or export is claimed. Do not merge partial source with stale game binaries as a completed HUD release.
