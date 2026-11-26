@@ -93,8 +93,15 @@ PR #1411 merged at 71ca4b05318c3cee1879420ffc1cb3187083539e; 230/230 prototype t
 ## Beast Mode configurable development checkpoint
 - [x] Owner-directed baseline/programme/adherence/field transfer/retest policy recorded on development branch.
 - [x] Candidate stage criteria validation and pure append-only policy ledger implemented on development branch.
-- [ ] Verify 28 new regression cases in CI; previous verified baseline 247.
+- [x] Verify 28 new regression cases in CI; PR #1414 merged at 0a355c098978bf594a7ca47054338aacc97c7074; 277 recovery tests passed.
 - [ ] Trusted evidence provenance and complete programme records.
 - [ ] Dedicated owner authorization, atomic persistent policy storage, drafts and alternative pathways.
 - [ ] Admin dashboard, policy pinning, privacy review, deployment and live acceptance.
 Original 53-milestone count unchanged. No runtime activation.
+
+## Owner policy storage checkpoint — PR #1415
+- [x] Dedicated owner authorization and append-only PostgreSQL policy store implemented and tested at 225dbb968c323642a00dd1eea1cd219ec748a3c4.
+- [x] Restricted runtime role, concurrent publication, restoration and opt-in integration tests verified: 316 passing tests across runs 45751034194, 45751034195, 45751034264; one intentional no-database skip.
+- [ ] Canonical readiness registration via CLI (outstanding; owner authorized PR-specific merge exception if necessary, not human acceptance).
+- [ ] Drafts, alternative pathways, trusted evidence, version pinning, production database configuration, privacy correction and admin interface.
+No production migration, runtime activation or owner device acceptance. Original 53-milestone denominator unchanged. Rollback: reviewed revert of squash commit and redeploy; no database schema or data change in this PR.
