@@ -1,0 +1,32 @@
+name: Rugby Simba migration
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type MIGRATE_RUGBY_SIMBA to authorize schema creation
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: rugby-simba-production-migration
+  cancel-in-progress: false
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'MIGRATE_RUGBY_SIMBA'
+    environment: rugby-simba-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Execute approved migration
+        env:
+          DATABASE_URL: ${{ secrets.RUGBY_SIMBA_MIGRATION_URL }}
+          PGSSLMODE: verify-full
+          PGCONNECT_TIMEOUT: '10'
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL"
+          psql -X --dbname="$DATABASE_URL" --file=scripts/rugby/simba-policy-migration.sql
