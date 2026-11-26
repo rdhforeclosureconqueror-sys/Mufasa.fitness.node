@@ -1,0 +1,52 @@
+name: Rugby Simba migration
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type MIGRATE_RUGBY_SIMBA to authorize schema creation
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: rugby-simba-production-migration
+  cancel-in-progress: false
+jobs:
+  migrate:
+    if: github.ref == 'refs/heads/main' && inputs.confirmation == 'MIGRATE_RUGBY_SIMBA'
+    environment: rugby-simba-production
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Execute approved migration
+        env:
+          DATABASE_URL: ${{ secrets.RUGBY_SIMBA_MIGRATION_URL }}
+          PGSSLMODE: verify-full
+          PGCONNECT_TIMEOUT: '10'
+          PGSSLROOTCERT: /etc/ssl/certs/ca-certificates.crt
+        run: |
+          set -euo pipefail
+          test -n "$DATABASE_URL"
+          # Accept only a standard PostgreSQL URI with no query options or fragment.
+          # This prevents URI parameters overriding the required TLS settings.
+          python3 - <<'PY'
+          import os, re, urllib.parse
+          try:
+              raw = os.environ["DATABASE_URL"]
+              assert raw.isascii() and not any(ord(c) <= 32 or ord(c) == 127 for c in raw)
+              assert "?" not in raw and "#" not in raw and "\\" not in raw
+              u = urllib.parse.urlsplit(raw)
+              assert re.fullmatch(r"[A-Za-z0-9.-]+", u.hostname or "")
+              assert u.netloc.count("@") == 1
+              assert u.port in (None, 5432)
+              assert u.scheme in ("postgres", "postgresql")
+              assert u.hostname and u.username and u.password
+              assert u.path == "/simba_db_jda4"
+              assert not u.query and not u.fragment
+          except Exception:
+              raise SystemExit("Invalid migration connection configuration")
+          PY
+          psql -X --dbname="$DATABASE_URL" --file=scripts/rugby/simba-policy-migration.sql

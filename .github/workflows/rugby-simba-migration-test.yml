@@ -1,0 +1,42 @@
+name: Rugby Simba migration rehearsal
+on:
+  pull_request:
+    paths:
+      - 'scripts/rugby/simba-policy-migration.sql'
+      - '.github/workflows/rugby-simba-migration*.yml'
+permissions:
+  contents: read
+jobs:
+  rehearsal:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: rehearsal-only
+          POSTGRES_DB: simba_db_jda4
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      PGHOST: localhost
+      PGUSER: postgres
+      PGPASSWORD: rehearsal-only
+      PGDATABASE: simba_db_jda4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Rehearse migration and repeat
+        run: |
+          set -euo pipefail
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.sentinel(id integer); INSERT INTO public.sentinel VALUES (42);'
+          psql -X -f scripts/rugby/simba-policy-migration.sql
+          if psql -X -f scripts/rugby/simba-policy-migration.sql; then exit 1; fi
+          test "$(psql -XAtc 'SELECT id FROM public.sentinel')" = 42
+          test "$(psql -XAtc "SELECT count(*) FROM information_schema.tables WHERE table_schema='rugby_intelligence' AND table_name='rugby_beast_mode_policy_versions'")" = 1
+          psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE rehearsal_unprivileged;'
+          test "$(psql -XAtc "SELECT has_schema_privilege('rehearsal_unprivileged','rugby_intelligence','USAGE')")" = f
+          test "$(psql -XAtc "SELECT has_table_privilege('rehearsal_unprivileged','rugby_intelligence.rugby_beast_mode_policy_versions','SELECT')")" = f
+          if PGDATABASE=postgres psql -X -f scripts/rugby/simba-policy-migration.sql; then exit 1; fi
+          test "$(PGDATABASE=postgres psql -XAtc "SELECT count(*) FROM information_schema.schemata WHERE schema_name='rugby_intelligence'")" = 0

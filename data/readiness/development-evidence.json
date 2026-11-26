@@ -6866,6 +6866,39 @@
       "prNumber": 1419,
       "commitSha": "44d747d25e0373f891468d99870dbd718c0822e4",
       "timestamp": "2026-11-26T06:21:59.166Z"
+    },
+    {
+      "operationId": "1ab5a233-b90e-4f6b-a97e-71833be5ddcb",
+      "board": "launch",
+      "cardId": "launch-development-rugby-simba-migration",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Isolated migration rehearsal; protected production execution remains operator gated",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-26T07:21:06.214Z"
+    },
+    {
+      "operationId": "70831718-34f0-4d1b-83b6-6049f87735a3",
+      "board": "launch",
+      "cardId": "launch-development-rugby-simba-migration",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        ".github/workflows/readiness-evidence.yml",
+        ".github/workflows/rugby-simba-migration-test.yml",
+        ".github/workflows/rugby-simba-migration.yml",
+        "docs/rugby/master-intelligence-v1/ROADMAP.md",
+        "docs/rugby/master-intelligence-v1/simba-migration-runbook.md",
+        "scripts/rugby/simba-policy-migration.sql"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated Rugby Simba migration rehearsal; owner live acceptance pending.; verified successful workflow run 45774623046",
+      "prNumber": 1420,
+      "commitSha": "70491901ce8cdc03c5f11092641adce0537f7209",
+      "timestamp": "2026-11-26T07:21:27.905Z"
     }
   ]
 }
