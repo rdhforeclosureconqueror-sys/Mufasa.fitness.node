@@ -1,0 +1,56 @@
+name: Readiness evidence generator
+on:
+  workflow_dispatch:
+    inputs:
+      board:
+        description: Existing readiness board
+        required: true
+        type: string
+      card:
+        description: Existing readiness card ID
+        required: true
+        type: string
+      files:
+        description: Comma-separated implementation paths
+        required: true
+        type: string
+      pr:
+        description: Pull request number
+        required: true
+        type: string
+      note:
+        description: Verified machine evidence and outstanding acceptance
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Generate canonical evidence
+        env:
+          BOARD: ${{ inputs.board }}
+          CARD: ${{ inputs.card }}
+          FILES: ${{ inputs.files }}
+          PR: ${{ inputs.pr }}
+          NOTE: ${{ inputs.note }}
+          READINESS_OPS_FILE: ${{ runner.temp }}/readiness-ops.json
+        run: |
+          set -euo pipefail
+          [[ "$PR" =~ ^[0-9]+$ ]]
+          npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$GITHUB_SHA" --note "$NOTE"
+          npm run readiness:validate
+          git diff --exit-code -- data/readiness/development-cards.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-readiness-evidence
+          path: data/readiness/development-evidence.json
+          if-no-files-found: error
