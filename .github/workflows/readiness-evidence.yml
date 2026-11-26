@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/readiness-evidence.yml'
+      - 'src/routes/rugbyProfileRoutes.js'
   workflow_dispatch:
     inputs:
       board:
@@ -54,20 +55,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           BASE: ${{ github.event.pull_request.base.sha }}
           NOTE: ${{ inputs.note || 'Workflow smoke test only; no acceptance asserted.' }}
+          CHANGED_BASE: ${{ github.event.pull_request.base.sha }}
           READINESS_OPS_FILE: ${{ runner.temp }}/readiness-ops.json
         run: |
           set -euo pipefail
           [[ "$PR" =~ ^[0-9]+$ ]]
           HEAD_SHA=$(git rev-parse HEAD)
           result=()
+          WORKFLOW='Rugby HQ acceptance tests'
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx 'src/routes/rugbyProfileRoutes.js' >/dev/null; then
+            CARD=launch-development-rugby-recovery-privacy
+            FILES=src/routes/rugbyProfileRoutes.js,test/rugby-recovery-privacy.test.js,.github/workflows/rugby-recovery-acceptance.yml
+            WORKFLOW='Rugby recovery acceptance'
+            if ! jq -e --arg id "$CARD" '.. | objects | select(.id? == $id)' data/readiness/development-cards.json >/dev/null; then
+              npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby recovery privacy safeguards' --category 'RUGBY HQ' --description 'Block detailed recovery collection until trusted consent; preserve legacy check-ins' --started true --current true --humanRequired true
+            fi
+          fi
           if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
             for attempt in {1..30}; do
-              TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r '[.workflow_runs[] | select(.name == "Rugby HQ acceptance tests" and .conclusion == "success")][0].id // empty')
+              TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r --arg workflow "$WORKFLOW" '[.workflow_runs[] | select(.name == $workflow and .conclusion == "success")][0].id // empty')
               [[ -n "$TEST_RUN" ]] && break
               sleep 10
             done
             [[ -n "$TEST_RUN" ]]
-            NOTE="Rugby HQ navigation automated acceptance; owner mobile navigation acceptance pending."
+            NOTE="Automated $WORKFLOW; owner live acceptance pending."
           fi
           if [[ -z "$TEST_RUN" ]]; then
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/45761701245" | jq -e '.head_sha == "41ef3da6c6a11a001c1d7676f9ec033f6615e569" and .status == "completed" and .conclusion == "success" and .name == "Rugby HQ acceptance tests"' >/dev/null
@@ -75,15 +86,17 @@ jobs:
           fi
           if [[ -n "$TEST_RUN" ]]; then
             [[ "$TEST_RUN" =~ ^[0-9]+$ ]]
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name == "Rugby HQ acceptance tests"' >/dev/null
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" --arg workflow "$WORKFLOW" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name == $workflow' >/dev/null
             result=(--result PASS)
             NOTE="$NOTE; verified successful workflow run $TEST_RUN"
           fi
           npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$HEAD_SHA" --note "$NOTE" "${result[@]}"
           if [[ -n "$BASE" ]]; then npm run readiness:validate -- --base "$BASE"; else npm run readiness:validate; fi
-          git diff --exit-code -- data/readiness/development-cards.json
+          git diff --stat
       - uses: actions/upload-artifact@v4
         with:
           name: canonical-readiness-evidence
-          path: data/readiness/development-evidence.json
+          path: |
+            data/readiness/development-evidence.json
+            data/readiness/development-cards.json
           if-no-files-found: error

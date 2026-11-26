@@ -6836,6 +6836,36 @@
       "prNumber": 1418,
       "commitSha": "f1156d418d50f8762f6c10268ba32b61b93b6d13",
       "timestamp": "2026-11-26T05:32:01.732Z"
+    },
+    {
+      "operationId": "e6c14eef-a6d8-41e6-bfc7-a3b937f42e7c",
+      "board": "launch",
+      "cardId": "launch-development-rugby-recovery-privacy",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Block detailed recovery collection until trusted consent; preserve legacy check-ins",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-26T06:21:46.493Z"
+    },
+    {
+      "operationId": "cc5dacb6-30ff-48a4-9cbf-f11031adcf04",
+      "board": "launch",
+      "cardId": "launch-development-rugby-recovery-privacy",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/routes/rugbyProfileRoutes.js",
+        "test/rugby-recovery-privacy.test.js",
+        ".github/workflows/rugby-recovery-acceptance.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated Rugby recovery acceptance; owner live acceptance pending.; verified successful workflow run 45767619506",
+      "prNumber": 1419,
+      "commitSha": "44d747d25e0373f891468d99870dbd718c0822e4",
+      "timestamp": "2026-11-26T06:21:59.166Z"
     }
   ]
 }

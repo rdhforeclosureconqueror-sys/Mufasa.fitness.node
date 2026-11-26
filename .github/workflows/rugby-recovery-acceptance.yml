@@ -5,6 +5,8 @@ on:
       - 'docs/rugby/master-intelligence-v1/**'
       - 'data/rugby/**'
       - 'src/rugby/**'
+      - 'src/routes/rugbyProfileRoutes.js'
+      - 'test/rugby-recovery-privacy.test.js'
       - 'test/rugby-athlete-evidence.test.js'
       - 'test/rugby-coach-evidence.test.js'
       - 'test/rugby-stored-readiness.test.js'
@@ -27,4 +29,4 @@ jobs:
         with:
           node-version: '22'
       - name: Execute recovered prototype suites
-        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js test/rugby-coach-evidence.test.js test/rugby-stored-readiness.test.js test/rugby-beast-mode-candidate.test.js test/rugby-beast-mode-development.test.js test/rugby-beast-mode-policy.test.js test/rugby-beast-mode-owner-policy.test.js
+        run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js test/rugby-coach-evidence.test.js test/rugby-stored-readiness.test.js test/rugby-beast-mode-candidate.test.js test/rugby-beast-mode-development.test.js test/rugby-beast-mode-policy.test.js test/rugby-beast-mode-owner-policy.test.js test/rugby-recovery-privacy.test.js
