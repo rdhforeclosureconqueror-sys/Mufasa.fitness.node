@@ -60,13 +60,22 @@ jobs:
           [[ "$PR" =~ ^[0-9]+$ ]]
           HEAD_SHA=$(git rev-parse HEAD)
           result=()
+          if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
+            for attempt in {1..30}; do
+              TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r '[.workflow_runs[] | select(.name == "Rugby HQ acceptance tests" and .conclusion == "success")][0].id // empty')
+              [[ -n "$TEST_RUN" ]] && break
+              sleep 10
+            done
+            [[ -n "$TEST_RUN" ]]
+            NOTE="Rugby HQ navigation automated acceptance; owner mobile navigation acceptance pending."
+          fi
           if [[ -z "$TEST_RUN" ]]; then
             gh api "repos/$GITHUB_REPOSITORY/actions/runs/45761701245" | jq -e '.head_sha == "41ef3da6c6a11a001c1d7676f9ec033f6615e569" and .status == "completed" and .conclusion == "success" and .name == "Rugby HQ acceptance tests"' >/dev/null
             echo "Verified historical test fixture; no current PASS asserted."
           fi
           if [[ -n "$TEST_RUN" ]]; then
             [[ "$TEST_RUN" =~ ^[0-9]+$ ]]
-            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name != "Readiness evidence generator"' >/dev/null
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name == "Rugby HQ acceptance tests"' >/dev/null
             result=(--result PASS)
             NOTE="$NOTE; verified successful workflow run $TEST_RUN"
           fi
