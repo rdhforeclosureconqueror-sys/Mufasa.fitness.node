@@ -32,7 +32,7 @@ jobs:
           set -euo pipefail
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE TABLE public.sentinel(id integer); INSERT INTO public.sentinel VALUES (42);'
           psql -X -f scripts/rugby/simba-policy-migration.sql
-          psql -X -f scripts/rugby/simba-policy-migration.sql
+          if psql -X -f scripts/rugby/simba-policy-migration.sql; then exit 1; fi
           test "$(psql -XAtc 'SELECT id FROM public.sentinel')" = 42
           test "$(psql -XAtc "SELECT count(*) FROM information_schema.tables WHERE table_schema='rugby_intelligence' AND table_name='rugby_beast_mode_policy_versions'")" = 1
           psql -X -v ON_ERROR_STOP=1 -c 'CREATE ROLE rehearsal_unprivileged;'
