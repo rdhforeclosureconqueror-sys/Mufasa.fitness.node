@@ -11,3 +11,5 @@ test('different test protocol denied',()=>{const x=fixture();x.retest.protocolId
 test('pain overrides cycle',()=>assert.equal(r({...fixture(),pain:true}).status,'REFER'));
 test('cross athlete field evidence denied',()=>{const x=fixture();x.fieldObservations[0].athleteId='b';assert.equal(r(x).reason,'field_transfer_required');});
 test('duplicate sessions denied',()=>{const x=fixture();x.programme.sessions.push(x.programme.sessions[0]);assert.equal(r(x).reason,'invalid_programme_evidence');});
+
+test('missing cycle never permits retest',()=>{for(const x of [null,undefined,[],42,{}]){assert.equal(r(x).status,'HOLD_SAFETY');assert.equal(r(x).retestAllowed,false);}});
