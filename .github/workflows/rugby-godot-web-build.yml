@@ -9,7 +9,33 @@ on:
 permissions:
   contents: read
 jobs:
+  classify:
+    runs-on: ubuntu-24.04
+    outputs:
+      build: ${{ steps.classify.outputs.build }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - id: classify
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT" = pull_request ] && [ "$(git log -1 --format=%s)" = "Publish validated V8C Web candidate" ]; then
+            changed="$(git diff-tree --no-commit-id --name-only -r HEAD)"
+            if [ -n "$changed" ] && ! printf '%s\n' "$changed" | grep -qv '^public/game/rugby-hq/'; then
+              echo 'build=false' >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          echo 'build=true' >> "$GITHUB_OUTPUT"
   compile-export:
+    needs: classify
+    if: needs.classify.outputs.build == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
@@ -90,8 +116,8 @@ jobs:
   publish-v8c-candidate:
     # Only this same-repository development branch can receive the candidate.
     # Never push main or execute PR source with a write token.
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/rugby-v8c-mobile-cards' && github.event.pull_request.base.ref == 'main'
-    needs: compile-export
+    if: needs.classify.outputs.build == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'feat/rugby-v8c-mobile-cards' && github.event.pull_request.base.ref == 'main'
+    needs: [classify, compile-export]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -133,3 +159,18 @@ jobs:
           if git diff --cached --quiet; then exit 0; fi
           git -c user.name='github-actions[bot]' -c user.email='41898282+github-actions[bot]@users.noreply.github.com' commit -m "Publish validated V8C Web candidate"
           git push origin "HEAD:refs/heads/$branch"
+
+  verify-published:
+    needs: classify
+    if: needs.classify.outputs.build == 'false'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify already-published package without rebuilding
+        run: node --test test/rugby-godot-web.test.js
