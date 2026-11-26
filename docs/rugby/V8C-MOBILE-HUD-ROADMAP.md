@@ -21,7 +21,8 @@ Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve al
 - [x] Initial Training Pick Your Play source adapter committed: existing scenario selection signal, ready-state guard, joystick cancellation and raw scene-input guard.
 - [x] Initial Training settings, mode, advanced and controls source adapters committed; normal mobile HUD status omits keyboard instructions.
 - [ ] Compile and verify Training adapters, including underlying GUI input isolation, safe help availability, responsive shortcuts, restart overlap, and touch target sizes. Existing defense behavior retained; no new defense choices implemented.
-- [ ] Wire Playbook adapter and feedback; preserve existing tactical logic.
+- [x] Initial Playbook source adapters: formation, set plays, decision training, ribbons, Training return, support/draw/finish/timing choices and scrollable coaching review. Existing scenario and outcome functions retained.
+- [ ] Compile and verify Playbook adapters, including modal focus/input isolation, replay, automatic review timing, responsive control sizes and all original decision options.
 - [ ] Hide desktop-only instructions on mobile in both source shell and exported shell.
 - [ ] Responsive layout, safe areas, focus handling, rotation, no overlap; validate desktop unchanged.
 - [ ] Godot 4.5.1 headless import, automated game tests, Web export and manifest regeneration.
