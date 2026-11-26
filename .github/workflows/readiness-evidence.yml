@@ -1,5 +1,8 @@
 name: Readiness evidence generator
 on:
+  pull_request:
+    paths:
+      - '.github/workflows/readiness-evidence.yml'
   workflow_dispatch:
     inputs:
       board:
@@ -37,11 +40,11 @@ jobs:
           node-version: '22'
       - name: Generate canonical evidence
         env:
-          BOARD: ${{ inputs.board }}
-          CARD: ${{ inputs.card }}
-          FILES: ${{ inputs.files }}
-          PR: ${{ inputs.pr }}
-          NOTE: ${{ inputs.note }}
+          BOARD: ${{ inputs.board || 'launch' }}
+          CARD: ${{ inputs.card || 'launch-development-rugby-hq-web' }}
+          FILES: ${{ inputs.files || 'public/rugby-player.html' }}
+          PR: ${{ inputs.pr || github.event.pull_request.number }}
+          NOTE: ${{ inputs.note || 'Workflow smoke test only; no acceptance asserted.' }}
           READINESS_OPS_FILE: ${{ runner.temp }}/readiness-ops.json
         run: |
           set -euo pipefail
