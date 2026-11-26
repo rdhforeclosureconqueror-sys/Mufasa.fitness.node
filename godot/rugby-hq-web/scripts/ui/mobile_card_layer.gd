@@ -90,6 +90,19 @@ func open_card(heading: String, entries: Array[Dictionary], focus_return: Contro
 	if _entries.get_child_count() > 0:
 		(_entries.get_child(0) as Control).grab_focus()
 
+func open_feedback(heading: String, bbcode: String, focus_return: Control = null) -> void:
+	var empty: Array[Dictionary] = []
+	open_card(heading, empty, focus_return)
+	var feedback := RichTextLabel.new()
+	feedback.bbcode_enabled = true
+	feedback.fit_content = true
+	feedback.scroll_active = false
+	feedback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	feedback.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	feedback.add_theme_font_size_override("normal_font_size", 26)
+	feedback.text = bbcode
+	_entries.add_child(feedback)
+
 func _activate(action: Callable) -> void:
 	close_card()
 	if action.is_valid():
