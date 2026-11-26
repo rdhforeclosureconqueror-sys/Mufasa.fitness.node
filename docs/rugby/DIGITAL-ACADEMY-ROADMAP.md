@@ -39,3 +39,6 @@ P01 source trace and negative access matrix. P02 can use generic synthetic scena
 - Regression tests staged for both endpoints, anonymous/unrelated/removed enrollment, malformed preview flags and no-store. These are handler-level tests, not live HTTP identity verification.
 - Render service metadata does not expose environment values; actual preview flag and enrollment readiness remain unverified. Do not merge/deploy this behavior change until authorized roster continuity is established. No sensitive identifiers in this file.
 - Next: run targeted CI; verify canonical server auth registration, membership and static/export exposure. Confirm deployed preview state and enrollment readiness via authorized configuration inspection. P01 remains open.
+
+### Owner decision — roster continuity
+Owner confirms no active team users need continuity and authorizes secure-default release. Prior roster hold is superseded; CI and live authorization verification remain required. Explicit preview must be disabled in production. No private uploads until full P01 isolation is proven.
