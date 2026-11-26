@@ -21,18 +21,24 @@ on:
         description: Pull request number
         required: true
         type: string
+      test_run:
+        description: Successful workflow run ID for the exact branch commit
+        required: true
+        type: string
       note:
         description: Verified machine evidence and outstanding acceptance
         required: true
         type: string
 permissions:
   contents: read
+  actions: read
 jobs:
   generate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
           fetch-depth: 0
       - uses: actions/setup-node@v4
@@ -44,13 +50,24 @@ jobs:
           CARD: ${{ inputs.card || 'launch-development-rugby-hq-web' }}
           FILES: ${{ inputs.files || 'public/rugby-player.html' }}
           PR: ${{ inputs.pr || github.event.pull_request.number }}
+          TEST_RUN: ${{ inputs.test_run }}
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.sha }}
           NOTE: ${{ inputs.note || 'Workflow smoke test only; no acceptance asserted.' }}
           READINESS_OPS_FILE: ${{ runner.temp }}/readiness-ops.json
         run: |
           set -euo pipefail
           [[ "$PR" =~ ^[0-9]+$ ]]
-          npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$GITHUB_SHA" --note "$NOTE"
-          npm run readiness:validate
+          HEAD_SHA=$(git rev-parse HEAD)
+          result=()
+          if [[ -n "$TEST_RUN" ]]; then
+            [[ "$TEST_RUN" =~ ^[0-9]+$ ]]
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs/$TEST_RUN" | jq -e --arg sha "$HEAD_SHA" '.head_sha == $sha and .status == "completed" and .conclusion == "success" and .name != "Readiness evidence generator"' >/dev/null
+            result=(--result PASS)
+            NOTE="$NOTE; verified successful workflow run $TEST_RUN"
+          fi
+          npm run readiness:update -- --board "$BOARD" --card "$CARD" --action evidence --files "$FILES" --pr "$PR" --commit "$HEAD_SHA" --note "$NOTE" "${result[@]}"
+          if [[ -n "$BASE" ]]; then npm run readiness:validate -- --base "$BASE"; else npm run readiness:validate; fi
           git diff --exit-code -- data/readiness/development-cards.json
       - uses: actions/upload-artifact@v4
         with:
