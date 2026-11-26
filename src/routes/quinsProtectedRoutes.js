@@ -1,7 +1,7 @@
 "use strict";
 /**
  * Fail-closed Quin coaching route. Tactical content is never stored in public/.
- * During the coach-approved build preview, any signed-in account may view the play.\n * Never permit anonymous access; production role gating can be restored later.
+ * Preview access requires explicit opt-in; unset or invalid configuration denies unlisted accounts.
  */
 const { getPlay } = require("../services/quinsRavensPlaybook");
 function allowed(req, env=process.env) {
@@ -9,7 +9,7 @@ function allowed(req, env=process.env) {
  const emails=String(env.QUINS_AUTHORIZED_EMAILS||"").split(",").map(x=>x.trim().toLowerCase()).filter(Boolean);
  const role=String(req.authz?.role||"").toLowerCase();
  const admin=Boolean(req.authz?.isBootstrapSuperAdmin) || ["admin","super_admin"].includes(role);
- return !!req.auth?.userId && (env.QUINS_BUILD_PREVIEW !== "false" || admin || ids.includes(req.auth.userId) || (!!req.auth.email&&emails.includes(req.auth.email.toLowerCase())));
+ return !!req.auth?.userId && (env.QUINS_BUILD_PREVIEW === "true" || admin || ids.includes(req.auth.userId) || (!!req.auth.email&&emails.includes(req.auth.email.toLowerCase())));
 }
 function installQuinsProtectedRoutes({app,requireAuth,env=process.env}){
  app.get("/api/quins/ravens/status",requireAuth,(req,res)=>{
