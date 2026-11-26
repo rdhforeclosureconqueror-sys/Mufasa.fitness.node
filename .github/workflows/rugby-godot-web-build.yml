@@ -1,0 +1,88 @@
+name: Rugby HQ Godot Web build
+on:
+  pull_request:
+    paths:
+      - 'godot/rugby-hq-web/**'
+      - '.github/workflows/rugby-godot-web-build.yml'
+      - 'test/rugby-godot-web.test.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compile-export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install matching Godot and Web export templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          version=4.5.1-stable
+          base="https://github.com/godotengine/godot-builds/releases/download/$version"
+          curl --fail --location --retry 3 "$base/Godot_v${version}_linux.x86_64.zip" -o "$RUNNER_TEMP/godot.zip"
+          curl --fail --location --retry 3 "$base/Godot_v${version}_export_templates.tpz" -o "$RUNNER_TEMP/templates.tpz"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          chmod +x "$RUNNER_TEMP/godot/Godot_v${version}_linux.x86_64"
+          sudo install "$RUNNER_TEMP/godot/Godot_v${version}_linux.x86_64" /usr/local/bin/godot
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.5.1.stable"
+          unzip -q "$RUNNER_TEMP/templates.tpz" -d "$RUNNER_TEMP/godot-templates"
+          cp -a "$RUNNER_TEMP/godot-templates/templates/." "$HOME/.local/share/godot/export_templates/4.5.1.stable/"
+          godot --version | grep '^4\.5\.1\.stable'
+      - name: Import and compile project
+        shell: bash
+        run: |
+          set -euo pipefail
+          godot --headless --editor --path godot/rugby-hq-web --import 2>&1 | tee "$RUNNER_TEMP/import.log"
+          if grep -Ei 'SCRIPT ERROR|Parse Error|Failed to load script|ERROR: Failed loading resource' "$RUNNER_TEMP/import.log"; then exit 1; fi
+      - name: Smoke test Training and Playbook scenes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for scene in res://scenes/training_drill.tscn res://playbook/playbook_arena.tscn; do
+            godot --headless --path godot/rugby-hq-web --quit-after 120 "$scene" 2>&1 | tee "$RUNNER_TEMP/scene.log"
+            if grep -Ei 'SCRIPT ERROR|Parse Error|Failed to load script|ERROR: Failed loading resource' "$RUNNER_TEMP/scene.log"; then exit 1; fi
+          done
+      - name: Export Web candidate to temporary directory
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/rugby-web"
+          godot --headless --path godot/rugby-hq-web --export-release Web "$RUNNER_TEMP/rugby-web/index.html" 2>&1 | tee "$RUNNER_TEMP/export.log"
+          if grep -Ei 'SCRIPT ERROR|Parse Error|ERROR:.*(export|resource)' "$RUNNER_TEMP/export.log"; then exit 1; fi
+          test -s "$RUNNER_TEMP/rugby-web/index.wasm"
+          test -s "$RUNNER_TEMP/rugby-web/index.pck"
+          test -s "$RUNNER_TEMP/rugby-web/index.html"
+      - name: Generate candidate manifest and run package contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - "$RUNNER_TEMP/rugby-web" <<'NODE'
+          const fs = require('node:fs'), path = require('node:path'), crypto = require('node:crypto');
+          const dir = process.argv[2];
+          const original = JSON.parse(fs.readFileSync('public/game/rugby-hq/build-manifest.json','utf8'));
+          const files = {};
+          for (const name of fs.readdirSync(dir).sort()) {
+            const file = path.join(dir,name);
+            if (!fs.statSync(file).isFile()) continue;
+            const data = fs.readFileSync(file);
+            files[name] = {bytes:data.length,sha256:crypto.createHash('sha256').update(data).digest('hex')};
+          }
+          for (const name of Object.keys(original.files)) if (!files[name]) throw new Error('Missing exported asset: '+name);
+          fs.writeFileSync(path.join(dir,'build-manifest.json'),JSON.stringify({...original,files},null,2)+'\n');
+          NODE
+          cp -a "$RUNNER_TEMP/rugby-web/." public/game/rugby-hq/
+          node --test test/rugby-godot-web.test.js
+      - name: Upload validated candidate only
+        uses: actions/upload-artifact@v4
+        with:
+          name: rugby-hq-web-candidate
+          path: ${{ runner.temp }}/rugby-web/
+          if-no-files-found: error
+          retention-days: 7
