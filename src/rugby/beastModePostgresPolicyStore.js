@@ -14,8 +14,9 @@ function createPostgresPolicyStore(pool){
   if(!Number.isInteger(expectedVersion)||expectedVersion<1||next.length!==expectedVersion+1||next.at(-1).version!==expectedVersion+1)throw Error('Invalid version transition');
   const client=await pool.connect();
   try{
-   await client.query('BEGIN');
-   await client.query('LOCK TABLE rugby_beast_mode_policy_versions IN SHARE ROW EXCLUSIVE MODE');
+   await client.query('BEGIN ISOLATION LEVEL READ COMMITTED');
+   // All cooperating writers use this reserved policy-ledger lock key.
+   await client.query('SELECT pg_advisory_xact_lock(1381320537, 1)');
    const {rows}=await client.query('SELECT MAX(version) AS version FROM rugby_beast_mode_policy_versions');
    const current=rows[0].version;
    if((current??1)!==expectedVersion){await client.query('ROLLBACK');return false;}
