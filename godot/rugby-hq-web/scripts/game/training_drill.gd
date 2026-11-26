@@ -43,6 +43,12 @@ var dummy_count := 0
 var scenario_mode := 0
 var support_two: RugbyPlayer
 var defender_two: RugbyPlayer
+const MobileCardLayer = preload("res://scripts/ui/mobile_card_layer.gd")
+var _mobile_cards: MobileCardLayer
+var _mobile_play_button: Button
+var _mobile_settings_buttons: Array[Button] = []
+var _mobile_help_button: Button
+var _mobile_menu: HBoxContainer
 var scenario_selector: OptionButton
 var start_play_button: Button
 var receiver_selector: OptionButton
@@ -142,8 +148,12 @@ func _ready() -> void:
 	$CameraRig/SpringArm3D.add_excluded_object(ball.get_rid())
 	_diagnostics = "--rugby-diagnostics" in OS.get_cmdline_user_args()
 	_reset_drill()
+	_setup_mobile_play_card()
 
 func _input(event: InputEvent) -> void:
+	# Modal GUI must receive its own input; do not invoke raw gameplay gestures.
+	if is_instance_valid(_mobile_cards) and _mobile_cards.is_open():
+		return
 	# Keep native menu touch emulation, but consume its duplicate PASS/RESTART
 	# mouse events. These two controls also work with a second joystick finger.
 	if event is InputEventMouseButton and event.device == -1:
@@ -394,7 +404,7 @@ func _end_play(message: String) -> void:
 
 func _update_status(message: String) -> void:
 	_message = message
-	status_label.text = message + "\n" + INSTRUCTIONS
+	status_label.text = message if is_instance_valid(_mobile_cards) else message + "\n" + INSTRUCTIONS
 
 
 func _setup_turbo_hud() -> void:
@@ -924,6 +934,13 @@ func _prepare_scenario() -> void:
 	pending_receiver = null
 	waiting_to_start = true
 	scenario_selector.disabled = false
+	if is_instance_valid(_mobile_play_button):
+		_mobile_play_button.disabled = false
+		for button in _mobile_settings_buttons:
+			button.disabled = false
+		_mobile_help_button.disabled = false
+		_mobile_menu.show()
+		_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
 	start_play_button.show()
 	control_mode_button.disabled = false
 
@@ -944,6 +961,12 @@ func _start_scenario() -> void:
 	go_remaining = 0.0
 
 	scenario_selector.disabled = true
+	if is_instance_valid(_mobile_play_button):
+		_mobile_play_button.disabled = true
+		for button in _mobile_settings_buttons:
+			button.disabled = true
+		_mobile_help_button.disabled = true
+		_mobile_menu.hide()
 	carrier_selector.disabled = true
 	difficulty_selector.disabled = true
 	start_play_button.hide()
@@ -2092,3 +2115,203 @@ func _return_to_playbook() -> void:
 	var result: Error = get_tree().change_scene_to_file("res://playbook/playbook_arena.tscn")
 	if result != OK:
 		_update_status("Unable to open Playbook Arena")
+
+# V8C first adapter: reuse the real scenario selector and its existing signal.
+func _setup_mobile_play_card() -> void:
+	if not MobileCardLayer.is_mobile():
+		return
+	_mobile_cards = MobileCardLayer.new()
+	add_child(_mobile_cards)
+	_mobile_cards.card_closed.connect(_restore_mobile_play_controls)
+	_mobile_play_button = Button.new()
+	_mobile_play_button.name = "MobilePickYourPlay"
+	_mobile_play_button.focus_mode = Control.FOCUS_NONE
+	_mobile_play_button.add_theme_font_size_override("font_size", 24)
+	$HUD.add_child(_mobile_play_button)
+	_mobile_play_button.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_mobile_play_button.offset_left = -145.0
+	_mobile_play_button.offset_right = 145.0
+	_mobile_play_button.offset_top = 126.0
+	_mobile_play_button.offset_bottom = 164.0
+	_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
+	_mobile_play_button.pressed.connect(_open_mobile_play_card)
+	scenario_selector.hide()
+	carrier_selector.hide()
+	difficulty_selector.hide()
+	_controller_selector.hide()
+	preview_angles_button.hide()
+	control_mode_button.hide()
+	$HUD/ReturnToPlaybookButton.hide()
+	status_label.text = _message
+	_mobile_settings_buttons.append(_mobile_shortcut("DRILL SETTINGS", 15.0, _open_mobile_drill_settings))
+	_mobile_settings_buttons.append(_mobile_shortcut("TRAINING MODE", 79.0, _open_mobile_training_mode))
+	_mobile_settings_buttons.append(_mobile_shortcut("SETTINGS / PLAYBOOK", 143.0, _open_mobile_advanced_settings))
+	_mobile_help_button = _mobile_shortcut("CONTROLS", 207.0, _open_mobile_controls)
+	_setup_mobile_layout()
+
+func _open_mobile_play_card() -> void:
+	if not waiting_to_start or countdown_running or scenario_selector.disabled:
+		return
+	var entries: Array[Dictionary] = []
+	for index in range(scenario_selector.item_count):
+		var selected_prefix := "• " if index == scenario_selector.selected else ""
+		entries.append({"label": selected_prefix + scenario_selector.get_item_text(index), "action": _select_mobile_play.bind(index), "enabled": not scenario_selector.is_item_disabled(index)})
+	_open_mobile_card("PICK YOUR PLAY", entries, _mobile_play_button)
+
+func _select_mobile_play(index: int) -> void:
+	if scenario_selector.disabled or not waiting_to_start or countdown_running:
+		return
+	scenario_selector.select(index)
+	scenario_selector.item_selected.emit(index)
+	_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
+
+func _restore_mobile_play_controls() -> void:
+	$HUD/VirtualJoystick.visible = _mobile_controller
+
+func _mobile_shortcut(label: String, top: float, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = label
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 22)
+	$HUD.add_child(button)
+	button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	button.offset_left = -280.0
+	button.offset_right = -25.0
+	button.offset_top = top
+	button.offset_bottom = top + 58.0
+	button.pressed.connect(action)
+	return button
+
+func _open_mobile_card(heading: String, entries: Array[Dictionary], focus_return: Control = null) -> void:
+	# Configuration is restricted to ready state. Help is also restricted until a safe pause is implemented.
+	if not waiting_to_start or countdown_running:
+		return
+	_reset_advanced_gestures()
+	_pass_touch_index = -1
+	$HUD/VirtualJoystick.cancel_controller_touch()
+	controlled_player.touch_direction = Vector2.ZERO
+	controlled_player.turbo_touch = false
+	_joystick_held = false
+	$HUD/VirtualJoystick.hide()
+	_mobile_cards.open_card(heading, entries, focus_return)
+
+func _mobile_option_entries(selector: OptionButton) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for index in range(selector.item_count):
+		var prefix := "• " if index == selector.selected else ""
+		entries.append({"label": prefix + selector.get_item_text(index), "action": _select_mobile_option.bind(selector, index), "enabled": not selector.disabled and not selector.is_item_disabled(index)})
+	return entries
+
+func _select_mobile_option(selector: OptionButton, index: int) -> void:
+	if not waiting_to_start or countdown_running or selector.disabled:
+		return
+	if index < 0 or index >= selector.item_count or selector.is_item_disabled(index):
+		return
+	selector.select(index)
+	selector.item_selected.emit(index)
+
+func _open_mobile_drill_settings() -> void:
+	_open_mobile_card("DRILL SETTINGS — BALL CARRIER", _mobile_option_entries(carrier_selector))
+
+func _open_mobile_training_mode() -> void:
+	_open_mobile_card("TRAINING MODE", _mobile_option_entries(difficulty_selector))
+
+func _open_mobile_advanced_settings() -> void:
+	var entries: Array[Dictionary] = [
+		{"label": "Controller profile", "action": _open_mobile_controller_profile},
+		{"label": preview_angles_button.text, "action": _mobile_existing_button.bind(preview_angles_button), "enabled": not preview_angles_button.disabled},
+		{"label": control_mode_button.text, "action": _mobile_existing_button.bind(control_mode_button), "enabled": not control_mode_button.disabled},
+		{"label": "PLAYBOOK ARENA", "action": _mobile_existing_button.bind($HUD/ReturnToPlaybookButton)}
+	]
+	_open_mobile_card("ADVANCED SETTINGS", entries)
+
+func _open_mobile_controller_profile() -> void:
+	_open_mobile_card("CONTROLLER PROFILE", _mobile_option_entries(_controller_selector))
+
+func _mobile_existing_button(button: Button) -> void:
+	if waiting_to_start and not countdown_running and not button.disabled:
+		button.pressed.emit()
+
+func _open_mobile_controls() -> void:
+	var entries: Array[Dictionary] = [
+		{"label": "Joystick: move your player", "enabled": false},
+		{"label": "Double tap and hold joystick: turbo", "enabled": false},
+		{"label": "Tap PASS: pass; double tap: dummy", "enabled": false},
+		{"label": "Hold PASS: skip pass; KICK: kick", "enabled": false},
+		{"label": "START PLAY: begin; RESTART: reset", "enabled": false}
+	]
+	_open_mobile_card("MOBILE CONTROLS", entries)
+
+# V8C compact ready-state shortcuts; keep the field free during the rep.
+func _setup_mobile_layout() -> void:
+	_mobile_menu = HBoxContainer.new()
+	$HUD.add_child(_mobile_menu)
+	_mobile_menu.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_mobile_menu.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_mobile_menu.add_theme_constant_override("separation", 8)
+	var shortcuts: Array[Button] = [_mobile_play_button]
+	shortcuts.append_array(_mobile_settings_buttons)
+	shortcuts.append(_mobile_help_button)
+	for button in shortcuts:
+		button.reparent(_mobile_menu, false)
+		button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		button.custom_minimum_size = Vector2(0, 70)
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 24)
+		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_mobile_settings_buttons[0].text = "DRILL"
+	_mobile_settings_buttons[1].text = "MODE"
+	_mobile_settings_buttons[2].text = "SETTINGS"
+	get_viewport().size_changed.connect(_resize_mobile_layout)
+	_resize_mobile_layout()
+
+func _resize_mobile_layout() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var width := maxf(1.0, viewport_size.x)
+	var height := maxf(1.0, viewport_size.y)
+	var menu_width := minf(width - 32.0, 1100.0)
+	_mobile_menu.offset_left = -menu_width * 0.5
+	_mobile_menu.offset_right = menu_width * 0.5
+	_mobile_menu.offset_top = 76.0
+	_mobile_menu.offset_bottom = 146.0
+	# These bounds also drive the existing raw PASS/RESTART touch hit tests.
+	var action_size := clampf(height * 0.15, 80.0, 108.0)
+	var action_width := clampf(width * 0.14, 145.0, 190.0)
+	_mobile_place_bottom_right($HUD/PassButton, action_width, action_size, 20.0)
+	_mobile_place_bottom_right(kick_button, action_width, action_size, 32.0 + action_size)
+	var joystick_size := clampf(height * 0.27, 144.0, 180.0)
+	var joystick: Control = $HUD/VirtualJoystick
+	joystick.offset_left = 20.0
+	joystick.offset_right = 20.0 + joystick_size
+	joystick.offset_top = -20.0 - joystick_size
+	joystick.offset_bottom = -20.0
+	_joystick_hint.hide()
+	var restart: Button = $HUD/RestartButton
+	restart.offset_left = -170.0
+	restart.offset_right = -20.0
+	restart.offset_top = 8.0
+	restart.offset_bottom = 72.0
+	restart.add_theme_font_size_override("font_size", 24)
+	tactical_camera_button.offset_left = -110.0
+	tactical_camera_button.offset_right = 110.0
+	tactical_camera_button.offset_top = 8.0
+	tactical_camera_button.offset_bottom = 72.0
+	tactical_camera_button.add_theme_font_size_override("font_size", 24)
+	start_play_button.offset_top = -38.0
+	start_play_button.offset_bottom = 38.0
+	start_play_button.offset_left = -125.0
+	start_play_button.offset_right = 125.0
+	start_play_button.add_theme_font_size_override("font_size", 28)
+	status_label.offset_left = 16.0
+	status_label.offset_right = maxf(120.0, width * 0.5 - 120.0)
+	status_label.offset_top = 8.0
+	status_label.offset_bottom = 72.0
+	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	status_label.add_theme_font_size_override("font_size", 24)
+
+func _mobile_place_bottom_right(button: Button, button_width: float, button_height: float, bottom: float) -> void:
+	button.offset_left = -20.0 - button_width
+	button.offset_right = -20.0
+	button.offset_top = -bottom - button_height
+	button.offset_bottom = -bottom
+	button.add_theme_font_size_override("font_size", 30)

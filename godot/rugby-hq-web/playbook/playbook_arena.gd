@@ -2,6 +2,12 @@ extends Node3D
 
 const PLAYER_SCENE = preload("res://scenes/characters/rashad_player.tscn")
 
+const MobileCardLayer = preload("res://scripts/ui/mobile_card_layer.gd")
+var _mobile_cards: MobileCardLayer
+var _mobile_phase_selector: OptionButton
+var _mobile_decision_button: Button
+var _mobile_review_button: Button
+
 var attackers: Array[Node3D] = []
 var defenders: Array[Node3D] = []
 var ribbons: Node3D
@@ -220,7 +226,7 @@ func _position_camera() -> void:
 	print("[PLAYBOOK CAMERA] Mode: ", camera_mode)
 
 
-func _button(parent: Control, title_value: String, action: Callable) -> void:
+func _button(parent: Control, title_value: String, action: Callable) -> Button:
 	var button := Button.new()
 
 	button.text = title_value
@@ -229,6 +235,7 @@ func _button(parent: Control, title_value: String, action: Callable) -> void:
 	button.pressed.connect(action)
 
 	parent.add_child(button)
+	return button
 
 
 func _build_hud() -> void:
@@ -275,7 +282,7 @@ func _build_hud() -> void:
 		_position_camera()
 	)
 
-	_button(controls, "RIBBONS", func():
+	var ribbons_button := _button(controls, "RIBBONS", func():
 		ribbons.visible = not ribbons.visible
 	)
 
@@ -283,11 +290,13 @@ func _build_hud() -> void:
 		_load_phase(phase)
 	)
 
-	_button(controls, "TRAINING", func():
+	var training_button := _button(controls, "TRAINING", func():
 		get_tree().change_scene_to_file.call_deferred("res://scenes/training_drill.tscn")
 	)
 
 	_setup_reaction_hud(hud)
+	if MobileCardLayer.is_mobile():
+		_setup_mobile_playbook(panel, controls, selector, ribbons_button, training_button)
 
 
 func _load_phase(index: int) -> void:
@@ -314,6 +323,9 @@ func _load_phase(index: int) -> void:
 	if three_on_two and reaction_support_choice.selected == 2:
 		reaction_support_choice.select(0)
 	reaction_panel.visible = reaction
+	if is_instance_valid(_mobile_decision_button):
+		_mobile_decision_button.visible = reaction
+		_mobile_review_button.hide()
 	reaction_ball.visible = reaction
 	reaction_try_line.visible = reaction
 	for i in range(attackers.size()):
@@ -1078,7 +1090,11 @@ func _show_reaction_feedback(outcome: String, carrier: Node3D, pair: Array[Node3
 	reaction_space_outside.visible = true
 	reaction_space_inside.scale = Vector3.ONE * (1.25 if best_side == "INSIDE" else 0.7)
 	reaction_space_outside.scale = Vector3.ONE * (1.25 if best_side == "OUTSIDE" else 0.7)
-	(reaction_feedback.get_parent() as Control).show()
+	if is_instance_valid(_mobile_cards):
+		_mobile_review_button.show()
+		_open_mobile_review()
+	else:
+		(reaction_feedback.get_parent() as Control).show()
 
 func _receiver_clearance(position: Vector3, opponents: Array[Node3D]) -> float:
 	var clearance := INF
@@ -1106,7 +1122,7 @@ func _three_on_two_read(result: String) -> String:
 	return timing + ". " + lane_read + " " + catch_read
 
 func _update_pass_timing_control() -> void:
-	pass_timing_choice.visible = phase == THREE_V_TWO_PHASE and reaction_finish_choice.selected == 0
+	pass_timing_choice.visible = not is_instance_valid(_mobile_cards) and phase == THREE_V_TWO_PHASE and reaction_finish_choice.selected == 0
 
 func _reaction_channel_gap(origin: Vector3, lateral: float, defenders_at_read: Array[Vector3]) -> float:
 	var sample := Vector2(origin.x + lateral, origin.z - 3.0)
@@ -1114,3 +1130,106 @@ func _reaction_channel_gap(origin: Vector3, lateral: float, defenders_at_read: A
 	for defender in defenders_at_read:
 		gap = minf(gap, sample.distance_to(Vector2(defender.x, defender.z)))
 	return gap
+
+# V8C uses the canonical phase selector and reaction controls; no alternate simulation.
+func _setup_mobile_playbook(panel: VBoxContainer, controls: HBoxContainer, selector: OptionButton, ribbons_button: Button, training_button: Button) -> void:
+	_mobile_cards = MobileCardLayer.new()
+	add_child(_mobile_cards)
+	_mobile_phase_selector = selector
+	selector.hide()
+	ribbons_button.hide()
+	training_button.hide()
+	var row := HFlowContainer.new()
+	panel.add_child(row)
+	row.add_theme_constant_override("h_separation", 8)
+	row.add_theme_constant_override("v_separation", 6)
+	panel.custom_minimum_size.x = minf(1080.0, get_viewport().get_visible_rect().size.x - 40.0)
+	get_viewport().size_changed.connect(func(): panel.custom_minimum_size.x = minf(1080.0, get_viewport().get_visible_rect().size.x - 40.0))
+	_button(row, "PICK PLAY", _open_mobile_playbook_menu)
+	_button(row, "VIEW SETTINGS", _open_mobile_view_settings)
+	_button(row, "TRAINING", func(): training_button.pressed.emit())
+	_mobile_decision_button = _button(row, "DECISIONS", _open_mobile_decisions)
+	_mobile_review_button = _button(row, "REVIEW", _open_mobile_review)
+	_mobile_decision_button.hide()
+	_mobile_review_button.hide()
+	for container in [controls, row]:
+		for child in container.get_children():
+			if child is Button:
+				var button := child as Button
+				button.custom_minimum_size.y = 70
+				button.add_theme_font_size_override("font_size", 26)
+	# Keep Preview and Play/Replay in the original reaction area.
+	(reaction_support_choice.get_parent() as Control).hide()
+	pass_timing_choice.hide()
+	for child in pass_timing_choice.get_parent().get_children():
+		if child is Button:
+			var button := child as Button
+			button.custom_minimum_size.y = 76
+			button.add_theme_font_size_override("font_size", 26)
+
+func _mobile_playbook_idle() -> bool:
+	return not playing and not previewing_defense
+
+func _open_mobile_playbook_menu() -> void:
+	if not _mobile_playbook_idle():
+		return
+	var entries: Array[Dictionary] = [
+		{"label": "Formation — 15v15", "action": _mobile_select_phase.bind(0)},
+		{"label": "Set plays", "action": _open_mobile_phase_group.bind("SET PLAYS", 1, 2)},
+		{"label": "Decision training", "action": _open_mobile_phase_group.bind("DECISION TRAINING", 3, 5)}
+	]
+	_mobile_cards.open_card("PICK YOUR PLAY", entries)
+
+func _open_mobile_phase_group(heading: String, first: int, last: int) -> void:
+	var entries: Array[Dictionary] = []
+	for index in range(first, last + 1):
+		entries.append({"label": _mobile_phase_selector.get_item_text(index), "action": _mobile_select_phase.bind(index)})
+	_mobile_cards.open_card(heading, entries)
+
+func _mobile_select_phase(index: int) -> void:
+	if not _mobile_playbook_idle():
+		return
+	_mobile_phase_selector.select(index)
+	_mobile_phase_selector.item_selected.emit(index)
+	if _is_reaction_phase():
+		_open_mobile_decisions()
+
+func _open_mobile_view_settings() -> void:
+	if not _mobile_playbook_idle():
+		return
+	var entries: Array[Dictionary] = [
+		{"label": "Ribbons: " + ("ON" if ribbons.visible else "OFF"), "action": _mobile_toggle_ribbons}
+	]
+	_mobile_cards.open_card("VIEW SETTINGS", entries)
+
+func _mobile_toggle_ribbons() -> void:
+	ribbons.visible = not ribbons.visible
+
+func _open_mobile_decisions() -> void:
+	if not _mobile_playbook_idle() or not _is_reaction_phase():
+		return
+	var entries: Array[Dictionary] = [
+		{"label": reaction_support_choice.get_item_text(reaction_support_choice.selected), "action": _open_mobile_decision_options.bind("SUPPORT / TARGET", reaction_support_choice)},
+		{"label": reaction_draw_choice.get_item_text(reaction_draw_choice.selected), "action": _open_mobile_decision_options.bind("DRAW", reaction_draw_choice)},
+		{"label": reaction_finish_choice.get_item_text(reaction_finish_choice.selected), "action": _open_mobile_decision_options.bind("FINISH", reaction_finish_choice)}
+	]
+	if phase == THREE_V_TWO_PHASE and reaction_finish_choice.selected == 0:
+		entries.append({"label": pass_timing_choice.get_item_text(pass_timing_choice.selected), "action": _open_mobile_decision_options.bind("PASS TIMING", pass_timing_choice)})
+	entries.append({"label": "CONFIRM — RETURN TO FIELD", "action": Callable()})
+	_mobile_cards.open_card("PLAN YOUR RESPONSE", entries, _mobile_decision_button)
+
+func _open_mobile_decision_options(heading: String, selector: OptionButton) -> void:
+	var entries: Array[Dictionary] = []
+	for index in range(selector.item_count):
+		entries.append({"label": selector.get_item_text(index), "action": _mobile_select_decision.bind(selector, index), "enabled": not selector.is_item_disabled(index)})
+	_mobile_cards.open_card(heading, entries)
+
+func _mobile_select_decision(selector: OptionButton, index: int) -> void:
+	if not _mobile_playbook_idle() or not _is_reaction_phase() or selector.is_item_disabled(index):
+		return
+	selector.select(index)
+	selector.item_selected.emit(index)
+	_open_mobile_decisions()
+
+func _open_mobile_review() -> void:
+	_mobile_cards.open_feedback("COACHING REVIEW", reaction_feedback.text, _mobile_review_button)

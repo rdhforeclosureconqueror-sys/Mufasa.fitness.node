@@ -22,10 +22,21 @@ body.immersive #exit-immersive{display:block;position:absolute;z-index:4;bottom:
  body.immersive #exit-immersive{top:max(4px,env(safe-area-inset-top));bottom:auto;right:max(4px,env(safe-area-inset-right));font-size:12px;min-height:44px;padding:6px 10px;opacity:.92}
  body.immersive #canvas{width:100%;height:100%}
 }
+/* V8C: mobile help lives inside the game; compact shell chrome. */
+@media(pointer:coarse){
+ header{min-height:0;padding: max(6px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) 6px max(10px,env(safe-area-inset-left));gap:8px}
+ header strong{font-size:12px}
+ header #controls,header #hint{display:none}
+ #fullscreen{min-height:44px;padding:8px 12px}
+ #game-stage{grid-template:minmax(0,1fr)/minmax(0,1fr)}
+}
+@media(pointer:coarse) and (orientation:portrait){
+ #canvas,body.immersive #canvas{height:auto;aspect-ratio:16/9;max-height:100%}
+}
 </style>$GODOT_HEAD_INCLUDE</head><body>
 <header><a href="/rugby.html">← Rugby HQ</a><strong>QUIN NATION · RUGBY HQ</strong><button id="fullscreen" type="button" aria-pressed="false">Fullscreen</button><p id="controls">WASD / arrows: run · Shift: walk · Space / PASS: pass · R: reset · Right-drag: camera</p><span id="hint">Click the field to focus keyboard controls. Press R after a tackle.</span></header>
 <main id="game-stage"><canvas id="canvas" tabindex="0" aria-label="Rugby HQ 3D training field"></canvas>
-<section id="overlay" aria-live="polite"><h1>Rugby HQ · 2v1</h1><p id="message">Train with Rashad, a support runner and a defender. On phones, rotate to landscape and use the joystick and PASS button.</p><progress id="progress" hidden></progress><button id="start">PLAY RUGBY HQ</button><p><a href="/rugby.html">Back to Rugby HQ</a></p></section>
+<section id="overlay" aria-live="polite"><h1>Rugby HQ</h1><p id="message">Train with Rashad, a support runner and a defender. On phones, rotate to landscape and use the joystick and PASS button.</p><progress id="progress" hidden></progress><button id="start">PLAY RUGBY HQ</button><p><a href="/rugby.html">Back to Rugby HQ</a></p></section>
 <span id="rotate-hint">Rotate phone for a larger field.</span><button id="exit-immersive" type="button">Exit fullscreen</button></main>
 <noscript>Enable JavaScript to play Rugby HQ.</noscript>
 <script src="$GODOT_URL"></script><script>

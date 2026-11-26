@@ -1,0 +1,36 @@
+# V8C Mobile HUD — implementation roadmap
+
+Baseline: PR #1409, commit a7063d6f4e17e6096659caa4ddf3a393a328a413. Preserve all subsequent unrelated main changes and existing exported binaries until a verified replacement is ready.
+
+## Approved scope
+- Training is default entrance. Mobile cards close after selection; no desktop keyboard instructions on mobile field.
+- Pick Your Play: 2v1, 2v2, 2v3, Three Deep, Wedge (2v3), Double Wedge (6v4).
+- Drill Settings: ball carrier and existing applicable configuration. New defensive options require separately verified gameplay support; do not invent behavior.
+- Training Mode: existing mode/difficulty options.
+- Advanced Settings: controller profile, angles, control mode.
+- Playbook: existing formation, Crash/Backdoor, Wide Release, 2v2, 2v1, 3v2; preserve Watch, Camera, Ribbons, Reset, Training.
+- Keep camera, joystick, Kick, Pass, Start/Restart accessible; controls help on side. Preserve desktop.
+- Portrait: use available whitespace for cards; landscape: compact shortcuts. Do not crop field or joystick.
+- Coaching feedback readable and dismissible, with all existing information retained.
+- Access control is separate release-blocking backlog for public launch.
+
+## Gates
+- [x] Existing HUD source audit and screenshot mapping.
+- [x] Initial reusable card layer source committed (not compiled).
+- [ ] Compile reusable component; validate mobile detection and actual CSS-equivalent touch targets.
+- [x] Initial Training Pick Your Play source adapter committed: existing scenario selection signal, ready-state guard, joystick cancellation and raw scene-input guard.
+- [x] Initial Training settings, mode, advanced and controls source adapters committed; normal mobile HUD status omits keyboard instructions.
+- [ ] Compile and verify Training adapters, including underlying GUI input isolation, safe help availability, responsive shortcuts, restart overlap, and touch target sizes. Existing defense behavior retained; no new defense choices implemented.
+- [x] Initial Playbook source adapters: formation, set plays, decision training, ribbons, Training return, support/draw/finish/timing choices and scrollable coaching review. Existing scenario and outcome functions retained.
+- [ ] Compile and verify Playbook adapters, including modal focus/input isolation, replay, automatic review timing, responsive control sizes and all original decision options.
+- [x] Hide desktop-only instructions in mobile source shell; compact header and generic loading title.
+- [ ] Regenerate exported shell and manifest from source; verify mobile instructions are hidden in the live build.
+- [x] Initial responsive layout source: compact ready-state menu, hide during rep, enlarged gameplay controls, inset joystick, wrapping Playbook shortcuts.
+- [ ] Verify actual CSS-pixel targets, safe areas, focus handling, rotation, no overlap, and desktop unchanged. Portrait canvas still uses 16:9; a full portrait-native layout remains outstanding.
+- [x] Add isolated GitHub Actions Godot 4.5.1 compile/export workflow (read-only repository permissions; candidate artifact only).
+- [ ] Confirm first cloud workflow run; correct import, runtime or export errors; add explicit mobile-card behavior tests. Existing scene smoke is desktop/headless, not mobile acceptance.
+- [ ] Retrieve validated candidate, publish matching binary and shell files to PR, run automated game tests and package contracts.
+- [ ] Browser smoke and physical iPhone acceptance (touch accuracy, readability, performance, cards, replay).
+- [ ] Review, merge, deploy and verify canonical milelefit.com; retain rollback checkpoint.
+
+Initial Training integration is source-only; no runtime validation or export is claimed. Do not merge partial source with stale game binaries as a completed HUD release.
