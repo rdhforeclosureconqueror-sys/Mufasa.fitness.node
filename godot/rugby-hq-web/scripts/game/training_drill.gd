@@ -46,6 +46,7 @@ var defender_two: RugbyPlayer
 const MobileCardLayer = preload("res://scripts/ui/mobile_card_layer.gd")
 var _mobile_cards: MobileCardLayer
 var _mobile_play_button: Button
+var _mobile_settings_buttons: Array[Button] = []
 var scenario_selector: OptionButton
 var start_play_button: Button
 var receiver_selector: OptionButton
@@ -401,7 +402,7 @@ func _end_play(message: String) -> void:
 
 func _update_status(message: String) -> void:
 	_message = message
-	status_label.text = message + "\n" + INSTRUCTIONS
+	status_label.text = message if is_instance_valid(_mobile_cards) else message + "\n" + INSTRUCTIONS
 
 
 func _setup_turbo_hud() -> void:
@@ -933,6 +934,8 @@ func _prepare_scenario() -> void:
 	scenario_selector.disabled = false
 	if is_instance_valid(_mobile_play_button):
 		_mobile_play_button.disabled = false
+		for button in _mobile_settings_buttons:
+			button.disabled = false
 		_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
 	start_play_button.show()
 	control_mode_button.disabled = false
@@ -956,6 +959,8 @@ func _start_scenario() -> void:
 	scenario_selector.disabled = true
 	if is_instance_valid(_mobile_play_button):
 		_mobile_play_button.disabled = true
+		for button in _mobile_settings_buttons:
+			button.disabled = true
 	carrier_selector.disabled = true
 	difficulty_selector.disabled = true
 	start_play_button.hide()
@@ -2125,22 +2130,26 @@ func _setup_mobile_play_card() -> void:
 	_mobile_play_button.text = scenario_selector.get_item_text(scenario_selector.selected) + " ▾"
 	_mobile_play_button.pressed.connect(_open_mobile_play_card)
 	scenario_selector.hide()
+	carrier_selector.hide()
+	difficulty_selector.hide()
+	_controller_selector.hide()
+	preview_angles_button.hide()
+	control_mode_button.hide()
+	$HUD/ReturnToPlaybookButton.hide()
+	status_label.text = _message
+	_mobile_settings_buttons.append(_mobile_shortcut("DRILL SETTINGS", 15.0, _open_mobile_drill_settings))
+	_mobile_settings_buttons.append(_mobile_shortcut("TRAINING MODE", 79.0, _open_mobile_training_mode))
+	_mobile_settings_buttons.append(_mobile_shortcut("SETTINGS / PLAYBOOK", 143.0, _open_mobile_advanced_settings))
+	_mobile_shortcut("CONTROLS", 207.0, _open_mobile_controls)
 
 func _open_mobile_play_card() -> void:
 	if not waiting_to_start or countdown_running or scenario_selector.disabled:
 		return
-	_reset_advanced_gestures()
-	_pass_touch_index = -1
-	$HUD/VirtualJoystick.cancel_controller_touch()
-	controlled_player.touch_direction = Vector2.ZERO
-	controlled_player.turbo_touch = false
-	_joystick_held = false
-	$HUD/VirtualJoystick.hide()
 	var entries: Array[Dictionary] = []
 	for index in range(scenario_selector.item_count):
 		var selected_prefix := "• " if index == scenario_selector.selected else ""
 		entries.append({"label": selected_prefix + scenario_selector.get_item_text(index), "action": _select_mobile_play.bind(index), "enabled": not scenario_selector.is_item_disabled(index)})
-	_mobile_cards.open_card("PICK YOUR PLAY", entries, _mobile_play_button)
+	_open_mobile_card("PICK YOUR PLAY", entries, _mobile_play_button)
 
 func _select_mobile_play(index: int) -> void:
 	if scenario_selector.disabled or not waiting_to_start or countdown_running:
@@ -2151,3 +2160,77 @@ func _select_mobile_play(index: int) -> void:
 
 func _restore_mobile_play_controls() -> void:
 	$HUD/VirtualJoystick.visible = _mobile_controller
+
+func _mobile_shortcut(label: String, top: float, action: Callable) -> Button:
+	var button := Button.new()
+	button.text = label
+	button.focus_mode = Control.FOCUS_NONE
+	button.add_theme_font_size_override("font_size", 22)
+	$HUD.add_child(button)
+	button.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	button.offset_left = -280.0
+	button.offset_right = -25.0
+	button.offset_top = top
+	button.offset_bottom = top + 58.0
+	button.pressed.connect(action)
+	return button
+
+func _open_mobile_card(heading: String, entries: Array[Dictionary], focus_return: Control = null) -> void:
+	# Configuration is restricted to ready state. Help is also restricted until a safe pause is implemented.
+	if not waiting_to_start or countdown_running:
+		return
+	_reset_advanced_gestures()
+	_pass_touch_index = -1
+	$HUD/VirtualJoystick.cancel_controller_touch()
+	controlled_player.touch_direction = Vector2.ZERO
+	controlled_player.turbo_touch = false
+	_joystick_held = false
+	$HUD/VirtualJoystick.hide()
+	_mobile_cards.open_card(heading, entries, focus_return)
+
+func _mobile_option_entries(selector: OptionButton) -> Array[Dictionary]:
+	var entries: Array[Dictionary] = []
+	for index in range(selector.item_count):
+		var prefix := "• " if index == selector.selected else ""
+		entries.append({"label": prefix + selector.get_item_text(index), "action": _select_mobile_option.bind(selector, index), "enabled": not selector.disabled and not selector.is_item_disabled(index)})
+	return entries
+
+func _select_mobile_option(selector: OptionButton, index: int) -> void:
+	if not waiting_to_start or countdown_running or selector.disabled:
+		return
+	if index < 0 or index >= selector.item_count or selector.is_item_disabled(index):
+		return
+	selector.select(index)
+	selector.item_selected.emit(index)
+
+func _open_mobile_drill_settings() -> void:
+	_open_mobile_card("DRILL SETTINGS — BALL CARRIER", _mobile_option_entries(carrier_selector))
+
+func _open_mobile_training_mode() -> void:
+	_open_mobile_card("TRAINING MODE", _mobile_option_entries(difficulty_selector))
+
+func _open_mobile_advanced_settings() -> void:
+	var entries: Array[Dictionary] = [
+		{"label": "Controller profile", "action": _open_mobile_controller_profile},
+		{"label": preview_angles_button.text, "action": _mobile_existing_button.bind(preview_angles_button), "enabled": not preview_angles_button.disabled},
+		{"label": control_mode_button.text, "action": _mobile_existing_button.bind(control_mode_button), "enabled": not control_mode_button.disabled},
+		{"label": "PLAYBOOK ARENA", "action": _mobile_existing_button.bind($HUD/ReturnToPlaybookButton)}
+	]
+	_open_mobile_card("ADVANCED SETTINGS", entries)
+
+func _open_mobile_controller_profile() -> void:
+	_open_mobile_card("CONTROLLER PROFILE", _mobile_option_entries(_controller_selector))
+
+func _mobile_existing_button(button: Button) -> void:
+	if waiting_to_start and not countdown_running and not button.disabled:
+		button.pressed.emit()
+
+func _open_mobile_controls() -> void:
+	var entries: Array[Dictionary] = [
+		{"label": "Joystick: move your player", "enabled": false},
+		{"label": "Double tap and hold joystick: turbo", "enabled": false},
+		{"label": "Tap PASS: pass; double tap: dummy", "enabled": false},
+		{"label": "Hold PASS: skip pass; KICK: kick", "enabled": false},
+		{"label": "START PLAY: begin; RESTART: reset", "enabled": false}
+	]
+	_open_mobile_card("MOBILE CONTROLS", entries)
