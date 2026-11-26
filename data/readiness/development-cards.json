@@ -950,6 +950,20 @@
       "createdAt": "2026-11-26T06:21:46.493Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-simba-migration",
+      "board": "launch",
+      "canonical": false,
+      "title": "Rugby Simba migration",
+      "category": "RUGBY HQ",
+      "description": "Isolated migration rehearsal; protected production execution remains operator gated",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-26T07:21:06.214Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
