@@ -6,7 +6,7 @@ const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:a
  const get=url=>fetch(url,{signal:AbortSignal.timeout(120000)}),checks=[];
  for(const route of ['/','/community-hub.html','/rugby.html','/rugby-player.html','/workout.html','/rugby-arena.html']){
   const r=await get(base+route);assert.equal(r.status,200,route);const body=await r.text();
-  if(route==='/community-hub.html')assert.match(body,/href="\/rugby.html"/);
+  if(route==='/community-hub.html')assert.match(body,/href="\/rugby-player.html"/);
   if(route==='/rugby.html')assert.match(body,/href="\/game\/rugby-hq\/index.html">PLAY RUGBY HQ/);
   checks.push({route,status:r.status});
  }
