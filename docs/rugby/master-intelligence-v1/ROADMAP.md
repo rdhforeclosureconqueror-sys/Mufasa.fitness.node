@@ -117,3 +117,6 @@ No production migration, runtime activation or owner device acceptance. Original
 This activation checklist does not alter the original 53-milestone denominator. No production migration or human acceptance asserted.
 
 - [ ] Read-only production connection preflight: owner reported environment and secret configured; screenshots show main-only rule, owner reviewer, administrator bypass disabled and fresh export November 26 at 2:08 AM. Saved protection rules, actual restore and external TLS connection remain unverified.
+
+## Policy preview checkpoint
+Recovery clone authentication and restore verification deferred by owner; independent development may continue. Production migration remains separately gated. Owner-only nonmutating draft preview and field-level comparison implemented on development branch; CI and review pending. No API exposure, production activation or milestone completion asserted.
