@@ -5,9 +5,9 @@
  let current=null;
  const fields=[['minimumScore','Minimum competency score',4,5],['candidateMinimumDistinctDays','Distinct observation days',2,365],['candidateMinimumSpanDays','Observation span (days)',1,365]];
  async function request(options={}){
-  const response=await fetch(endpoint,{credentials:'same-origin',cache:'no-store',...options});
-  if(!response.ok)throw Error(response.status===409?'Policy version changed. Reload before reviewing.':'Policy access or preview unavailable.');
-  const result=await response.json();if(result.ok!==true||!result.data)throw Error('Invalid policy response');return result.data;
+  const response=await window.MaatApiClient.request(endpoint,options);
+  if(!response.ok)throw Error(response.response?.status===409?'Policy version changed. Reload before reviewing.':'Policy access or preview unavailable.');
+  const result=response.payload;if(result.ok!==true||!result.data)throw Error('Invalid policy response');return result.data;
  }
  function render(data){
   if(!Number.isInteger(data.version)||!Array.isArray(data.policy?.stages)||data.policy.stages.length!==7)throw Error('Invalid policy response');
