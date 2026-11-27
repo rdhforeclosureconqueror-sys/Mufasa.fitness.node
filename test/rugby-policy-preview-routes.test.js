@@ -18,9 +18,9 @@ test('owner reads and previews without mutation',async()=>{const call=fixture(),
 test('nonowner and spoofed body identity denied',async()=>{const call=fixture();for(const auth of [null,{userId:'other'},{userId:'athlete',role:'super_admin'}]){assert.equal((await call('GET',auth)).status,403);assert.equal((await call('POST',auth,{userId:'owner',policy:defaultPolicy(),expectedVersion:1,reason:'Review'})).status,403);}});
 test('invalid and stale drafts rejected',async()=>{const call=fixture(),owner={userId:'owner'},policy=defaultPolicy();assert.equal((await call('POST',owner,{policy,expectedVersion:2,reason:'Review'})).status,409);policy.stages[0].minimumScore=1;assert.equal((await call('POST',owner,{policy,expectedVersion:1,reason:'Review'})).status,400);});
 
-test('canonical preview owner needs verified identity and bootstrap role, not duplicate allowlist',async()=>{
+test('canonical owner needs verified identity and bootstrap role, not duplicate allowlist',async()=>{
  const resolver=createAuthorizationResolver({adminEmails:['admin@example.test'],bootstrap:{superAdminUserIds:['owner'],superAdminSubjects:[]},roleAssignments:{adminUserIds:[],adminSubjects:[],trainerUserIds:[],trainerSubjects:[]}});
- const service=createPolicyService({store:{read:async()=>initialLedger(),compareAndSwap:async()=>{throw Error('Unexpected write');}},authorizationResolver:resolver,ownerUserIds:[],canonicalPreviewOwner:true});
+ const service=createPolicyService({store:{read:async()=>initialLedger(),compareAndSwap:async()=>{throw Error('Unexpected write');}},authorizationResolver:resolver,ownerUserIds:[],canonicalOwner:true});
  const owner={userId:'owner',provider:'firebase',providerVerified:true};
  const request={policy:defaultPolicy(),expectedVersion:1,reason:'Review'};
  assert.equal((await service.read(owner)).length,1);
@@ -29,6 +29,6 @@ test('canonical preview owner needs verified identity and bootstrap role, not du
   await assert.rejects(service.read(auth),/Policy owner required/);
   await assert.rejects(service.preview(auth,request),/Policy owner required/);
  }
- await assert.rejects(service.publish(owner,request),/Policy owner required/);
- await assert.rejects(service.restore(owner,{version:1,expectedVersion:1,reason:'Review'}),/Policy owner required/);
+ await assert.rejects(service.publish(owner,request),/Unexpected write/);
+ await assert.rejects(service.publish({userId:'member',providerVerified:true},request),/Policy owner required/);
 });
