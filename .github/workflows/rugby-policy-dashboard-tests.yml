@@ -4,6 +4,7 @@ on:
     paths:
       - 'src/routes/rugbyPolicyPreviewRoutes.js'
       - 'test/rugby-policy-preview-routes.test.js'
+      - 'test/rugby-policy-dashboard-diagnostics.test.js'
       - 'src/rugby/beastModePolicy*.js'
       - '.github/workflows/rugby-policy-dashboard-tests.yml'
       - 'public/rugby-policy-dashboard*'
@@ -19,5 +20,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test test/rugby-policy-preview-routes.test.js test/rugby-beast-mode-owner-policy.test.js
+      - run: node --test test/rugby-policy-preview-routes.test.js test/rugby-beast-mode-owner-policy.test.js test/rugby-policy-dashboard-diagnostics.test.js
       - run: npm run readiness:validate
