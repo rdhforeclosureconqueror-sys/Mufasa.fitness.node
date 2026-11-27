@@ -10,7 +10,7 @@ test('exported assets match recorded hashes and binary formats',()=>{
  assert.equal(fs.readFileSync(path.join(out,'index.pck')).subarray(0,4).toString(),'GDPC');
 });
 test('existing navigation survives and browser game has loading/focus/error controls',()=>{
- assert.match(read('public/community-hub.html'),/href="\/rugby.html"/);
+ assert.match(read('public/community-hub.html'),/href="\/rugby-player.html"/);
  const landing=read('public/rugby.html');assert.match(landing,/href="\/game\/rugby-hq\/index.html">PLAY RUGBY HQ/);assert.match(landing,/href="\/rugby-player.html"/);
  const shell=read('public/game/rugby-hq/index.html');
  for(const marker of ['requestFullscreen','preventDefault','canvas.focus','onProgress','onPrintError','Back to Rugby HQ'])assert.ok(shell.includes(marker),marker);
