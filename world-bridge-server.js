@@ -245,6 +245,20 @@ function createWorldBridgeApp(options = {}) {
   installDeploymentIdentity(app, options);
   installGarveyAssessmentNotificationRelay(app, options);
   installRugbyProfileRoutes({app,requireAuth,userStore:createCanonicalUserStore(options)});
+  // Isolated candidate preview only; explicit owner allowlist, no production store.
+  {
+    const {createAuthorizationResolver}=require('./src/lib/authorization');
+    const {createPolicyService}=require('./src/rugby/beastModePolicyService');
+    const {initialLedger}=require('./src/rugby/beastModePolicyLedger');
+    const {installRugbyPolicyPreviewRoutes}=require('./src/routes/rugbyPolicyPreviewRoutes');
+    const resolver=createAuthorizationResolver();
+    const policyService=createPolicyService({
+      store:{read:async()=>initialLedger(),compareAndSwap:async()=>{throw Error('Preview store is read only');}},
+      authorizationResolver:{resolveRole:auth=>auth?.provider==='pilot_bypass'||auth?.identityClass==='pilot_bypass'||auth?.providerVerified!==true?{role:'user',isBootstrapSuperAdmin:false}:resolver.resolveRole(auth)},
+      ownerUserIds:String(process.env.RUGBY_POLICY_OWNER_USER_IDS||'').split(',').map(x=>x.trim()).filter(Boolean)
+    });
+    installRugbyPolicyPreviewRoutes({app,requireAuth,policyService});
+  }
   installFreeRunClub(app, options);
   installResidentialWellness(app, options);
   installResidentialCommunity(app, options);
