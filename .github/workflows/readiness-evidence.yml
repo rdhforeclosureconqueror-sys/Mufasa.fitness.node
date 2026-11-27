@@ -96,6 +96,11 @@ jobs:
               npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby policy draft preview' --category 'RUGBY HQ' --description 'Owner-only nonmutating draft preview' --started true --current true --humanRequired true
             fi
           fi
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx 'src/routes/rugbyPolicyPreviewRoutes.js' >/dev/null; then
+            CARD=launch-development-rugby-policy-dashboard
+            FILES=src/routes/rugbyPolicyPreviewRoutes.js,world-bridge-server.js,public/rugby-policy-dashboard.html,public/rugby-policy-dashboard.js,test/rugby-policy-preview-routes.test.js,.github/workflows/rugby-policy-dashboard-tests.yml,.github/workflows/readiness-evidence.yml
+            WORKFLOW='Rugby policy dashboard tests'
+          fi
           if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
             for attempt in {1..30}; do
               TEST_RUN=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$HEAD_SHA&status=success&per_page=100" | jq -r --arg workflow "$WORKFLOW" '[.workflow_runs[] | select(.name == $workflow and .conclusion == "success")][0].id // empty')
