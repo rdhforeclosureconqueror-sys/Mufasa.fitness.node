@@ -4,6 +4,7 @@ on:
     paths:
       - '.github/workflows/readiness-evidence.yml'
       - 'src/routes/rugbyProfileRoutes.js'
+      - 'src/rugby/beastModePolicyService.js'
       - 'scripts/rugby/simba-policy-migration.sql'
       - 'scripts/rugby/simba-policy-preflight.sql'
       - '.github/workflows/rugby-simba-migration*.yml'
@@ -86,6 +87,14 @@ jobs:
             CARD=launch-development-rugby-simba-migration
             FILES=$(git diff --name-only "$CHANGED_BASE" HEAD | grep -E '^(scripts/rugby/simba-policy-(migration|preflight)[.]sql|[.]github/workflows/(rugby-simba-migration[^/]*|readiness-evidence)[.]yml|docs/rugby/master-intelligence-v1/(ROADMAP|simba-migration-runbook)[.]md)$' | paste -sd, -)
             WORKFLOW='Rugby Simba migration rehearsal'
+          fi
+          if [[ "$GITHUB_EVENT_NAME" == pull_request && -n "$CHANGED_BASE" ]] && git diff --name-only "$CHANGED_BASE" HEAD | grep -Fx 'src/rugby/beastModePolicyService.js' >/dev/null; then
+            CARD=launch-development-rugby-policy-preview
+            FILES=src/rugby/beastModePolicyService.js,test/rugby-beast-mode-owner-policy.test.js,.github/workflows/readiness-evidence.yml,docs/rugby/master-intelligence-v1/ROADMAP.md
+            WORKFLOW='Rugby recovery acceptance'
+            if ! jq -e --arg id "$CARD" '.. | objects | select(.id? == $id)' data/readiness/development-cards.json >/dev/null; then
+              npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby policy draft preview' --category 'RUGBY HQ' --description 'Owner-only nonmutating draft preview' --started true --current true --humanRequired true
+            fi
           fi
           if [[ -z "$TEST_RUN" && "$GITHUB_EVENT_NAME" == pull_request ]]; then
             for attempt in {1..30}; do
