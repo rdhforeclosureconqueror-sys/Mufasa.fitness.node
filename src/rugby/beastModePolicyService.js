@@ -2,10 +2,10 @@
 const {publish,restore}=require('./beastModePolicyLedger');
 // Internal service only. Auth must originate from verified server authentication.
 // Store must implement atomic compare-and-swap across all writers.
-function createPolicyService({store,authorizationResolver,ownerUserIds=[],now=()=>new Date().toISOString()}){
+function createPolicyService({store,authorizationResolver,ownerUserIds=[],canonicalPreviewOwner=false,now=()=>new Date().toISOString()}){
  const owners=new Set(ownerUserIds.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()));
- function authorize(auth){
-  if(!auth||typeof auth.userId!=='string'||!owners.has(auth.userId))throw Error('Policy owner required');
+ function authorize(auth,previewOnly=false){
+  if(!auth||typeof auth.userId!=='string'||(!owners.has(auth.userId)&&!(previewOnly&&canonicalPreviewOwner&&auth.providerVerified===true&&auth.provider!=='pilot_bypass'&&auth.identityClass!=='pilot_bypass')))throw Error('Policy owner required');
   const role=authorizationResolver.resolveRole(auth);
   if(role.role!=='super_admin'||role.isBootstrapSuperAdmin!==true)throw Error('Policy owner required');
   return auth.userId;
@@ -18,7 +18,7 @@ function createPolicyService({store,authorizationResolver,ownerUserIds=[],now=()
   return structuredClone(next.at(-1));
  }
  async function preview(auth,request){
-  const actor=authorize(auth);
+  const actor=authorize(auth,true);
   const ledger=await store.read();
   const proposed=publish(ledger,request,actor,now()).at(-1);
   const current=ledger.at(-1);
@@ -31,7 +31,7 @@ function createPolicyService({store,authorizationResolver,ownerUserIds=[],now=()
   }
   return structuredClone({baseVersion:current.version,proposedPolicy:proposed.policy,changes,published:false,stageChangeAuthorized:false});
  }
- return {preview,read:async auth=>{authorize(auth);return structuredClone(await store.read());},
+ return {preview,read:async auth=>{authorize(auth,true);return structuredClone(await store.read());},
  publish:(auth,request)=>change(auth,request,publish),
  restore:(auth,request)=>change(auth,request,restore)};
 }
