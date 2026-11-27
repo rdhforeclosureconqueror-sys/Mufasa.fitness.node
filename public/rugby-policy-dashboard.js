@@ -1,13 +1,23 @@
 'use strict';
 (()=>{
- const $=id=>document.getElementById(id),form=$('editor'),status=$('status'),button=$('preview');
+ const $=id=>document.getElementById(id),form=$('editor'),status=$('status'),button=$('preview'),acceptance=$('acceptance'),firstFailure=$('first-failure');
  const endpoint='/api/admin/rugby/policy-preview';
  let current=null,revision=0;
  const fields=[['minimumScore','Minimum competency score',4,5],['candidateMinimumDistinctDays','Distinct observation days',2,365],['candidateMinimumSpanDays','Observation span (days)',1,365]];
+ function report(response){
+  const diagnostic=window.RugbyPolicyDiagnostics?.classify?.(response)||{boundary:'TRANSPORT',code:'DIAGNOSTICS_UNAVAILABLE',message:'The acceptance harness could not classify this request.'};
+  acceptance.hidden=false;firstFailure.textContent=window.RugbyPolicyDiagnostics?.format?.(diagnostic)||diagnostic.message;
+  return diagnostic;
+ }
+ function failure(response){
+  const diagnostic=report(response),error=Error(diagnostic.message);error.diagnostic=diagnostic;return error;
+ }
  async function request(options={}){
   const response=await window.MaatApiClient.request(endpoint,options);
-  if(!response.ok)throw Error(response.response?.status===409?'Policy version changed. Reload before reviewing.':'Policy access or preview unavailable.');
-  const result=response.payload;if(result.ok!==true||!result.data)throw Error('Invalid policy response');return result.data;
+  if(!response.ok)throw failure(response);
+  const result=response.payload;
+  if(result.ok!==true||!result.data)throw failure(response);
+  report(response);return result.data;
  }
  function render(data){
   if(!Number.isInteger(data.version)||!Array.isArray(data.policy?.stages)||data.policy.stages.length!==7)throw Error('Invalid policy response');
