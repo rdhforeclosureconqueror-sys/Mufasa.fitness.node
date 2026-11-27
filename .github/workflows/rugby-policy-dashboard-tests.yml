@@ -1,0 +1,23 @@
+name: Rugby policy dashboard tests
+on:
+  pull_request:
+    paths:
+      - 'src/routes/rugbyPolicyPreviewRoutes.js'
+      - 'test/rugby-policy-preview-routes.test.js'
+      - 'src/rugby/beastModePolicy*.js'
+      - '.github/workflows/rugby-policy-dashboard-tests.yml'
+      - 'public/rugby-policy-dashboard*'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test test/rugby-policy-preview-routes.test.js test/rugby-beast-mode-owner-policy.test.js
+      - run: npm run readiness:validate
