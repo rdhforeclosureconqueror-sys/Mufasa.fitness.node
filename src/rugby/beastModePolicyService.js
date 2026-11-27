@@ -2,10 +2,10 @@
 const {publish,restore}=require('./beastModePolicyLedger');
 // Internal service only. Auth must originate from verified server authentication.
 // Store must implement atomic compare-and-swap across all writers.
-function createPolicyService({store,authorizationResolver,ownerUserIds=[],now=()=>new Date().toISOString()}){
+function createPolicyService({store,authorizationResolver,ownerUserIds=[],canonicalOwner=false,now=()=>new Date().toISOString()}){
  const owners=new Set(ownerUserIds.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()));
  function authorize(auth){
-  if(!auth||typeof auth.userId!=='string'||!owners.has(auth.userId))throw Error('Policy owner required');
+  if(!auth||typeof auth.userId!=='string'||(canonicalOwner?!(auth.providerVerified===true&&auth.provider!=='pilot_bypass'&&auth.identityClass!=='pilot_bypass'):!owners.has(auth.userId)))throw Error('Policy owner required');
   const role=authorizationResolver.resolveRole(auth);
   if(role.role!=='super_admin'||role.isBootstrapSuperAdmin!==true)throw Error('Policy owner required');
   return auth.userId;
