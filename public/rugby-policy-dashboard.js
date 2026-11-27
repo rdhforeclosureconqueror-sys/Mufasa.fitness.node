@@ -2,7 +2,7 @@
 (()=>{
  const $=id=>document.getElementById(id),form=$('editor'),status=$('status'),button=$('preview');
  const endpoint='/api/admin/rugby/policy-preview';
- let current=null;
+ let current=null,revision=0;
  const fields=[['minimumScore','Minimum competency score',4,5],['candidateMinimumDistinctDays','Distinct observation days',2,365],['candidateMinimumSpanDays','Observation span (days)',1,365]];
  async function request(options={}){
   const response=await window.MaatApiClient.request(endpoint,options);
@@ -24,9 +24,9 @@
   }
   form.hidden=false;status.textContent='Candidate policy loaded. Changes remain drafts.';
  }
- form.addEventListener('input',()=>{$('result').hidden=true;});
+ form.addEventListener('input',()=>{revision++;$('result').hidden=true;});
  form.addEventListener('submit',async event=>{
-  event.preventDefault();if(!current||button.disabled)return;button.disabled=true;$('result').hidden=true;
+  event.preventDefault();if(!current||button.disabled)return;button.disabled=true;$('result').hidden=true;const submittedRevision=revision;
   try{
    const policy=structuredClone(current.policy);
    for(const stage of policy.stages){
@@ -34,6 +34,7 @@
     for(const key of ['proposedDimensions','candidateContexts'])stage[key]=form.elements.namedItem(stage.id+':'+key).value.split('\n').map(x=>x.trim()).filter(Boolean);
    }
    const result=await request({method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({policy,expectedVersion:current.version,reason:$('reason').value})});
+   if(submittedRevision!==revision){status.textContent='Draft changed during preview. Submit again.';return;}
    if(result.published!==false||result.stageChangeAuthorized!==false||!Array.isArray(result.changes))throw Error('Unsafe preview response');
    $('changes').textContent=result.changes.length?result.changes.map(x=>x.stageId+' · '+x.field+'\n'+JSON.stringify(x.before)+' → '+JSON.stringify(x.after)).join('\n\n'):'No changes.';
    $('result').hidden=false;status.textContent='Preview only. Nothing published.';
