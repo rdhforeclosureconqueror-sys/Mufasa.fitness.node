@@ -964,6 +964,20 @@
       "createdAt": "2026-11-26T07:21:06.214Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-policy-preview",
+      "board": "launch",
+      "canonical": false,
+      "title": "Rugby policy draft preview",
+      "category": "RUGBY HQ",
+      "description": "Owner-only nonmutating draft preview",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-27T18:36:09.743Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
