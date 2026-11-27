@@ -6966,6 +6966,37 @@
       "prNumber": 1423,
       "commitSha": "8668d4a3b8b525ae7fd4463f27aaeb2050c1c37e",
       "timestamp": "2026-11-26T09:09:13.845Z"
+    },
+    {
+      "operationId": "e1dd0591-a2d2-4f14-a330-3fa0bfb9f5b5",
+      "board": "launch",
+      "cardId": "launch-development-rugby-policy-preview",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Owner-only nonmutating draft preview",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-27T18:36:09.743Z"
+    },
+    {
+      "operationId": "9d05f412-04e8-4dae-9d63-e78df2d62c8d",
+      "board": "launch",
+      "cardId": "launch-development-rugby-policy-preview",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/rugby/beastModePolicyService.js",
+        "test/rugby-beast-mode-owner-policy.test.js",
+        ".github/workflows/readiness-evidence.yml",
+        "docs/rugby/master-intelligence-v1/ROADMAP.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated Rugby recovery acceptance; owner live acceptance pending.; verified successful workflow run 46050660150",
+      "prNumber": 1425,
+      "commitSha": "dedf03bda612db999c708460a08a7cf9d3e5fb9b",
+      "timestamp": "2026-11-27T18:36:20.932Z"
     }
   ]
 }
