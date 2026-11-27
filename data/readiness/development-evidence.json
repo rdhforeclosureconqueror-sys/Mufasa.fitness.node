@@ -6997,6 +6997,27 @@
       "prNumber": 1425,
       "commitSha": "dedf03bda612db999c708460a08a7cf9d3e5fb9b",
       "timestamp": "2026-11-27T18:36:20.932Z"
+    },
+    {
+      "operationId": "82e9e432-cbe0-4e4c-9fe0-7201465b8bec",
+      "board": "launch",
+      "cardId": "launch-development-rugby-policy-dashboard",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/routes/rugbyPolicyPreviewRoutes.js",
+        "world-bridge-server.js",
+        "public/rugby-policy-dashboard.html",
+        "public/rugby-policy-dashboard.js",
+        "test/rugby-policy-preview-routes.test.js",
+        ".github/workflows/rugby-policy-dashboard-tests.yml",
+        ".github/workflows/readiness-evidence.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "Automated Rugby policy dashboard tests; owner live acceptance pending.; verified successful workflow run 46064361561",
+      "prNumber": 1426,
+      "commitSha": "326de3f832f79a59f59e91794b93e4ff6c78b67e",
+      "timestamp": "2026-11-27T20:33:14.021Z"
     }
   ]
 }
