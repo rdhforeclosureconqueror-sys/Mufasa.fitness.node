@@ -20,9 +20,9 @@ jobs:
           READINESS_OPS_FILE: ${{ runner.temp }}/readiness-ops.json
         run: |
           set -euo pipefail
-          CARD=launch-development-rugby-canonical-owner-preview
+          CARD=launch-development-rugby-owner-first-failure
           if ! jq -e --arg id "$CARD" '.. | objects | select(.id? == $id)' data/readiness/development-cards.json >/dev/null; then
-            npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby canonical owner preview authorization' --category 'RUGBY HQ' --description 'Align read-only preview with verified canonical bootstrap owner identity; preserve write restrictions' --started true --current true --humanRequired true
+            npm run readiness:update -- --board launch --card "$CARD" --action create --title 'Rugby owner first-failure diagnostics' --category 'RUGBY HQ' --description 'Expose sanitized authentication and request failure boundaries without changing owner permissions' --started true --current true --humanRequired true
           fi
           npm run readiness:validate
       - uses: actions/upload-artifact@v4
