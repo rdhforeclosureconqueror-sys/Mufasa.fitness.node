@@ -25,6 +25,13 @@ function injectRuntimeConfig(html,cacheToken){
 if(!browserKey)throw new Error("VITE_GOOGLE_MAPS_BROWSER_API_KEY is required for the frontend production build");
 fs.rmSync(output,{recursive:true,force:true});
 fs.cpSync(source,output,{recursive:true});
+// Public entrance: preserve the legacy index at its explicit URL and redirect only the root.
+const homePath=path.join(output,"index.html");
+const quickConnectPath=path.join(output,"quick-connect.html");
+if(!fs.existsSync(quickConnectPath))throw new Error("Quick Connect homepage target missing");
+const homeHtml=fs.readFileSync(homePath,"utf8");
+if(!homeHtml.includes("</head>"))throw new Error("Legacy homepage head missing");
+fs.writeFileSync(homePath,homeHtml.replace("</head>",`<script>if(location.pathname==="/"){location.replace("/quick-connect.html"+location.search+location.hash);}</script>\n</head>`));
 // STATIC SECURITY BOUNDARY: these source files must exist only behind authenticated backend routes.
 for(const asset of PAC_PROTECTED_ASSETS){
  const destination=path.join(output,asset);
