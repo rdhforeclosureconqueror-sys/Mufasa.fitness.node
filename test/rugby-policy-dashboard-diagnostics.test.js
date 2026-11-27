@@ -7,6 +7,7 @@ test('classifies every owner-preview acceptance boundary without session data',(
  assert.equal(classify({diagnostics:{dispatched:false,failureClass:'unknown network'}}).code,'REQUEST_NOT_DISPATCHED');
  assert.equal(classify({diagnostics:{dispatched:true,status:401}}).boundary,'HTTP_AUTHENTICATION');
  assert.equal(classify({diagnostics:{dispatched:true,status:403}}).boundary,'HTTP_AUTHORIZATION');
+ assert.equal(classify({diagnostics:{dispatched:true,status:409}}).code,'HTTP_409');
  assert.equal(classify({diagnostics:{dispatched:true,status:502}}).boundary,'HTTP_RESPONSE');
  assert.equal(classify({ok:true,diagnostics:{dispatched:true,status:200},payload:{ok:false}}).boundary,'RESPONSE_SHAPE');
  assert.deepEqual(classify({ok:true,diagnostics:{dispatched:true,status:200},payload:{ok:true,data:{version:1}}}),{boundary:'NONE',code:'PASS',message:'Owner-preview acceptance request completed.'});
