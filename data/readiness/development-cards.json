@@ -978,6 +978,20 @@
       "createdAt": "2026-11-27T18:36:09.743Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-policy-dashboard",
+      "board": "launch",
+      "canonical": false,
+      "title": "Rugby owner policy dashboard",
+      "category": "RUGBY HQ",
+      "description": "Restricted isolated policy editing and nonmutating preview; no production migration or activation",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-27T19:22:04.741Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
