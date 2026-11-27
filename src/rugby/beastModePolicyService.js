@@ -17,7 +17,21 @@ function createPolicyService({store,authorizationResolver,ownerUserIds=[],now=()
   if(await store.compareAndSwap(request.expectedVersion,next)!==true)throw Error('Version conflict');
   return structuredClone(next.at(-1));
  }
- return {read:async auth=>{authorize(auth);return structuredClone(await store.read());},
+ async function preview(auth,request){
+  const actor=authorize(auth);
+  const ledger=await store.read();
+  const proposed=publish(ledger,request,actor,now()).at(-1);
+  const current=ledger.at(-1);
+  const changes=[];
+  for(const [i,stage] of proposed.policy.stages.entries()){
+   const before=current.policy.stages[i];
+   for(const field of Object.keys(stage)){
+    if(JSON.stringify(before[field])!==JSON.stringify(stage[field]))changes.push({stageId:stage.id,field,before:before[field],after:stage[field]});
+   }
+  }
+  return structuredClone({baseVersion:current.version,proposedPolicy:proposed.policy,changes,published:false,stageChangeAuthorized:false});
+ }
+ return {preview,read:async auth=>{authorize(auth);return structuredClone(await store.read());},
  publish:(auth,request)=>change(auth,request,publish),
  restore:(auth,request)=>change(auth,request,restore)};
 }
