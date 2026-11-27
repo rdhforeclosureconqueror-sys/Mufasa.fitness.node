@@ -26,3 +26,5 @@ test("Community-initiated retention returns to Community Hub instead of PocketPT
  assert.match(source,/communityMode\s*\?\s*"\/community-hub\.html\?journey=completed"\s*:\s*"\/workout\.html\?journey=1"/);
  assert.match(read("retention-journey-start.html"),/Back to My Community Hub/);
 });
+
+test("Returning community members can sign in from both landing and intake",()=>{for(const page of ["apartment-wellness.html","residential-wellness.html"])assert.match(read(page),/href="\/login\.html\?returnTo=%2Fcommunity-hub\.html">Sign In/);});
