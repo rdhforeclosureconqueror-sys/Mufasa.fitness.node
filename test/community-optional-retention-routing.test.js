@@ -13,7 +13,11 @@ test("Community Hub keeps Nutrition direct and Retention Journey optional",()=>{
  assert.ok(owner);
  assert.match(owner[0],/href="\/dashboard\.html"/);
  assert.doesNotMatch(hub.replace(owner[0],""),/href="\/(?:dashboard|workout|free-run-club)\.html"/);
- assert.match(read("community-hub.js"),/roles\.includes\("super_admin"\)/);
+ assert.match(read("community-hub.js"),/data\.authz\?\.role/);
+ assert.match(read("community-hub.js"),/roles\.includes\("super_admin"\)\|\|roles\.includes\("admin"\)/);
+ assert.match(hub,/id="ownerAccessStatus"/);
+ assert.match(read("rugby-player.html"),/href="\/rugby-policy-dashboard\.html"/);
+ assert.match(read("rugby-policy-dashboard.html"),/href="\/rugby-player\.html"/);
  assert.doesNotMatch(hub,/href="\/trial\.html">🥗 Nutrition/);
 });
 test("Community-initiated retention returns to Community Hub instead of PocketPT",()=>{
