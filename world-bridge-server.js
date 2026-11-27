@@ -255,7 +255,7 @@ function createWorldBridgeApp(options = {}) {
     const policyService=createPolicyService({
       store:{read:async()=>initialLedger(),compareAndSwap:async()=>{throw Error('Preview store is read only');}},
       authorizationResolver:{resolveRole:auth=>auth?.provider==='pilot_bypass'||auth?.identityClass==='pilot_bypass'||auth?.providerVerified!==true?{role:'user',isBootstrapSuperAdmin:false}:resolver.resolveRole(auth)},
-      ownerUserIds:String(process.env.RUGBY_POLICY_OWNER_USER_IDS||'').split(',').map(x=>x.trim()).filter(Boolean)
+      ownerUserIds:[], canonicalPreviewOwner:true
     });
     installRugbyPolicyPreviewRoutes({app,requireAuth,policyService});
   }
