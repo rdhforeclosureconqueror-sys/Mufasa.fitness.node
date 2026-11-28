@@ -7216,6 +7216,42 @@
       "prNumber": 1438,
       "commitSha": "562015cec810f7e5b721c9c132690c267708a0de",
       "timestamp": "2026-11-28T04:45:30.228Z"
+    },
+    {
+      "operationId": "ec03f9ac-1606-46d8-89a0-16770b47792b",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-live-capture",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Connect position menus and candidate-to-live capture bindings; add structured rugby skill/context observations using existing assessment persistence. No automatic scoring or participation clearance.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T04:53:12.560Z"
+    },
+    {
+      "operationId": "803badfc-f53c-48e1-8b53-0af8adfd1c28",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-live-capture",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/rugby/fullXvCapture.js",
+        "src/rugby/assessmentCapture.js",
+        "src/rugby/athleteReviewService.js",
+        "src/routes/rugbyAssessmentCaptureRoutes.js",
+        "public/rugby-assessments.html",
+        "public/rugby-assessments.js",
+        "public/rugby-athlete-review.js",
+        "test/rugby-assessment-capture-full-xv.test.js",
+        "test/rugby-assessment-capture-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "45 local service, UI, review and framework tests pass. Full XV validator, syntax and diff checks pass. All 15 role menus and 29 candidate registrations tested; structured skill/contact context, scoped positions, immutable bindings, corrections and readback verified. Human iPhone/UX/speech and qualified protocol approval are not asserted.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T05:03:18.536Z"
     }
   ]
 }

@@ -142,3 +142,9 @@ Production startup enables capture/configuration routes and the linked screen wi
 ## Full XV assessment definition checkpoint
 
 Existing forwards guidance, Scrum Ready stages and backs 10–15 criteria audited against PRs #1435–1437. Supplemental candidate definitions now cover 1–15 including 9, physical tests, supervised role observations and coach-reviewed development menus. See [full XV assessment framework](../full-xv-assessments/README.md) and its integration handoff. This is definition coverage, not live interpretation, protocol approval or programme activation. Qualified review, runtime binding, structured skill capture, independent verification and comparable field retests remain pending. Original checklist remains 30/53 (56.6%).
+
+## Full XV live capture adapter
+
+Position preferences and relevant menus now connect all 15 profiles and 29 candidate definitions to the active assessment screen. Admins register exact local procedures under new live UUIDs, preserving candidate/version/procedure provenance. State-based observations capture factual behavior, decision, execution, outcome and pressure/environment context. Contact records require supervision and prerequisite context without implying participation clearance. Corrections append and supersede; originals remain in history while current review excludes superseded records.
+
+Runtime browsing, registration, persistence and readback are enabled. Candidate definitions stay unapproved for automatic scoring; independent review, prescribed programmes, field retests and stage changes remain pending. No original checkpoint is newly marked complete; 30/53 remains the verified denominator/count. The PR records machine checks, review, deployment and remaining human iPhone acceptance. No database migration or production setting change.

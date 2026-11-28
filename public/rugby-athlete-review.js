@@ -15,19 +15,21 @@
   try{
    const data=await request('/api/admin/rugby/athlete-reviews/'+encodeURIComponent($('athlete').value)+'?stageId='+encodeURIComponent($('stage').value));
    if(selected!==revision)return;
-   $('athlete-name').textContent=data.athlete.name;$('summary').textContent=data.summary;
+   const positionLine=data.positions?.primary?'Assessment menu positions: primary '+data.positions.primary+(data.positions.secondary?', secondary '+data.positions.secondary:'')+'.':'';
+   $('athlete-name').textContent=data.athlete.name;$('summary').textContent=data.summary+(positionLine?' '+positionLine:'');
    const readiness='Readiness: '+words(data.readiness.status)+'. '+words(data.readiness.reason)+'.';$('readiness').textContent=readiness;
    const assessments=data.assessments.map(item=>item.measurement?words(item.measurement.type)+': '+item.measurement.value+' '+item.measurement.unit+', '+item.measurement.date+'. Coach review: '+words(item.review)+'.':'A linked measurement is unavailable and cannot be used.');
    for(const item of data.developmentAssessments||[]){
     const result=item.protocol.category==='physical'?item.value+' '+item.unit:Object.entries(item.observations).map(([key,value])=>words(key)+': '+words(value)).join('; ');
-    assessments.push(item.date+' · '+item.protocol.name+' · '+result+' · '+words(item.source)+' · pain: '+(item.pain===null?'unknown':item.pain?'yes':'no')+'. '+(item.combine?item.combine.name+' / '+item.combine.sessionName+'. ':'')+item.setupNotes);
+    const context=Object.entries(item.context||{}).map(([key,value])=>words(key)+': '+words(value)).join('; ');
+    assessments.push(item.date+' · '+item.protocol.name+' · '+result+' · '+words(item.source)+' · pain: '+(item.pain===null?'unknown':item.pain?'yes':'no')+'. '+(item.combine?item.combine.name+' / '+item.combine.sessionName+'. ':'')+item.setupNotes+(context?' Context: '+context+'. Review required.':''));
    }
    $('capture-link').href='/rugby-assessments.html?athleteId='+encodeURIComponent(data.athlete.athleteId);
    if(!assessments.length)assessments.push('No linked assessment evidence recorded yet.');list('assessments',assessments);
    $('legacy').textContent=data.legacyAssessmentCount?data.legacyAssessmentCount+' older or unlinked assessment records remain outside this review.':'';
    const c=data.criteria;const criteria='Inspecting '+data.reviewTargetStage+'. Minimum score '+c.minimumScore+'. Observe on '+c.candidateMinimumDistinctDays+' different days across at least '+c.candidateMinimumSpanDays+' days. Dimensions: '+c.proposedDimensions.map(words).join(', ')+'. Contexts: '+c.candidateContexts.map(words).join(', ')+'.';
    $('criteria').textContent=criteria;list('gaps',data.gaps);
-   spoken=[data.athlete.name,data.summary,readiness,...assessments,criteria,'These are candidate requirements.',...data.gaps].join(' ');
+   spoken=[data.athlete.name,data.summary,positionLine,readiness,...assessments,criteria,'These are candidate requirements.',...data.gaps].join(' ');
    $('listen').hidden=!window.speechSynthesis;$('result').hidden=false;$('status').textContent='Review loaded from saved records. Athlete stage unchanged.';
   }catch(error){if(selected===revision)$('status').textContent=error.message;}finally{$('review').disabled=false;}
  });

@@ -31,6 +31,10 @@ function page({denied=false,failReadback=false}={}){
    if(path==='/api/me/rugby/assessment-catalog')data=service.catalog(actor);
    else if(path==='/api/admin/rugby/athlete-reviews')data=[{athleteId:'athlete',name:'Athlete'}];
    else if(path==='/api/admin/rugby/assessment-catalog')data=service.configure(actor,JSON.parse(options.body));
+   else if(path.endsWith('/assessment-positions')){
+    const id=path.includes('/athletes/')?path.split('/')[5]:actor.userId;
+    data=options?.method==='POST'?service.savePositions(actor,id,JSON.parse(options.body)):service.getPositions(actor,id);
+   }
    else{
     const id=path.includes('/athletes/')?path.split('/')[5]:actor.userId;
     if(options?.method==='POST'){posted=true;data=service.record(actor,id,JSON.parse(options.body));}
@@ -65,4 +69,29 @@ test('readback failures are not presented as successful saves; retry does not du
 });
 test('denied access keeps the workspace hidden and renders an actionable error',async()=>{
  const p=page({denied:true});await tick();assert.equal(p.elements.workspace.hidden,true);assert.match(p.elements.status.textContent,/Verified sign-in required/);
+});
+test('position preferences save through the service and filter relevant primary/secondary menus',async()=>{
+ const p=page();await tick();const e=p.elements;
+ assert.equal(e['capture-primary'].children.length,16);
+ e['capture-primary'].value='9';e['capture-primary'].handlers.change();
+ assert.ok(e['framework-candidate'].children.some(option=>option.value==='scrum_half_service'));
+ assert.equal(e['framework-candidate'].children.some(option=>option.value==='lineout_throw'),false);
+ e['capture-secondary'].value='15';e['capture-secondary'].handlers.change();
+ assert.ok(e['framework-candidate'].children.some(option=>option.value==='aerial_backfield'));
+ await p.submit('position-form');assert.equal(p.users.owner.rugbyAssessmentPositions.primary,9);assert.equal(p.users.owner.rugbyAssessmentPositions.secondary,15);assert.equal(p.users.owner.rugbyAssessmentPositions.participationAuthorized,false);assert.match(e['position-status'].textContent,/saved and read back/);
+});
+test('framework registration and structured skill capture round-trip without numeric scores or approval',async()=>{
+ const p=page();await tick();const e=p.elements;e['capture-primary'].value='9';e['capture-primary'].handlers.change();
+ e['framework-candidate'].value='scrum_half_service';e['framework-candidate'].handlers.change();e['binding-setup'].value='Ground service from fixed positions, same ball, both directions and fixed cues.';
+ await p.submit('binding-form');
+ const protocol=p.service.catalog(p.actor).protocols.find(protocol=>protocol.candidateId==='scrum_half_service');assert.ok(protocol);assert.notEqual(protocol.id,'scrum_half_service');
+ e['capture-protocol'].value=protocol.id;e['capture-protocol'].handlers.change();assert.equal(e['capture-value'].disabled,true);
+ const controls=Object.fromEntries(e['context-fields'].children.flatMap(child=>child.children||[]).filter(child=>child.dataset?.context).map(child=>[child.dataset.context,child]));
+ const context={position:'9',role:'Scrum-half',side:'bilateral',environment:'field',pressure:'controlled',readiness:'normal',conditions:'Dry grass, fixed service point and identical ball.',prompts:'Pass on cue',behavior:'Looked before pass',decision:'Left receiver selected',execution:'Accurate pass',outcome:'Receiver maintained pace',clipRef:'clip:one'};
+ for(const [key,value] of Object.entries(context))controls[key].value=value;
+ e['movement-fields'].children[0].children[0].value='introduced';e['capture-notes'].value='Both-side service observed at the fixed setup.';
+ await p.submit('capture-form');const saved=p.users.owner.rugbyAssessmentRecords[0];assert.equal(saved.protocol.candidateId,'scrum_half_service');assert.equal(saved.context.position,9);assert.equal(saved.value,undefined);assert.equal(saved.independentlyVerified,false);assert.match(e['capture-history'].children[0].textContent,/Left receiver selected/);
+ e['capture-correction'].value=saved.id;e['capture-correction'].handlers.change();
+ const correctedControls=e['context-fields'].children.flatMap(child=>child.children||[]).filter(child=>child.dataset?.context);correctedControls.find(child=>child.dataset.context==='execution').value='Pass needed receiver adjustment';
+ await p.submit('capture-form');assert.equal(p.users.owner.rugbyAssessmentRecords.length,2);assert.equal(p.users.owner.rugbyAssessmentRecords[1].supersedes,saved.id);assert.equal(p.users.owner.rugbyAssessmentRecords[0].context.execution,'Accurate pass');assert.match(e['capture-history'].children[1].textContent,/Superseded historical/);
 });

@@ -1589,5 +1589,19 @@
     "coach_approval_pending": true,
     "live_catalog_binding_pending": true,
     "original_checklist_unchanged": true
+  },
+  "full_xv_live_capture": {
+    "adapter": "src/rugby/fullXvCapture.js",
+    "screen": "public/rugby-assessments.html",
+    "enabled_in_startup": true,
+    "position_menu_count": 15,
+    "candidate_definition_count": 29,
+    "binding": "explicit_admin_registration_new_UUID_with_snapshot",
+    "structured_skill_observations": true,
+    "contact_context_required": true,
+    "corrections_preserve_originals": true,
+    "participation_clearance": false,
+    "automatic_scoring": false,
+    "human_acceptance_pending": true
   }
 }
