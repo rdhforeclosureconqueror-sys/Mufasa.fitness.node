@@ -245,6 +245,13 @@ function createWorldBridgeApp(options = {}) {
   installDeploymentIdentity(app, options);
   installGarveyAssessmentNotificationRelay(app, options);
   installRugbyProfileRoutes({app,requireAuth,userStore:createCanonicalUserStore(options)});
+  {
+    const {createAuthorizationResolver,parseAuthorizationConfig}=require('./src/lib/authorization');
+    const {createAthleteReviewService}=require('./src/rugby/athleteReviewService');
+    const {installRugbyAthleteReviewRoutes}=require('./src/routes/rugbyAthleteReviewRoutes');
+    const service=createAthleteReviewService({userStore:createCanonicalUserStore(options),authorizationResolver:createAuthorizationResolver(parseAuthorizationConfig(options.env||process.env))});
+    installRugbyAthleteReviewRoutes({app,requireAuth,service});
+  }
   // Isolated candidate preview only; explicit owner allowlist, no production store.
   {
     const {createAuthorizationResolver}=require('./src/lib/authorization');

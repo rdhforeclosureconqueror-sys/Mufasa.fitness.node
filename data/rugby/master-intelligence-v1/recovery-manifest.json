@@ -1555,5 +1555,16 @@
     "new_tests": 17,
     "ci_pending": true,
     "runtime_eligibility_activation": false
+  },
+  "athlete_evidence_review": {
+    "service": "src/rugby/athleteReviewService.js",
+    "routes": "src/routes/rugbyAthleteReviewRoutes.js",
+    "screen": "public/rugby-athlete-review.html",
+    "enabled_in_startup": true,
+    "writes_athlete_state": false,
+    "candidate_criteria_approved": false,
+    "live_acceptance_pending": true,
+    "overall_original_checklist_completed": 30,
+    "overall_original_checklist_total": 53
   }
 }

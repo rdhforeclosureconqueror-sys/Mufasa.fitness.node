@@ -1006,6 +1006,20 @@
       "createdAt": "2026-11-27T22:56:04.390Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-athlete-evidence-review",
+      "board": "launch",
+      "canonical": false,
+      "title": "Rugby athlete evidence review",
+      "category": "RUGBY HQ",
+      "description": "Activate an admin athlete review screen using saved records, candidate criteria and trusted stored readiness. Human device acceptance follows deployment.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T03:08:54.283Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

@@ -10,6 +10,12 @@ on:
       - 'src/rugby/beastModeTrustedEvidence.js'
       - '.github/workflows/rugby-policy-dashboard-tests.yml'
       - 'public/rugby-policy-dashboard*'
+      - 'src/rugby/athleteReviewService.js'
+      - 'src/routes/rugbyAthleteReviewRoutes.js'
+      - 'test/rugby-athlete-review.test.js'
+      - 'test/rugby-athlete-review-ui.test.js'
+      - 'public/rugby-athlete-review*'
+      - 'world-bridge-server.js'
 permissions:
   contents: read
 jobs:
@@ -24,3 +30,4 @@ jobs:
           node-version: '22'
       - run: node --test test/rugby-policy-preview-routes.test.js test/rugby-beast-mode-owner-policy.test.js test/rugby-policy-dashboard-diagnostics.test.js test/rugby-beast-mode-trusted-evidence.test.js
       - run: npm run readiness:validate
+      - run: node --test test/rugby-athlete-review.test.js test/rugby-athlete-review-ui.test.js
