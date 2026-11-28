@@ -7252,6 +7252,29 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-28T05:03:18.536Z"
+    },
+    {
+      "operationId": "2bb58ef2-d4e2-4bbc-9660-86060205b7b3",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-live-capture",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/rugby/fullXvCapture.js",
+        "src/rugby/assessmentCapture.js",
+        "src/rugby/athleteReviewService.js",
+        "src/routes/rugbyAssessmentCaptureRoutes.js",
+        "public/rugby-assessments.html",
+        "public/rugby-assessments.js",
+        "public/rugby-athlete-review.js",
+        "test/rugby-assessment-capture-full-xv.test.js",
+        "test/rugby-assessment-capture-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "PR 1439 implementation reference: fd8cdefcf9a2671fa0361cd03f95c0220c3964b8. Four triggered CI workflows passed on that implementation; 45 local tests and full-XV/readiness validation passed. Raw capture is enabled; protocol scoring, independent review and human iPhone/UX acceptance are not asserted.",
+      "prNumber": 1439,
+      "commitSha": "fd8cdefcf9a2671fa0361cd03f95c0220c3964b8",
+      "timestamp": "2026-11-28T05:05:23.974Z"
     }
   ]
 }
