@@ -1,6 +1,6 @@
-import {translateClassification} from './muscle-translation.mjs';
+import {translateClassification} from './muscle-translation.mjs?rev=1490';
 import {getActivation} from './activation-registry.mjs';
-import {mountPremiumModel,MODEL_IDS} from './premium-adapter.mjs';
+import {mountPremiumModel,MODEL_IDS} from './premium-adapter.mjs?rev=1490';
 const $=id=>document.getElementById(id);
 const samples={Push:{pectoralis_major:'primary',anterior_deltoid:'secondary',triceps_brachii:'secondary',rectus_abdominis:'stabilizer'},Pull:{latissimus_dorsi:'primary',biceps_brachii:'secondary'},Legs:{rectus_femoris:'primary',gluteus_maximus:'primary',gastrocnemius:'secondary'},Missing:{}};
 let active;
@@ -22,8 +22,8 @@ function render(){
  });
  if($('diagnostics'))$('diagnostics').textContent=JSON.stringify({status:active.result.status,issues:active.result.issues,regionCount:active.result.regions.length},null,2);
 }
-function safeRender(){try{render()}catch(e){$('selection').textContent='Preview failed: '+e.message;}}
+function safeRender(){try{render();const count=active.result.regions.filter(r=>['primary','secondary','stabilizer'].includes(r.role)).length;$('render-status').textContent=experimental?(count?count+' regions highlighted — approximate muscle groups.':'No mapped regions — check classification input.'):'Neutral or standalone preview: '+count+' highlighted regions.';}catch(e){$('selection').textContent='Preview failed: '+e.message;$('render-status').textContent=$('selection').textContent;}}
 $('model').addEventListener('change',safeRender);$('sample').addEventListener('change',safeRender);
 $('view').addEventListener('change',()=>{clear();$('models').dataset.view=$('view').value;});
 $('trace').addEventListener('change',()=> $('models').classList.toggle('trace',$('trace').checked));
-if(experimental){try{const response=await fetch('./exercise-index.json');if(!response.ok)throw Error('Catalog unavailable');const data=await response.json();const row=data.rows.find(r=>r.id===params.get('exercise'));if(row){const translated=translateClassification(row);candidate={candidates:translated.candidates.flatMap(g=>g.muscleIds.map(muscleId=>({muscleId,role:g.role,side:'unspecified'})))};groupMode=true;$('selection').textContent='Approximate muscle groups';}}catch(e){console.warn('Group preview unavailable',e);}}safeRender();
+if(experimental){const row=Object.fromEntries(['primaryMuscles','secondaryMuscles','stabilizers'].map(key=>[key,params.getAll(key)]));const translated=translateClassification(row);candidate={candidates:translated.candidates.flatMap(g=>g.muscleIds.map(muscleId=>({muscleId,role:g.role,side:'unspecified'})))};groupMode=true;}safeRender();
