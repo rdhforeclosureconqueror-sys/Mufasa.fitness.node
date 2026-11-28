@@ -4,8 +4,11 @@ const kinds=['practice','match','independent_training','protected_recovery'];
 function normalizeWorkload(raw){
  if(raw===undefined)return null;
  if(!Array.isArray(raw)||raw.length>28)throw Error('Invalid weekly workload context');
+ const daily=Array(7).fill(0);
  return raw.map(x=>{
   if(!x||typeof x!=='object'||Object.keys(x).some(k=>!['day','kind','minutes'].includes(k))||!Number.isInteger(x.day)||x.day<0||x.day>6||!kinds.includes(x.kind)||!Number.isInteger(x.minutes)||x.minutes<1||x.minutes>1440)throw Error('Invalid workload entry');
+  daily[x.day]+=x.minutes;
+  if(daily[x.day]>1440)throw Error('Daily workload exceeds available minutes');
   return {day:x.day,kind:x.kind,minutes:x.minutes};
  });
 }
