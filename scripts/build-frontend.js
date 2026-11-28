@@ -25,6 +25,7 @@ function injectRuntimeConfig(html,cacheToken){
 if(!browserKey)throw new Error("VITE_GOOGLE_MAPS_BROWSER_API_KEY is required for the frontend production build");
 fs.rmSync(output,{recursive:true,force:true});
 fs.cpSync(source,output,{recursive:true});
+execFileSync(process.execPath,[path.join(root,'scripts/build-anatomy-exercise-index.mjs'),path.join(output,'anatomy-engine/exercise-index.json')],{cwd:root,stdio:'inherit'});
 // Public entrance: preserve the legacy index at its explicit URL and redirect only the root.
 const homePath=path.join(output,"index.html");
 const quickConnectPath=path.join(output,"quick-connect.html");
