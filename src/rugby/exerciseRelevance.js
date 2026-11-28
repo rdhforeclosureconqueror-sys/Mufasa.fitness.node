@@ -13,8 +13,8 @@ const RULES={
 };
 function rankRugbyExercises(priority,input){
  const menu=menus.links.find(m=>m.domain===priority.domain),rule=RULES[priority.domain];
- const base={version:1,domain:priority.domain,evidenceIds:[...(priority.evidenceIds||[])],coachApprovalRequired:true,trainingAuthorized:false,automaticDose:false,classification:'coach_review_hypothesis'};
- if(!menu||!rule||!['physical_capacity','movement_control'].includes(priority.priorityType))return {...base,fieldOrFurtherReviewRequired:true,candidates:[],exerciseFamilies:menu?.exerciseFamilies||[]};
+ const base={version:1,domain:priority.domain,evidenceIds:[...(priority.evidenceIds||[])],coachApprovalRequired:true,trainingAuthorized:false,automaticDose:false,classification:'coach_review_hypothesis',candidateCount:0};
+ if(priority.evidenceCurrent===false||!base.evidenceIds.length||!menu||!rule||!['physical_capacity','movement_control'].includes(priority.priorityType))return {...base,fieldOrFurtherReviewRequired:true,candidates:[],exerciseFamilies:menu?.exerciseFamilies||[]};
  const equipment=new Set(['bodyweight',...input.equipment]),blocked=new Set(input.limitations.map(slug)),ceiling={beginner:1,intermediate:2,advanced:3}[input.experienceLevel];
  const candidates=exerciseService.list().flatMap(e=>{
   const c=e.classification,pattern=c.movementPattern,alias=pattern==='horizontal_push'?'push':pattern==='horizontal_pull'?'pull':pattern;
@@ -23,7 +23,7 @@ function rankRugbyExercises(priority,input){
   const pinned=menu.canonicalExerciseExamples.includes(e.exerciseId),patternMatch=rule.patterns.includes(pattern),muscleMatches=c.primaryMuscles.filter(m=>rule.muscles.includes(m));
   if(!pinned&&!patternMatch&&!muscleMatches.length)return [];
   const score=(pinned?4:0)+(patternMatch?3:0)+(muscleMatches.length?1:0)+(priority.domain==='power'&&c.executionStyle==='explosive'?1:0);
-  return [{exerciseId:e.exerciseId,contentVersion:e.contentVersion,displayName:e.displayName,movementPattern:pattern,primaryMuscles:c.primaryMuscles,matchedMuscles:muscleMatches,relevance:pinned?'menu_candidate':patternMatch?'supporting_pattern':'supporting_muscle',score,rugbyApplication:rule.purpose,requiresTechniqueAndReadinessReview:true}];
+  return [{exerciseId:e.exerciseId,contentVersion:e.contentVersion,displayName:e.displayName,movementPattern:pattern,primaryMuscles:[...c.primaryMuscles],matchedMuscles:muscleMatches,relevance:pinned?'menu_candidate':patternMatch?'supporting_pattern':'supporting_muscle',score,rugbyApplication:!pinned&&!patternMatch?'Muscle overlap only; movement-specific relevance is unconfirmed. '+rule.purpose:rule.purpose,requiresTechniqueAndReadinessReview:true}];
  }).sort((a,b)=>b.score-a.score||a.exerciseId.localeCompare(b.exerciseId));
  return {...base,fieldOrFurtherReviewRequired:true,candidateCount:candidates.length,candidates:candidates.slice(0,20),exerciseFamilies:menu.exerciseFamilies,retest:menu.retest};
 }
