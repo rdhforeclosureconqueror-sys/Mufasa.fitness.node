@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'src/rugby/**'
+      - 'src/program-engine/postgresAssignmentStore.js'
+      - 'test/rugby-program-postgres.integration.test.js'
       - 'docs/rugby/master-intelligence-v1/beast-mode-policy-storage.sql'
       - 'test/rugby-beast-mode-postgres.integration.test.js'
       - '.github/workflows/rugby-policy-postgres.yml'
@@ -33,10 +35,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test test/rugby-beast-mode-postgres.integration.test.js
+      - run: node --test test/rugby-beast-mode-postgres.integration.test.js test/rugby-program-postgres.integration.test.js
       - run: npm ci --ignore-scripts
       - run: npm install --no-save --package-lock=false --ignore-scripts pg@8
-      - run: node --test test/rugby-beast-mode-postgres.integration.test.js
+      - run: node --test test/rugby-beast-mode-postgres.integration.test.js test/rugby-program-postgres.integration.test.js
         env:
           RUGBY_REQUIRE_POSTGRES: '1'
           RUGBY_TEST_DATABASE_URL: postgres://rugby_test:local_ci_only@localhost:5432/rugby_policy_test
