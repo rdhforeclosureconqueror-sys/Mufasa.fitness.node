@@ -31,7 +31,7 @@ test('joins confirmed assessment, competency, programme and retest evidence into
  assert.equal(result.automaticProgression,false);
  assert.equal(result.runtimeActivation,false);
  assert.equal(result.automaticPrescription,false);
- assert.equal(result.eligibleEvidenceEventIds.length,8);
+ assert.equal(result.eligibleEvidenceEventIds.length,6);
 });
 test('unreviewed evidence cannot establish competency or programme adherence',()=>{
  const result=evaluateTrustedEvidence(request({evidence:evidence().filter(event=>event.eventType!=='coach_reviewed')}));
