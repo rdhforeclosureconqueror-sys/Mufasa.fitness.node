@@ -1,0 +1,3 @@
+# Anatomy evidence review contract
+
+Review exact canonical exercise and technique, joint actions, contraction roles, laterality, evidence applicability and limitations. EMG amplitude alone does not establish muscle force or role. Record citation and limitations per source, rationale and evidence IDs per mapping, reviewer identity, decision and date. Geometry approval is separate and must cover the released models. The software gate checks completeness only; it cannot authenticate reviewers or scientific accuracy. No real approvals are included. Production integration requires a trusted approval source and release review. Unknown roles remain unknown; do not infer absence from missing data.
