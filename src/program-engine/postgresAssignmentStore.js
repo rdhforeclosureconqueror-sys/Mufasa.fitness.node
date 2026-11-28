@@ -13,6 +13,7 @@ function createPostgresAssignmentStore(pool){
    const current=rows[0]?.assignment??null;
    if(expected===null?current!==null:(!current||current.userId!==userId||current.assignmentId!==expected.assignmentId||current.version!==expected.version))throw Error('Assignment changed');
    if(next.version!==(current?.assignmentId===next.assignmentId?current.version+1:1))throw Error('Invalid version transition');
+   if(current)await client.query('INSERT INTO rugby_intelligence.program_assignment_history (user_id,assignment) VALUES ($1,$2::jsonb)',[userId,JSON.stringify(current)]);
    await client.query('INSERT INTO rugby_intelligence.program_assignments (user_id,assignment) VALUES ($1,$2::jsonb) ON CONFLICT (user_id) DO UPDATE SET assignment=EXCLUDED.assignment',[userId,JSON.stringify(next)]);
    await client.query('COMMIT');return structuredClone(next);
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
