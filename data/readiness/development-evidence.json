@@ -7337,6 +7337,24 @@
       "prNumber": 1440,
       "commitSha": "374622b45247b832391f18e4b4b5ce14fda449d4",
       "timestamp": "2026-11-28T05:53:22.018Z"
+    },
+    {
+      "operationId": "9f2a1395-a0b7-40bf-a34e-5a8f1a88c855",
+      "board": "launch",
+      "cardId": "launch-development-rugby-evidence-priorities",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-athlete-review.js",
+        "public/rugby-development-review.js",
+        "test/rugby-athlete-review-ui.test.js",
+        "test/rugby-development-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Fixed both automated PR review findings: selected-athlete navigation synchronizes immediately; evidence selectors and history include trial, combine/session, structured context and record ID. Added regression tests. 58 local tests PASS. No new human acceptance claimed; production and device QA pending.",
+      "prNumber": 1440,
+      "commitSha": "9f56b98ea3439abadf8dc5efb47cbe984a01b019",
+      "timestamp": "2026-11-28T05:55:30.933Z"
     }
   ]
 }

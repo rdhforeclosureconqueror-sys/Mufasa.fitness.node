@@ -10,7 +10,7 @@
  }
  const words=value=>String(value||'unknown').replaceAll('_',' ');
  function list(id,items){$(id).replaceChildren(...items.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));}
- function clear(){revision++;$('result').hidden=true;spoken='';window.speechSynthesis?.cancel();}
+ function clear(){revision++;$('result').hidden=true;spoken='';priorityLink.href='/rugby-development-review.html'+($('athlete').value?'?athleteId='+encodeURIComponent($('athlete').value):'');window.speechSynthesis?.cancel();}
  $('selection').addEventListener('change',clear);
  $('selection').addEventListener('submit',async event=>{
   event.preventDefault();clear();const selected=revision;$('review').disabled=true;$('status').textContent='Loading saved evidence…';
