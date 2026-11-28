@@ -13,7 +13,7 @@ function render(){
  const mappings=Object.entries(samples[key]).map(([muscleId,role])=>({muscleId,role,side:'bilateral'}));
  active=mountPremiumModel(figures,mappings,key==='Missing'?'missing':'unverified',r=>{
  clear();for(const svg of figures)for(const n of svg.querySelectorAll('[data-region-id]'))if(n.dataset.regionId===r.id)n.classList.add('selected');
- $('selection').textContent=r.muscleId.replaceAll('_',' ')+' — '+r.side+' / '+r.role+' (unverified)';
+ $('selection').textContent=r.muscleId.replaceAll('_',' ').replace(/\b\w/g,c=>c.toUpperCase())+' — '+r.side+' / '+r.role+' (unverified)';
  });
  if($('diagnostics'))$('diagnostics').textContent=JSON.stringify({status:active.result.status,issues:active.result.issues,regionCount:active.result.regions.length},null,2);
 }
