@@ -1579,5 +1579,15 @@
     "automatic_progression": false,
     "automatic_programming": false,
     "human_acceptance_pending": true
+  },
+  "full_xv_assessment_definitions": {
+    "path": "data/rugby/full-xv-assessments/position-profiles.v1.json",
+    "handoff": "docs/rugby/full-xv-assessments/INTEGRATION_HANDOFF.md",
+    "position_count": 15,
+    "status": "candidate_definitions_not_runtime",
+    "runtime_activation": false,
+    "coach_approval_pending": true,
+    "live_catalog_binding_pending": true,
+    "original_checklist_unchanged": true
   }
 }

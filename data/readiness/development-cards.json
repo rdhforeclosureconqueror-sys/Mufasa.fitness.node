@@ -1034,6 +1034,20 @@
       "createdAt": "2026-11-28T03:47:03.235Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-full-xv-assessments",
+      "board": "launch",
+      "canonical": false,
+      "title": "Full XV positional assessment framework",
+      "category": "RUGBY HQ",
+      "description": "Audit existing forwards and backs resources; define all 15 position overlays, assessment candidates, development links and integration handoff after PR 1437. Definitions only; no runtime activation.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T04:21:03.353Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

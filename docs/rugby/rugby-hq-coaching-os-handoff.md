@@ -390,3 +390,7 @@ A Rugby HQ feature is ready only when:
 6. What are the team’s weekly practice/match rhythms so workload rules reflect reality?
 
 Until these are resolved, use conservative, coach-approved defaults rather than invented benchmarks or automated tactical prescriptions.
+
+## Supplemental full-XV assessment map
+
+The [full-XV assessment framework](full-xv-assessments/README.md) extends this handoff's role-group guidance into explicit candidate profiles for jerseys 1–15, including number 9. It reuses the existing forwards and backs resources and documents the mapping gaps after PR #1437. Definitions remain coach-review candidates; no live scoring, workout dose or selection authorization follows from their presence.
