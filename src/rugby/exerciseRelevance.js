@@ -13,7 +13,7 @@ const RULES={
 };
 function rankRugbyExercises(priority,input){
  const menu=menus.links.find(m=>m.domain===priority.domain),rule=RULES[priority.domain];
- const base={version:1,domain:priority.domain,evidenceIds:[...(priority.evidenceIds||[])],coachApprovalRequired:true,trainingAuthorized:false,automaticDose:false,classification:'coach_review_hypothesis',candidateCount:0};
+ const base={version:1,domain:priority.domain,evidenceIds:[...(priority.evidenceIds||[])],coachApprovalRequired:true,trainingAuthorized:false,automaticDose:false,classification:'coach_review_hypothesis',candidateCount:0,positionContext:structuredClone(priority.positionContext||null)};
  if(priority.evidenceCurrent===false||!base.evidenceIds.length||!menu||!rule||!['physical_capacity','movement_control'].includes(priority.priorityType))return {...base,fieldOrFurtherReviewRequired:true,candidates:[],exerciseFamilies:menu?.exerciseFamilies||[]};
  const equipment=new Set(['bodyweight',...input.equipment]),blocked=new Set(input.limitations.map(slug)),ceiling={beginner:1,intermediate:2,advanced:3}[input.experienceLevel];
  const candidates=exerciseService.list().flatMap(e=>{
