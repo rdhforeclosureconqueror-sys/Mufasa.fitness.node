@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "status": "candidate_coach_review_menus",
+  "runtimeActivation": false,
+  "rules": [
+    "Missing data remains unknown, never zero or not-ready.",
+    "Comparable protocol and current readiness precede interpretation.",
+    "Pain/unknown pain and participation restrictions override development suggestions.",
+    "No automatic lineup, stage assignment, programme publication or workout dose.",
+    "Resolve canonical exercise IDs through existing exerciseCatalog; no new exercise authority.",
+    "Examples are candidate options, not prescriptions; field drills require separate role/space/contact metadata."
+  ],
+  "links": [
+    {
+      "domain": "acceleration",
+      "question": "Is the first 10 m limiting rugby movement?",
+      "interpretation": "Confirm consistent timing and look at sprint technique, force capacity and readiness before choosing a cause.",
+      "exerciseFamilies": [
+        "Acceleration technique",
+        "Lower-body strength where deficient",
+        "Appropriate resisted sprint coaching"
+      ],
+      "canonicalExerciseExamples": [
+        "front_squat",
+        "barbell_deadlift"
+      ],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same sprint protocol plus rugby-specific first-step observation."
+    },
+    {
+      "domain": "speed",
+      "question": "Can the player reach and use longer sprint speed?",
+      "interpretation": "Separate acceleration, maximum-velocity exposure and speed while carrying/reading.",
+      "exerciseFamilies": [
+        "Progressive sprint exposure",
+        "Sprint technique",
+        "Posterior-chain strength"
+      ],
+      "canonicalExerciseExamples": [
+        "dumbbell_rdl"
+      ],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same distance and timing; field chase/cover evidence separately."
+    },
+    {
+      "domain": "braking_cod",
+      "question": "Does turning fail even when the direction is known?",
+      "interpretation": "Review entry speed, braking steps, left/right task and control before inferring a strength deficit.",
+      "exerciseFamilies": [
+        "Deceleration technique",
+        "Split-stance control",
+        "Progressive eccentric strength"
+      ],
+      "canonicalExerciseExamples": [
+        "bodyweight_squat"
+      ],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same 505 and matched-speed braking task."
+    },
+    {
+      "domain": "reactive_agility",
+      "question": "Is planned turning adequate but attacker response poor?",
+      "interpretation": "Investigate scanning, cues, choice and task familiarity; do not automatically prescribe more strength or ladder work.",
+      "exerciseFamilies": [
+        "Attacker-led tracking",
+        "Constrained evasion",
+        "Perception and decision practice"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same geometry/cue rules; record choice and movement separately."
+    },
+    {
+      "domain": "power",
+      "question": "Is explosive output limiting despite adequate movement and strength?",
+      "interpretation": "Review jump method, training age, readiness and sport expression.",
+      "exerciseFamilies": [
+        "Appropriate jump/landing progressions",
+        "Throw progressions",
+        "Acceleration transfer"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same jump method and field transfer task."
+    },
+    {
+      "domain": "strength",
+      "question": "Is force capacity limiting safe role execution?",
+      "interpretation": "Consider absolute and body-mass-relative capacity alongside technique and training history.",
+      "exerciseFamilies": [
+        "Squat/hinge",
+        "Horizontal push and pull",
+        "Trunk control"
+      ],
+      "canonicalExerciseExamples": [
+        "goblet_squat",
+        "barbell_deadlift",
+        "bench_press",
+        "band_row",
+        "dead_bug"
+      ],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same lift/reps/range plus relevant contact or movement observation."
+    },
+    {
+      "domain": "repeat_effort",
+      "question": "Does output fall across a fixed sequence?",
+      "interpretation": "Check initial pace, completed reps, recovery, team load and conditioning before increasing density.",
+      "exerciseFamilies": [
+        "Repeated sprint development",
+        "Aerobic support",
+        "Recovery and workload adjustment"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same complete series, start interval and timing; retain all rep times."
+    },
+    {
+      "domain": "conditioning",
+      "question": "Can the athlete sustain and recover between efforts?",
+      "interpretation": "Compare like protocols and role demands; general running capacity does not establish contact endurance.",
+      "exerciseFamilies": [
+        "Intermittent aerobic development",
+        "Coach-managed conditioning",
+        "Recovery habits"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Same approved intermittent test; monitor match/training response."
+    },
+    {
+      "domain": "movement",
+      "question": "What movement warrants follow-up?",
+      "interpretation": "Observed compensation is not a diagnosis or proof of a specific muscle deficit.",
+      "exerciseFamilies": [
+        "Task regression",
+        "Mobility where follow-up supports it",
+        "Controlled strength"
+      ],
+      "canonicalExerciseExamples": [
+        "bodyweight_squat",
+        "dead_bug"
+      ],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same screen and relevant controlled field movement."
+    },
+    {
+      "domain": "tackle",
+      "question": "Which tackle stage breaks down?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Tracking",
+        "Preparation/foot placement",
+        "Connection and wrap",
+        "Controlled force application",
+        "Finish/reload"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "carry",
+      "question": "Is the limitation choice, ball control or physical execution?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Carry/pass decision",
+        "Ball protection",
+        "Controlled presentation"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "breakdown",
+      "question": "Is arrival or the legal decision limiting contribution?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Arrival footwork",
+        "Compete/support/reload scenarios"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "scrum",
+      "question": "Which role/stage lacks current qualified evidence?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Existing Scrum Ready progression",
+        "Role-specific supervised unit work"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "lineout",
+      "question": "Is the assigned jump/lift/delivery role coordinated?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Call/movement timing",
+        "Jump/lift coordination",
+        "Safe supported return"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "lineout_throw",
+      "question": "Does accuracy vary by target or pressure?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Targeted throw technique",
+        "Throw/jumper timing"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "base_control",
+      "question": "Can 8 control the base and connect with 9?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Unopposed base handling",
+        "Pick/pass decision",
+        "8/9 connection"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "service",
+      "question": "Is 9 limited by service technique, tempo or choice?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Ground passing both ways",
+        "Reposition/service",
+        "Distribute/carry/kick cues"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "attack_iq",
+      "question": "Is the problem scanning, support timing, choice or execution?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "2v1/3v2",
+        "Support-line practice",
+        "Catch-pass both ways"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "defence_iq",
+      "question": "Does alignment or decision disconnect the line?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Numbering/spacing",
+        "Connected press/drift/hold",
+        "Reload communication"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "aerial",
+      "question": "Is positioning, catching, landing or next choice limiting?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Uncontested aerial progressions",
+        "Backfield communication",
+        "Counterattack choices"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    },
+    {
+      "domain": "kicking",
+      "question": "Is decision or execution limiting this assigned kick?",
+      "interpretation": "Review factual coach evidence at the stated role and pressure. Physical tests may inform capacity but cannot certify this skill.",
+      "exerciseFamilies": [
+        "Fixed-target kick practice",
+        "Pressure/choice progression"
+      ],
+      "canonicalExerciseExamples": [],
+      "coachApprovalRequired": true,
+      "automaticDose": false,
+      "retest": "Repeat the same task and pressure; then seek independent live/field evidence when appropriate."
+    }
+  ]
+}

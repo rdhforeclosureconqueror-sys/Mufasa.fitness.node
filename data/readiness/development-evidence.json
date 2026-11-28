@@ -7108,6 +7108,94 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-28T03:55:03.558Z"
+    },
+    {
+      "operationId": "bf445f2f-fcea-4b55-a66b-7ee10162ca5f",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-assessments",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Audit existing forwards and backs resources; define all 15 position overlays, assessment candidates, development links and integration handoff after PR 1437. Definitions only; no runtime activation.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T04:21:03.353Z"
+    },
+    {
+      "operationId": "ee0440ce-e434-4806-8651-25a5bae8f7c1",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-assessments",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "data/rugby/full-xv-assessments/position-profiles.v1.json",
+        "data/rugby/full-xv-assessments/assessment-candidates.v1.json",
+        "data/rugby/full-xv-assessments/development-links.v1.json",
+        "docs/rugby/full-xv-assessments/README.md",
+        "docs/rugby/full-xv-assessments/INTEGRATION_HANDOFF.md",
+        "scripts/validate-rugby-full-xv.js",
+        "test/rugby-full-xv-framework.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Definitions implemented on rugby/full-xv-assessment-framework. Validator and 6 focused integrity tests pass; 292 recovery/framework tests and 27 existing capture/review tests pass. Source/role/protocol/catalog review complete; removed unrelated Unicode reformatting. Runtime, browser, production and device QA not applicable to definition-only changes; qualified coaching approval, protocol reliability, live binding and human acceptance remain pending. No new original milestone completion. Rollback: revert squash commit; no athlete data or migration effects.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T04:41:04.983Z"
+    },
+    {
+      "operationId": "19d74604-64a6-4e94-9119-3324f119cd51",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-assessments",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "data/rugby/full-xv-assessments/position-profiles.v1.json",
+        "data/rugby/full-xv-assessments/assessment-candidates.v1.json",
+        "data/rugby/full-xv-assessments/development-links.v1.json",
+        "docs/rugby/full-xv-assessments/INTEGRATION_HANDOFF.md",
+        "scripts/validate-rugby-full-xv.js",
+        "test/rugby-full-xv-framework.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "AI-assisted technical review of actual staged diff: all 15 jersey numbers, 29 candidates, canonical exercise references, capture-unit/UUID/observation compatibility, inactive approval boundaries, workflow trigger and rollback reviewed. 319 automated tests pass (292 recovery/framework plus 27 capture/review); readiness and diff checks pass. GitHub push blocked by automatic approval review: explicit authorization to disclose new files to verified origin remote required. No PR created, no merge or runtime activation; coach approval and human acceptance pending.",
+      "prNumber": null,
+      "commitSha": "4a02fc87e0f708e9a98336043f5fec506bfd5660",
+      "timestamp": "2026-11-28T04:41:38.889Z"
+    },
+    {
+      "operationId": "5c5387e6-e2bd-457b-8a5b-2ea04226c6e5",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-assessments",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "data/rugby/full-xv-assessments/assessment-candidates.v1.json",
+        "scripts/validate-rugby-full-xv.js",
+        "test/rugby-full-xv-framework.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Owner explicitly authorized review, fixes, publication and merge. AI-assisted diff review found missing structured contact context: added required qualified supervisor, contact level, role, space and demonstrated prerequisites to contact candidates; validator and mutation regression enforce them. Final combined suite: 320 passed, zero failures/skips. Prior upload block resolved by owner authorization. Candidate status and runtime activation remain false; coach/human approval pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T04:43:15.297Z"
+    },
+    {
+      "operationId": "acc1d4ee-c8b1-48ab-b2b4-4b0d3c6ef576",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-assessments",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "data/rugby/full-xv-assessments/assessment-candidates.v1.json",
+        "scripts/validate-rugby-full-xv.js",
+        "test/rugby-full-xv-framework.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Correction to prior publication status: automatic approval review rejected the second push despite the owner review/fix/merge instruction, citing insufficient explicit authorization to upload to github.com. Review and fixes committed locally; 320 tests pass. Remote publication, PR creation, CI and merge remain blocked and unperformed. No runtime activation or human acceptance claimed.",
+      "prNumber": null,
+      "commitSha": "1d8fedf",
+      "timestamp": "2026-11-28T04:43:33.760Z"
     }
   ]
 }

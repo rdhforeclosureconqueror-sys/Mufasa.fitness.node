@@ -1,0 +1,1154 @@
+{
+  "version": 1,
+  "status": "candidate_definitions_not_runtime",
+  "runtimeActivation": false,
+  "sources": [
+    {
+      "id": "world_rugby_roles",
+      "url": "https://passport.world.rugby/officiating/match-observation-programme/teams-and-players/",
+      "use": "General role demands; local assessment tasks and thresholds are not official standards."
+    },
+    {
+      "id": "world_rugby_conditioning",
+      "url": "https://passport.world.rugby/injury-prevention-and-risk-management/rugby-ready/physical-conditioning/",
+      "use": "Needs analysis and positional context; no universal physical cutoff."
+    },
+    {
+      "id": "world_rugby_scrum",
+      "url": "https://passport.world.rugby/injury-prevention-and-risk-management/rugby-ready/the-scrum/scrum-ready/",
+      "use": "Coach-supervised competence progression; a gym result cannot establish scrum eligibility."
+    },
+    {
+      "id": "world_rugby_lineout",
+      "url": "https://passport.world.rugby/injury-prevention-and-risk-management/rugby-ready/the-lineout/",
+      "use": "Coordinated jump/support and controlled return; local task procedure remains coach-authored."
+    },
+    {
+      "id": "world_rugby_tackle",
+      "url": "https://passport.world.rugby/injury-prevention-and-risk-management/tackle-ready/the-five-stages-of-tackle-ready/",
+      "use": "Tracking, preparation, connection, acceleration, finish; no official numeric readiness score inferred."
+    },
+    {
+      "id": "rugby_union_field_tests",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/21116198/",
+      "use": "Research distinguishes linear speed, planned direction change and reactive agility; local variants require separate reliability review."
+    },
+    {
+      "id": "match_physical_relationships",
+      "url": "https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0202811",
+      "use": "Observational study in 29 senior international men; associations do not establish causation or club-level selection thresholds."
+    }
+  ],
+  "protocols": [
+    {
+      "id": "acceleration_10m",
+      "name": "10 m acceleration",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "acceleration",
+      "mode": "physical",
+      "sourceIds": [
+        "rugby_union_field_tests"
+      ],
+      "liveBuiltinId": "sprint_10m",
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "time",
+          "unit": "seconds"
+        }
+      ],
+      "procedure": "Mark 0 and 10 m; fix start stance and start-line offset, timing trigger/gate height, recovery and trial count in the approved session sheet. Run without a ball. Retain every valid trial and the stated summary rule.",
+      "validityCriteria": [
+        "Same start and timing method across comparisons; no slipping or early trigger; hand timing and gates are separate series."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "acceleration_20m",
+      "name": "20 m acceleration",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "acceleration",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": "sprint_20m",
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "time",
+          "unit": "seconds"
+        }
+      ],
+      "procedure": "Use a measured 20 m course with the same fixed start, timing and recovery conditions as the 10 m test. Record separate split definitions if collecting 10 m within the run.",
+      "validityCriteria": [
+        "A 10 m split within a 20 m sprint is not automatically interchangeable with a standalone run."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "sprint_40m",
+      "name": "40 m sprint",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "speed",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "time",
+          "unit": "seconds"
+        }
+      ],
+      "procedure": "Measure a straight 40 m lane with safe run-off. Fix stance, timing trigger, recovery and trials before testing. Optional flying split needs its own definition and run-in distance.",
+      "validityCriteria": [
+        "Record wind and surface; total sprint time is not maximum velocity."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "cod_505_left",
+      "name": "505 turn \u2014 left",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "braking_cod",
+      "mode": "physical",
+      "sourceIds": [
+        "rugby_union_field_tests"
+      ],
+      "liveBuiltinId": "agility_505_left",
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "time",
+          "unit": "seconds"
+        }
+      ],
+      "procedure": "Use the conventional 505 layout: start 10 m behind the timing line, accelerate through it, turn at the line 5 m beyond it using the designated left plant leg, and return through timing. Record plant leg explicitly, fixed timing and trial rules.",
+      "validityCriteria": [
+        "Foot reaches turn line; designated plant leg; record layout and invalidate wrong-side turns; modified 505 requires another definition."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "cod_505_right",
+      "name": "505 turn \u2014 right",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "braking_cod",
+      "mode": "physical",
+      "sourceIds": [
+        "rugby_union_field_tests"
+      ],
+      "liveBuiltinId": "agility_505_right",
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "time",
+          "unit": "seconds"
+        }
+      ],
+      "procedure": "Use the conventional 505 layout: start 10 m behind the timing line, accelerate through it, turn at the line 5 m beyond it using the designated right plant leg, and return through timing. Record plant leg explicitly, fixed timing and trial rules.",
+      "validityCriteria": [
+        "Foot reaches turn line; designated plant leg; record layout and invalidate wrong-side turns; modified 505 requires another definition."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "braking_control",
+      "name": "Sprint-to-stop observation",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "braking_cod",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Mark a fixed approach lane and stopping zone. Coach selects safe approach speed, fixes the approach distance and zone, and films front/side views. Record steps, trunk control, balance and zone completion; test both lead-leg patterns.",
+      "validityCriteria": [
+        "Compare only at matched approach speed and layout; no universal stopping-distance cutoff."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "reactive_tracking",
+      "name": "Attacker-led tracking/evasion",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "reactive_agility",
+      "mode": "observation",
+      "sourceIds": [
+        "rugby_union_field_tests"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Fix lane dimensions, attacker start, defender distance and allowed movements. Use balanced unpredictable left/right trials. Record cue, choice accuracy, false steps, tracking outcome and time only if equipment supports it. Begin without contact.",
+      "validityCriteria": [
+        "Record attacker identity/speed and rep order; planned turns and generic phone reaction scores are separate constructs."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "cmj",
+      "name": "Countermovement jump",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "power",
+      "mode": "physical",
+      "sourceIds": [
+        "match_physical_relationships"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "jump_height",
+          "unit": "cm"
+        }
+      ],
+      "procedure": "Use a consistent validated device and its method. Fix hands-on-hips condition, take-off/landing instructions and recovery; retain valid trials. Do not compare flight-time and jump-and-reach methods as equivalent.",
+      "validityCriteria": [
+        "Hands remain in the specified position; stable landing; device and calculation method recorded."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "broad_jump",
+      "name": "Standing broad jump",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "power",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "distance",
+          "unit": "cm"
+        }
+      ],
+      "procedure": "Start with toes behind the line, two-foot take-off, stable two-foot landing; measure to the nearest heel. Fix arm-swing policy, trials and rest.",
+      "validityCriteria": [
+        "No fall or extra step; record take-off/landing surface; this is an alternative measure, not convertible to CMJ."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "lower_strength",
+      "name": "Familiar lower-body strength test",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "strength",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "external_load",
+          "unit": "kg"
+        }
+      ],
+      "procedure": "Coach selects one familiar lift and fixed repetition target, technique/range, equipment and supervision. Save each lift/repetition variant as its own definition. Record completed reps and body mass separately; use a technique-limited submaximal test when maximum testing is inappropriate.",
+      "validityCriteria": [
+        "Same lift, equipment, repetitions and range for retests; stop before loss of technique; estimated and actual 1RM remain distinct."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "upper_push",
+      "name": "Familiar upper-body press test",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "strength",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "external_load",
+          "unit": "kg"
+        }
+      ],
+      "procedure": "Select a familiar supervised press with fixed repetition target, range and equipment; use safeties/spotters where required. Save bench, dumbbell and alternative variants separately.",
+      "validityCriteria": [
+        "A press measures pushing capacity, not tackle competence; capture body mass and reps separately; do not convert push-up reps into bench strength."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "upper_pull",
+      "name": "Familiar upper-body pull test",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "strength",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "external_load",
+          "unit": "kg"
+        }
+      ],
+      "procedure": "Select a familiar supported row or other approved pull with fixed repetition target, range, body support and equipment; save variants separately.",
+      "validityCriteria": [
+        "No momentum-assisted repetitions; specify external load versus total system mass for bodyweight variants."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "repeated_sprint",
+      "name": "Repeated sprint series",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "repeat_effort",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "rep_time",
+          "unit": "seconds"
+        }
+      ],
+      "procedure": "Coach fixes distance, number of reps, start interval, recovery mode and timing method in the protocol before testing. Store one time per rep in a named session. Retain all reps; compute best/mean/total only after completeness review.",
+      "validityCriteria": [
+        "A changed interval/distance is a different protocol; missing reps are missing, not zero; percentage decrement alone is not a readiness decision."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "intermittent_recovery",
+      "name": "Intermittent running recovery test",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "conditioning",
+      "mode": "physical",
+      "sourceIds": [
+        "match_physical_relationships"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "completed_distance",
+          "unit": "m"
+        }
+      ],
+      "procedure": "Choose one published test variant such as Yo-Yo IR1, retrieve its authorized instructions/audio and attach the exact setup, pace and termination rules before use. Do not mix variants.",
+      "validityCriteria": [
+        "This candidate is not an administration manual; no interpretation until the full selected protocol is approved."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "overhead_squat",
+      "name": "Overhead squat observations",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "movement",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": "overhead_squat",
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Use existing descriptive capture: document depth, stance, footwear, view and actual observed compensations. Record not assessed where observation is absent.",
+      "validityCriteria": [
+        "No automatic diagnosis, injury prediction or inference of weak/tight muscles from appearance alone."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "ankle_mobility",
+      "name": "Ankle knee-to-wall",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "movement",
+      "mode": "physical",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": "ankle_knee_to_wall",
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [
+        {
+          "id": "distance",
+          "unit": "cm"
+        }
+      ],
+      "procedure": "Fix barefoot/footwear condition, foot alignment and wall setup. Keep heel down and record toe-to-wall distance with knee contact achieved; record left and right separately.",
+      "validityCriteria": [
+        "Side is mandatory in the approved extension; current live scalar capture can only describe side in notes."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "single_leg_control",
+      "name": "Single-leg control and landing",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "movement",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_conditioning"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Coach fixes squat depth/support and an appropriate landing task separately. Record left/right control, trunk movement, balance and symptoms. Start with supported or low-demand tasks when appropriate.",
+      "validityCriteria": [
+        "Different landing heights or tasks are separate conditions; asymmetry prompts review, not diagnosis."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "tackle_sequence",
+      "name": "Tackle in space and reload",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "tackle",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_tackle"
+      ],
+      "liveBuiltinId": null,
+      "contact": true,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Record tracking, preparation, connection, acceleration and finish separately, then legal release/get-up/reload. Begin tracking without contact; progress to controlled equipment/partner work only with qualified supervision and demonstrated prerequisites. Observe both shoulders.",
+      "validityCriteria": [
+        "Record approach direction, opposition, pressure and coach prompts; no maximal collision contest; no fatigue progression before safe controlled competence."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role",
+        "qualified_supervisor",
+        "contact_level",
+        "assigned_role",
+        "space",
+        "prerequisites_demonstrated"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "carry_continuity",
+      "name": "Carry and ball continuity",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "carry",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": true,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Fix starting picture and opposition. Observe scan, footwork, carry/pass choice, ball protection and legal presentation or offload decision; begin with controlled contact level.",
+      "validityCriteria": [
+        "Separate decision, technical execution and outcome; opponent mismatch cannot be interpreted as capacity."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role",
+        "qualified_supervisor",
+        "contact_level",
+        "assigned_role",
+        "space",
+        "prerequisites_demonstrated"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "breakdown_decision",
+      "name": "Ruck arrival and decision",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "breakdown",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": true,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Use coached scenarios to observe arrival angle, legal entry, body control and compete/support/reload decision. Start with a walkthrough and record the permitted contact level.",
+      "validityCriteria": [
+        "Current local laws and coach supervision required; no unsupported neck loading or uncontrolled clear-outs."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role",
+        "qualified_supervisor",
+        "contact_level",
+        "assigned_role",
+        "space",
+        "prerequisites_demonstrated"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "scrum_role",
+      "name": "Role-specific scrum competence",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "scrum",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_scrum"
+      ],
+      "liveBuiltinId": null,
+      "contact": true,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Reference the existing Scrum Ready progression and current qualified coach review. Record exact role, stage demonstrated, body/bind control and unit context. Preserve separate front-row participation/competition authorization.",
+      "validityCriteria": [
+        "Do not invent a stage from gym results; no machine or opposition progression without prerequisites; role changes require review."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role",
+        "qualified_supervisor",
+        "contact_level",
+        "assigned_role",
+        "space",
+        "prerequisites_demonstrated"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "lineout_role",
+      "name": "Assigned lineout jump/lift role",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "lineout",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_lineout"
+      ],
+      "liveBuiltinId": null,
+      "contact": true,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Assign jumper/lifter/receiver role. Observe call, movement, timing, coordination, secure ball delivery and controlled supported return. Follow coached progressions before lifting people.",
+      "validityCriteria": [
+        "Qualified supervision, suitable space and current local requirements; a high jump alone does not verify a lineout role."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role",
+        "qualified_supervisor",
+        "contact_level",
+        "assigned_role",
+        "space",
+        "prerequisites_demonstrated"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "lineout_throw",
+      "name": "Hooker throwing accuracy",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "lineout_throw",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Fix target distances/heights, ball, throw count and target window. Record attempts and accurate throws per target, timing and consistency; compare unopposed and pressured contexts separately.",
+      "validityCriteria": [
+        "Define an accurate throw before testing; use stable targets and conditions; no universal percentage pass mark."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "scrum_base_control",
+      "name": "Number 8 base control",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "base_control",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": true,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Under qualified coaching observe controlled ball management at the scrum base, link with 9, and pick/pass decisions first in an unopposed setup.",
+      "validityCriteria": [
+        "Live scrum evidence requires approved scrum progression; distinguish handling from scrum authorization."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role",
+        "qualified_supervisor",
+        "contact_level",
+        "assigned_role",
+        "space",
+        "prerequisites_demonstrated"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "scrum_half_service",
+      "name": "Scrum-half service and tempo",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "service",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Use fixed pass targets and distances from a ground ball both ways. Record accuracy, delivery time if measurable, footwork and communication. Add changing distribute/carry/kick cues only after baseline service.",
+      "validityCriteria": [
+        "Fix ball presentation and start cue; record decision accuracy separately from pass accuracy; 9 is part of backs coverage."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "attack_decision",
+      "name": "Attack and support decisions",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "attack_iq",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Fix 2v1 or 3v2 starting geometry and vary a documented defender response. Observe scan, depth, timing, support line and pass/carry/kick decision.",
+      "validityCriteria": [
+        "Keep opportunity, decision, execution and outcome separate; simulator evidence remains distinct from field execution."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "defence_connection",
+      "name": "Defensive alignment and communication",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "defence_iq",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Use a documented defensive picture and team-coach objective. Observe numbering, spacing, connection, press/drift/hold decision and reload.",
+      "validityCriteria": [
+        "Use generic public scenarios; retain club tactics in protected storage; successful outcome alone does not prove correct decision."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "aerial_backfield",
+      "name": "Aerial skill and backfield decisions",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "aerial",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Fix kick type, distance, chase pressure and space. Start with uncontested catches; record positioning, communication, catch security, landing and next decision.",
+      "validityCriteria": [
+        "Progress opposition only under coaching and applicable laws; high-ball confidence and catching skill are separate observations."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    },
+    {
+      "id": "kick_role",
+      "name": "Role-specific kicking",
+      "version": 1,
+      "status": "candidate",
+      "origin": "local_coaching_proposal",
+      "domain": "kicking",
+      "mode": "observation",
+      "sourceIds": [
+        "world_rugby_roles"
+      ],
+      "liveBuiltinId": null,
+      "contact": false,
+      "coachReviewRequired": true,
+      "metrics": [],
+      "procedure": "Fix kick type, start position, target area, ball and pressure. Record target outcome, decision appropriateness and execution separately on each tested foot.",
+      "validityCriteria": [
+        "Record wind and conditions; a longer kick is not automatically a better tactical choice."
+      ],
+      "interpretation": "Raw result or factual observation only. No validated selection threshold or automatic prescription.",
+      "requiredSetup": [
+        "equipment",
+        "surface",
+        "footwear",
+        "warmup",
+        "readiness",
+        "timing_or_observation_method",
+        "rest_between_trials",
+        "trial_selection_rule",
+        "assessor",
+        "date",
+        "side_or_role"
+      ],
+      "stopRule": "Stop affected testing for pain, injury concern, unsafe execution or deteriorating control; follow existing referral and participation restrictions. Unknown readiness or pain requires review."
+    }
+  ]
+}

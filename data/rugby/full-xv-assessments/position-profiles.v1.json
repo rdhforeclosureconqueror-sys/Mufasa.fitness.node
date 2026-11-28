@@ -1,0 +1,655 @@
+{
+  "version": 1,
+  "status": "candidate_definitions_not_runtime",
+  "runtimeActivation": false,
+  "scope": "Adult rugby union XV; adapt age/sex/level and competition requirements before applying benchmarks.",
+  "commonAssessmentIds": [
+    "acceleration_10m",
+    "acceleration_20m",
+    "cod_505_left",
+    "cod_505_right",
+    "braking_control",
+    "reactive_tracking",
+    "overhead_squat",
+    "ankle_mobility",
+    "single_leg_control",
+    "lower_strength",
+    "upper_push",
+    "upper_pull",
+    "repeated_sprint",
+    "intermittent_recovery",
+    "tackle_sequence",
+    "carry_continuity",
+    "attack_decision",
+    "defence_connection"
+  ],
+  "scheduling": "Menu, not a requirement to administer every test in one day. Coach selects the smallest battery that answers the current question. Separate fresh speed/power/strength from fatiguing conditioning and supervised contact.",
+  "profiles": [
+    {
+      "number": 1,
+      "name": "Loosehead prop",
+      "unit": "forwards",
+      "roleGroup": "front_row",
+      "demands": [
+        "Stable role-specific scrum force transfer",
+        "Coordinated lifting and safe return",
+        "Short acceleration, carry and repeat contact work"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Review loosehead-specific binding and stability; tighthead competence is not assumed.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 2,
+      "name": "Hooker",
+      "unit": "forwards",
+      "roleGroup": "front_row",
+      "demands": [
+        "Front-row stability and striking coordination",
+        "Throw accuracy and timing",
+        "Repeated involvement and defensive reload"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_throw",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Assess thrower skill separately from front-row and general lineout role.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 3,
+      "name": "Tighthead prop",
+      "unit": "forwards",
+      "roleGroup": "front_row",
+      "demands": [
+        "Stable role-specific scrum force transfer",
+        "Coordinated lifting and safe return",
+        "Short acceleration, carry and repeat contact work"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Review tighthead-specific binding and stability; loosehead competence is not assumed.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 4,
+      "name": "Lock 4",
+      "unit": "forwards",
+      "roleGroup": "second_row",
+      "demands": [
+        "Scrum connection",
+        "Assigned jump/lift timing and secure delivery",
+        "Repeat collision work and field arrival"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Assign jumper/lifter and caller duties explicitly; jersey number does not define lineout role.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 5,
+      "name": "Lock 5",
+      "unit": "forwards",
+      "roleGroup": "second_row",
+      "demands": [
+        "Scrum connection",
+        "Assigned jump/lift timing and secure delivery",
+        "Repeat collision work and field arrival"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Assign jumper/lifter and caller duties explicitly; no invented distinction from lock 4.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 6,
+      "name": "Flanker 6",
+      "unit": "forwards",
+      "roleGroup": "back_row",
+      "demands": [
+        "Tackle/reload and legal breakdown decisions",
+        "Acceleration and field coverage",
+        "Link handling and support"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Blindside/openside assignment varies by team; record actual role rather than infer it from number.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 7,
+      "name": "Flanker 7",
+      "unit": "forwards",
+      "roleGroup": "back_row",
+      "demands": [
+        "Tackle/reload and legal breakdown decisions",
+        "Acceleration and field coverage",
+        "Link handling and support"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Blindside/openside assignment varies by team; record actual role rather than infer it from number.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 8,
+      "name": "Number 8",
+      "unit": "forwards",
+      "roleGroup": "back_row",
+      "demands": [
+        "Base control and link with 9",
+        "Carry/pass choice and short-area power",
+        "Repeated tackle and support work"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_role",
+        "scrum_base_control",
+        "lineout_role",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Base control does not replace the separate scrum competence pathway.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 9,
+      "name": "Scrum-half",
+      "unit": "backs",
+      "roleGroup": "halfback",
+      "demands": [
+        "Ground service both ways and tempo",
+        "Repeated acceleration and repositioning",
+        "Scan, communication and kick/distribute decisions"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "scrum_half_service",
+        "kick_role"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Include defensive tracking and contact competence; do not treat 9 solely as a passer.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 10,
+      "name": "Fly-half",
+      "unit": "backs",
+      "roleGroup": "halfback",
+      "demands": [
+        "Distribution and territory decisions",
+        "Communication and manipulation of space",
+        "Channel defence and acceleration"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "kick_role"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Judge decision quality separately from kick distance and pass outcome.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 11,
+      "name": "Wing 11",
+      "unit": "backs",
+      "roleGroup": "outside_back",
+      "demands": [
+        "Finishing and support timing",
+        "Longer sprint speed and kick chase",
+        "Edge/backfield tracking and aerial skill"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "sprint_40m",
+        "aerial_backfield",
+        "kick_role"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Assess assigned side/foot and role; do not assume the two wings have identical duties.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 12,
+      "name": "Inside centre",
+      "unit": "backs",
+      "roleGroup": "centre",
+      "demands": [
+        "Carry/distribute balance and contact continuity",
+        "Acceleration and force relative to mass",
+        "Defensive connection with 10/13"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "breakdown_decision",
+        "kick_role"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Second-playmaker and direct-carrier duties are coach-assigned, not automatic.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 13,
+      "name": "Outside centre",
+      "unit": "backs",
+      "roleGroup": "centre",
+      "demands": [
+        "Edge defensive reading and wing connection",
+        "Outside break and pass timing",
+        "Reactive braking and acceleration"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "breakdown_decision"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Distinguish a late read from a physical inability to close space.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 14,
+      "name": "Wing 14",
+      "unit": "backs",
+      "roleGroup": "outside_back",
+      "demands": [
+        "Finishing and support timing",
+        "Longer sprint speed and kick chase",
+        "Edge/backfield tracking and aerial skill"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "sprint_40m",
+        "aerial_backfield",
+        "kick_role"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Assess assigned side/foot and role; do not assume the two wings have identical duties.",
+      "selectionThresholds": null
+    },
+    {
+      "number": 15,
+      "name": "Fullback",
+      "unit": "backs",
+      "roleGroup": "outside_back",
+      "demands": [
+        "Backfield organisation and counterattack choice",
+        "Aerial security and role-specific kicking",
+        "Last-line tracking, braking and tackle execution"
+      ],
+      "assessmentIds": [
+        "acceleration_10m",
+        "acceleration_20m",
+        "cod_505_left",
+        "cod_505_right",
+        "braking_control",
+        "reactive_tracking",
+        "overhead_squat",
+        "ankle_mobility",
+        "single_leg_control",
+        "lower_strength",
+        "upper_push",
+        "upper_pull",
+        "repeated_sprint",
+        "intermittent_recovery",
+        "tackle_sequence",
+        "carry_continuity",
+        "attack_decision",
+        "defence_connection",
+        "cmj",
+        "sprint_40m",
+        "aerial_backfield",
+        "kick_role"
+      ],
+      "alternatives": {
+        "cmj": [
+          "broad_jump"
+        ]
+      },
+      "roleAssignmentNote": "Record backfield communication and decisions before receiving the ball.",
+      "selectionThresholds": null
+    }
+  ]
+}

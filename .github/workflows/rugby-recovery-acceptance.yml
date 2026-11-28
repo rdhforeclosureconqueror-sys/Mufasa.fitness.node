@@ -7,6 +7,9 @@ on:
       - 'src/rugby/**'
       - 'src/routes/rugbyProfileRoutes.js'
       - 'test/rugby-recovery-privacy.test.js'
+      - 'test/rugby-full-xv-framework.test.js'
+      - 'scripts/validate-rugby-full-xv.js'
+      - 'docs/rugby/full-xv-assessments/**'
       - 'test/rugby-athlete-evidence.test.js'
       - 'test/rugby-coach-evidence.test.js'
       - 'test/rugby-stored-readiness.test.js'
@@ -30,3 +33,8 @@ jobs:
           node-version: '22'
       - name: Execute recovered prototype suites
         run: node --test docs/rugby/master-intelligence-v1/prototypes/*.test.cjs test/rugby-athlete-evidence.test.js test/rugby-coach-evidence.test.js test/rugby-stored-readiness.test.js test/rugby-beast-mode-candidate.test.js test/rugby-beast-mode-development.test.js test/rugby-beast-mode-policy.test.js test/rugby-beast-mode-owner-policy.test.js test/rugby-recovery-privacy.test.js
+
+      - name: Validate full XV assessment definitions
+        run: |
+          node scripts/validate-rugby-full-xv.js
+          node --test test/rugby-full-xv-framework.test.js
