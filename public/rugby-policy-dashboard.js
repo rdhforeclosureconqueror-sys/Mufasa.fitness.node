@@ -50,5 +50,5 @@
    $('result').hidden=false;status.textContent='Preview only. Nothing published.';
   }catch(e){status.textContent=e.message;}finally{button.disabled=false;}
  });
- request().then(render).catch(()=>{status.textContent='Owner policy access unavailable. No policy data loaded.';form.hidden=true;});
+ request().then(render).catch(()=>{status.textContent='Admin policy access unavailable. No policy data loaded.';form.hidden=true;});
 })();
