@@ -5,9 +5,13 @@ const {publish,restore}=require('./beastModePolicyLedger');
 function createPolicyService({store,authorizationResolver,ownerUserIds=[],canonicalOwner=false,now=()=>new Date().toISOString()}){
  const owners=new Set(ownerUserIds.filter(x=>typeof x==='string'&&x.trim()).map(x=>x.trim()));
  function authorize(auth){
-  if(!auth||typeof auth.userId!=='string'||(canonicalOwner?!(auth.providerVerified===true&&auth.provider!=='pilot_bypass'&&auth.identityClass!=='pilot_bypass'):!owners.has(auth.userId)))throw Error('Policy owner required');
+  if(!auth||typeof auth.userId!=='string')throw Error('Policy admin required');
   const role=authorizationResolver.resolveRole(auth);
-  if(role.role!=='super_admin'||role.isBootstrapSuperAdmin!==true)throw Error('Policy owner required');
+  if(canonicalOwner){
+   if(auth.providerVerified!==true||auth.provider==='pilot_bypass'||auth.identityClass==='pilot_bypass'||!['super_admin','admin'].includes(role.role))throw Error('Policy admin required');
+   return auth.userId;
+  }
+  if(!owners.has(auth.userId)||role.role!=='super_admin'||role.isBootstrapSuperAdmin!==true)throw Error('Policy admin required');
   return auth.userId;
  }
  async function change(auth,request,operation){
