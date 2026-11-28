@@ -11,7 +11,7 @@ function page(request){
  const main=element();main.prepend=child=>main.children.unshift(child);
  const document={getElementById(id){return elements[id]??=element();},createElement:element,createTextNode:element,querySelector(){return main;}};
  for(const match of fs.readFileSync(require.resolve('../public/rugby-athlete-review.html'),'utf8').matchAll(/id="([^"]+)"/g))document.getElementById(match[1]);
- const spoken=[];const window={MaatApiClient:{request},speechSynthesis:{cancel(){},speak(value){spoken.push(value.text);}}};
+ const spoken=[];const window={RugbyWorkspaceSession:{require:async()=>({ok:true})},MaatApiClient:{request},speechSynthesis:{cancel(){},speak(value){spoken.push(value.text);}}};
  vm.runInNewContext(source,{document,window,SpeechSynthesisUtterance:function(text){this.text=text;}});
  return {elements,spoken,main};
 }
@@ -31,6 +31,7 @@ test('authorization failures expose no review; empty roster has an actionable me
 test('switching selection while a request is pending prevents stale evidence display',async()=>{
  let resolve;const p=page(path=>path.includes('?')?new Promise(done=>{resolve=done;}):Promise.resolve(success([{athleteId:'a',name:'A'}])));await tick();
  p.elements.athlete.value='a';p.elements.stage.value='BM-01';const pending=p.elements.selection.handlers.submit({preventDefault(){}});
+ await tick();
  p.elements.selection.handlers.change();resolve(success({}));await pending;
  assert.equal(p.elements.result.hidden,true);assert.equal(p.elements.review.disabled,false);
 });

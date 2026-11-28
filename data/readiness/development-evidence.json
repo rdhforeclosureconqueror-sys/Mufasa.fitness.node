@@ -7355,6 +7355,46 @@
       "prNumber": 1440,
       "commitSha": "9f56b98ea3439abadf8dc5efb47cbe984a01b019",
       "timestamp": "2026-11-28T05:55:30.933Z"
+    },
+    {
+      "operationId": "fea7c333-5d9c-46a2-b673-99856513b5d6",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Expose development priorities and checklist in Rugby HQ and assessment navigation; preserve workspace destination through sign-in.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:13:01.213Z"
+    },
+    {
+      "operationId": "5cb5e427-252c-4d99-9f61-0fb24c7404e1",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-player.html",
+        "public/rugby-assessments.html",
+        "public/rugby-athlete-review.html",
+        "public/rugby-development-review.html",
+        "public/rugby-workspace-session.js",
+        "public/rugby-assessments.js",
+        "public/rugby-athlete-review.js",
+        "public/rugby-development-review.js",
+        "test/rugby-workspace-navigation.test.js",
+        "test/rugby-assessment-capture-ui.test.js",
+        "test/rugby-athlete-review-ui.test.js",
+        "test/rugby-development-ui.test.js",
+        ".github/workflows/rugby-policy-dashboard-tests.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "59 automated tests PASS. Signed-in navigation now exposes priorities and checklist; protected workspaces await canonical AuthNavigation requireUser and preserve pathname/search/hash through login. Existing auth and authorization unchanged. VM technical tests verify reuse, redirect target, readiness waiting and transient failure behavior. Owner signed-in/iPhone journey pending after deploy. Rollback: revert squash and redeploy frontend/backend; no data or env changes.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:14:45.380Z"
     }
   ]
 }

@@ -1076,6 +1076,20 @@
       "createdAt": "2026-11-28T05:44:38.676Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-workspace-navigation",
+      "board": "launch",
+      "canonical": false,
+      "title": "Signed-in Rugby HQ development navigation",
+      "category": "RUGBY HQ",
+      "description": "Expose development priorities and checklist in Rugby HQ and assessment navigation; preserve workspace destination through sign-in.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T06:13:01.213Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

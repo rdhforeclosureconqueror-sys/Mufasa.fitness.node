@@ -4,6 +4,7 @@
  const nav=document.createElement('p'),priorityLink=document.createElement('a'),checklistLink=document.createElement('a');
  priorityLink.href='/rugby-development-review.html';priorityLink.textContent='Review development priorities';checklistLink.href='/rugby-acceptance-checklist.html';checklistLink.textContent='Your testing checklist';nav.append(priorityLink,document.createTextNode(' · '),checklistLink);document.querySelector('main').prepend(nav);
  async function request(path){
+  await window.RugbyWorkspaceSession.require();
   const response=await window.MaatApiClient.request(path);
   if(!response.ok||response.payload?.ok!==true)throw Error(response.status===403?'Verified admin access is required.':response.status===401?'Please sign in to review athletes.':'Could not load saved athlete records. Please retry.');
   return response.payload.data;
