@@ -6,17 +6,23 @@
 <h1>Assessments and combines</h1><p>Record how the athlete moves and what they can physically produce. Use consistent procedures so later tests can be compared.</p><p id="status" role="status">Loading assessment access…</p>
 <div id="workspace" hidden><section><h2>Record an assessment</h2>
 <label>Athlete<select id="capture-athlete"><option value="">My account · self-report</option></select></label>
+<details open><summary>Position assessment menu · all fifteen roles</summary><p>Choose menu preferences for this athlete. They do not grant squad selection, stage progression or contact participation.</p>
+<form id="position-form"><label>Primary position<select id="capture-primary"></select></label><label>Secondary position (optional)<select id="capture-secondary"></select></label><button type="submit">Save position preferences</button></form><p id="position-status" role="status"></p><p id="position-demands"></p>
+<label>Relevant framework assessment<select id="framework-candidate"></select></label><p id="candidate-procedure"></p><ul id="candidate-validity"></ul><p id="candidate-stop"></p><p id="candidate-bindings"></p>
+<form id="binding-form" hidden><label>Local test name<input id="binding-name" minlength="2" maxlength="100" required></label><label>Exact local procedure and review note<textarea id="binding-setup" minlength="5" maxlength="1000" required placeholder="Specify the chosen method, population, setup and conditions. This registers raw capture, not a validated score."></textarea></label><button type="submit">Register procedure for capture</button></form></details>
 <form id="capture-form"><label>Combine battery<select id="capture-combine"><option value="">Standalone assessment</option></select></label>
 <label id="session-label" hidden>Combine session name<input id="capture-session" maxlength="100" placeholder="Quins pre-season · session one"></label>
 <label>Test<select id="capture-protocol" required></select></label><p id="protocol-setup"></p>
+<label>New result or correction<select id="capture-correction"><option value="">New result</option></select></label>
 <label>Test date<input id="capture-date" type="date" required></label><label>Trial number<input id="capture-trial" type="number" min="1" max="20" value="1" required></label>
 <div id="physical-fields"><label>Measurement (<span id="capture-unit"></span>)<input id="capture-value" type="number" min="0" max="1000000" step="any"></label></div>
 <div id="movement-fields" hidden></div>
+<div id="context-fields" hidden></div>
 <label>Pain during the test?<select id="capture-pain"><option value="unknown">Not assessed / unknown</option><option value="no">No</option><option value="yes">Yes</option></select></label>
 <label>Actual procedure and notes<textarea id="capture-notes" minlength="5" maxlength="1000" required placeholder="Record timing method, equipment, surface, technique and relevant observations."></textarea></label>
 <p>Movement observations are descriptive. Self-reports and admin-recorded results are identified separately; neither automatically verifies a score or changes an athlete stage.</p><button id="save-capture" type="submit">Save assessment and verify readback</button></form></section>
 <section><h2>Saved movement and physical results</h2><ul id="capture-history"></ul></section>
-<details id="configuration" hidden><summary>Admin · configure tests and combines</summary><p>Definitions are saved as new versions with stable IDs. Results keep a snapshot of the definition used. Changing the procedure means creating a new definition.</p>
+<details id="configuration" hidden><summary>Admin · configure tests and combines</summary><p>Each definition gets its own stable ID. Results keep a snapshot of the definition used. Changing the procedure means creating a new definition.</p>
 <form id="protocol-form"><h2>Add a physical test</h2><label>Test name<input id="new-protocol-name" minlength="2" maxlength="100" required></label><label>Unit<select id="new-protocol-unit"><option>seconds</option><option>cm</option><option>m</option><option>kg</option><option>reps</option></select></label><label>Test procedure<textarea id="new-protocol-setup" minlength="5" maxlength="1000" required></textarea></label><button type="submit">Save physical test</button></form>
 <form id="combine-form"><h2>Create a combine battery</h2><label>Combine name<input id="new-combine-name" minlength="2" maxlength="100" required></label><fieldset><legend>Included tests</legend><div id="combine-tests"></div></fieldset><label>Combine instructions<textarea id="new-combine-setup" minlength="5" maxlength="1000" required></textarea></label><button type="submit">Save combine battery</button></form>
 <p id="config-status" role="status"></p></details></div></main></body></html>

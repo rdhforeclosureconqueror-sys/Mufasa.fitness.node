@@ -8,6 +8,10 @@ function installRugbyAssessmentCaptureRoutes({app,requireAuth,writeLimit,service
   }
  };
  app.get('/api/me/rugby/assessment-catalog',requireAuth,wrap(req=>service.catalog(req.auth)));
+ app.get('/api/me/rugby/assessment-positions',requireAuth,wrap(req=>service.getPositions(req.auth,req.auth.userId)));
+ app.post('/api/me/rugby/assessment-positions',requireAuth,writeLimit,wrap(req=>service.savePositions(req.auth,req.auth.userId,req.body)));
+ app.get('/api/admin/rugby/athletes/:athleteId/assessment-positions',requireAuth,wrap(req=>service.adminGetPositions(req.auth,req.params.athleteId)));
+ app.post('/api/admin/rugby/athletes/:athleteId/assessment-positions',requireAuth,writeLimit,wrap(req=>service.adminSavePositions(req.auth,req.params.athleteId,req.body)));
  app.get('/api/me/rugby/assessment-records',requireAuth,wrap(req=>service.read(req.auth,req.auth.userId)));
  app.post('/api/me/rugby/assessment-records',requireAuth,writeLimit,wrap(req=>service.record(req.auth,req.auth.userId,req.body),true));
  app.post('/api/admin/rugby/assessment-catalog',requireAuth,writeLimit,wrap(req=>service.configure(req.auth,req.body),true));

@@ -1,6 +1,6 @@
 # Full XV assessment and development framework
 
-Status: candidate coaching definitions, not runtime activation. Adult rugby union XV.
+Status: candidate coaching definitions for adult rugby union XV. Position-aware browsing, local capture bindings and structured observations now use the live adapter described in INTEGRATION_HANDOFF.md. Candidate scoring, independent verification and programme prescription remain separate from raw capture.
 Owner request: complete the position assessment foundation while the separate thread connects Rugby HQ assessments and athlete development.
 
 ## What the audit found

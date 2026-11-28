@@ -1048,6 +1048,20 @@
       "createdAt": "2026-11-28T04:21:03.353Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-full-xv-live-capture",
+      "board": "launch",
+      "canonical": false,
+      "title": "Full XV live assessment menus and skill capture",
+      "category": "RUGBY HQ",
+      "description": "Connect position menus and candidate-to-live capture bindings; add structured rugby skill/context observations using existing assessment persistence. No automatic scoring or participation clearance.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T04:53:12.560Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

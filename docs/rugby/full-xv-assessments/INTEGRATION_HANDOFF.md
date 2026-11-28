@@ -2,7 +2,7 @@
 
 ## Starting point
 
-PR #1435 introduced trusted-evidence reconciliation without live progression. PR #1436 connected saved athlete review. PR #1437 enabled overhead-squat observations, five legacy physical measures, admin-defined scalar physical tests and named batteries. This package supplies full-XV candidate definitions; none are imported or approved automatically.
+PR #1435 introduced trusted-evidence reconciliation without live progression. PR #1436 connected saved athlete review. PR #1437 enabled overhead-squat observations, five legacy physical measures, admin-defined scalar physical tests and named batteries. PR #1438 supplies full-XV candidate definitions. The live adapter now exposes those definitions as position-aware menus and allows verified admins to register exact local procedures for raw capture. Registration does not approve a scoring protocol or independently verify an athlete.
 
 Use `data/rugby/full-xv-assessments/position-profiles.v1.json` as the position coverage map. Resolve its assessment IDs in `assessment-candidates.v1.json` and its domains in `development-links.v1.json`. Run `node scripts/validate-rugby-full-xv.js` before consuming them.
 
@@ -45,8 +45,20 @@ Keep the existing athlete identity, authorization resolver, canonical user store
 - [x] Define physical and rugby-observation candidates with references and limitations.
 - [x] Provide conditional development menus and compatibility mapping.
 - [ ] Qualified coaching approval and protocol repeatability review.
-- [ ] Live catalog binding and skill/context capture.
+- [x] Live position menus, explicit candidate-to-UUID capture bindings and structured skill/context capture (raw records, no scoring approval).
 - [ ] Independent verification, interpreted priorities and programme connection.
 - [ ] Comparable retests, field transfer and owner acceptance.
 
-This checklist supplements the original roadmap; it does not change its denominator or claim activation. No production migration is authorized by this handoff.
+This checklist supplements the original roadmap; it does not change its denominator or claim scoring/programme activation. No production migration is authorized by this handoff.
+
+## Live adapter operation
+
+Use `/rugby-assessments.html`. Save primary and optional secondary assessment-menu preferences for the selected athlete; these do not assign selection, Beast Mode stage, scrum eligibility or contact clearance. Their relevant candidates and alternatives appear together. A named combine retains its explicit test list rather than silently dropping tests under a position filter.
+
+Select a framework candidate, read its procedure/validity/stop conditions, and enter the exact local variant under Register procedure for capture. A verified admin receives a new live UUID carrying the candidate ID/version, original definition snapshot, unit or observation schema and registration actor/note. Existing generic builtins remain distinct; no historical data is relabelled.
+
+Choose the registered procedure in the capture form. All bound records retain actual role/position, side, environment, pressure, reported readiness and conditions. State-based observations additionally retain prompts, factual behavior, decision, execution, outcome and optional clip reference. Contact candidates require supervisor, reported supervision, contact level, space and prerequisite status, including explicit unknown/not-assessed values. Recording these claims does not certify them or authorize further contact. All bound records remain review-required and independently unverified.
+
+The assessment history retains originals. Choose a current result under New result or correction to append a correction for that same athlete and procedure. The admin review excludes superseded results from its current view; no historical record is deleted. Independent coach verification and approved interpretation remain separate next integrations.
+
+Rollback is a reviewed revert and redeployment of backend/static frontend. Preserve all new definitions, position preferences and assessment records. The previous UI does not support the new skill/context controls; use an existing standalone procedure or roll forward a correction rather than editing stored data to simulate compatibility. Human iPhone, visual/UX and speech acceptance remain post-deployment checks.
