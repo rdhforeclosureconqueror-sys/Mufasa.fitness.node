@@ -1,0 +1,8 @@
+'use strict';
+const test=require('node:test'),assert=require('node:assert/strict');
+const {createPriorityProgramPreviewService:create}=require('../src/rugby/priorityProgramPreviewService');
+const input={goal:'general_fitness',experienceLevel:'beginner',trainingDays:2,durationWeeks:4,sessionDuration:30,availableDays:[1,3],equipment:[],limitations:[]};
+function fixture(){let calls=0;const view={athlete:{athleteId:'a'},evidence:[{id:'e'}],priorities:[{id:'p',athleteId:'a',version:1,evidenceCurrent:true,currentReviewState:'working_priority',priorityType:'physical_capacity',evidenceIds:['e']}]};const service=create({priorityService:{view(auth){if(!auth.admin)throw Error('Admin required');return view;}},clock:()=>0,generator(raw,history){calls++;assert.equal(raw.startDate,'1970-01-01T00:00:00.000Z');assert.deepEqual(history,[]);return {schemaVersion:1,programId:'preview',microcycles:[{}]};}});return {service,view,calls:()=>calls};}
+test('authorization and current priority precede generation',()=>{const f=fixture();assert.throws(()=>f.service.preview({},'a','p',input));f.view.priorities[0].evidenceCurrent=false;assert.throws(()=>f.service.preview({admin:true},'a','p',input));assert.equal(f.calls(),0);});
+test('rejects supplied program, history and incomplete coach constraints',()=>{const f=fixture();for(const bad of [{...input,program:{}},{...input,history:[]},{}])assert.throws(()=>f.service.preview({admin:true},'a','p',bad));assert.equal(f.calls(),0);});
+test('returns review-only generated snapshot without assignment',()=>{const f=fixture(),d=f.service.preview({admin:true},'a','p',input);assert.equal(f.calls(),1);assert.equal(d.assignmentAuthorized,false);assert.equal(d.trainingAuthorized,false);assert.equal(d.snapshot.program.programId,'preview');});
