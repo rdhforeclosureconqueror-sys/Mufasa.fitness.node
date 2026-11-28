@@ -1566,5 +1566,18 @@
     "live_acceptance_pending": true,
     "overall_original_checklist_completed": 30,
     "overall_original_checklist_total": 53
+  },
+  "movement_physical_capture": {
+    "service": "src/rugby/assessmentCapture.js",
+    "screen": "public/rugby-assessments.html",
+    "enabled_in_startup": true,
+    "movement_capture": "overhead_squat_descriptive",
+    "physical_capture": "five_existing_metrics_and_admin_defined_tests",
+    "combine_configuration": "admin_defined_test_batteries",
+    "persistence": "canonical_user_store_append_only_records",
+    "legacy_records_preserved": true,
+    "automatic_progression": false,
+    "automatic_programming": false,
+    "human_acceptance_pending": true
   }
 }

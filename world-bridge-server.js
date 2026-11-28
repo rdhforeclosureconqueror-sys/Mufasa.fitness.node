@@ -249,8 +249,12 @@ function createWorldBridgeApp(options = {}) {
     const {createAuthorizationResolver,parseAuthorizationConfig}=require('./src/lib/authorization');
     const {createAthleteReviewService}=require('./src/rugby/athleteReviewService');
     const {installRugbyAthleteReviewRoutes}=require('./src/routes/rugbyAthleteReviewRoutes');
-    const service=createAthleteReviewService({userStore:createCanonicalUserStore(options),authorizationResolver:createAuthorizationResolver(parseAuthorizationConfig(options.env||process.env))});
+    const userStore=createCanonicalUserStore(options),authorizationResolver=createAuthorizationResolver(parseAuthorizationConfig(options.env||process.env));
+    const service=createAthleteReviewService({userStore,authorizationResolver});
     installRugbyAthleteReviewRoutes({app,requireAuth,service});
+    const {createAssessmentCapture}=require('./src/rugby/assessmentCapture');
+    const {installRugbyAssessmentCaptureRoutes}=require('./src/routes/rugbyAssessmentCaptureRoutes');
+    installRugbyAssessmentCaptureRoutes({app,requireAuth,writeLimit:createRateLimiter({name:'rugby-assessment-capture',windowMs:60000,max:30}),service:createAssessmentCapture({userStore,authorizationResolver})});
   }
   // Isolated candidate preview only; explicit owner allowlist, no production store.
   {
