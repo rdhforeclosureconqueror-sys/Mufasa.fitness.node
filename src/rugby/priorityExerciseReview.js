@@ -1,4 +1,5 @@
 'use strict';
+const {reviewExerciseVariations}=require('./exerciseVariationReview');
 const {getExercise}=require('../exercise-intelligence/exerciseCatalog');
 const {rankRugbyExercises}=require('./exerciseRelevance');
 const menus=require('../../data/rugby/full-xv-assessments/development-links.v1.json');
@@ -12,6 +13,6 @@ function buildPriorityExerciseReview(priority,input,program){
   if(e){const c=e.classification;if(!equipment.has(c.equipment))reasons.push('equipment_unavailable');if(!ceiling||c.difficultyScore>ceiling)reasons.push('experience_review_required');if(input.limitations.includes(c.movementPattern)||input.limitations.includes(e.exerciseId))reasons.push('reported_limitation');}
   return {exerciseId:option.exerciseId,displayName:e?.displayName||option.displayName,scheduledInGenericPreview:scheduled.has(option.exerciseId),status:reasons.length?'requires_resolution':'candidate_only',reasons};
  });
- return {menuVersion:menus.version,domain:priority.domain,exerciseFamilies:menu?.exerciseFamilies||[],retestPlan:priority.retestPlan,candidates,rugbyRelevance:rankRugbyExercises(priority,input),fieldDrillReviewRequired:!menu||!menu.canonicalExerciseExamples.length,coachApprovalRequired:true,automaticDose:false,trainingAuthorized:false};
+ return {menuVersion:menus.version,domain:priority.domain,exerciseFamilies:menu?.exerciseFamilies||[],retestPlan:priority.retestPlan,candidates,rugbyRelevance:rankRugbyExercises(priority,input),variationReview:reviewExerciseVariations([...scheduled],input),fieldDrillReviewRequired:!menu||!menu.canonicalExerciseExamples.length,coachApprovalRequired:true,automaticDose:false,trainingAuthorized:false};
 }
 module.exports={buildPriorityExerciseReview};
