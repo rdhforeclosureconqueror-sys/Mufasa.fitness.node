@@ -1,0 +1,13 @@
+import {resolveRegions,paintRegions} from "../../public/anatomy-engine/engine.mjs";
+import {test} from "node:test";
+import assert from "node:assert/strict";
+const regions=[{id:"l",muscleId:"chest",side:"left"},{id:"r",muscleId:"chest",side:"right"},{id:"t",muscleId:"triceps",side:"left"}];
+const m=(muscleId,role,side="bilateral")=>({muscleId,role,side});
+test("bilateral and unilateral roles",()=>{const x=resolveRegions(regions,[m("chest","primary","left"),m("triceps","secondary")],"verified");assert.deepEqual(x.regions.map(r=>r.role),["primary","other","secondary"]);});
+test("priority",()=>assert.equal(resolveRegions(regions,[m("chest","stabilizer"),m("chest","primary")]).regions[0].role,"primary"));
+test("unknown and missing",()=>{assert.equal(resolveRegions(regions,[m("unknown","primary")],"verified").issues.length,1);assert.equal(resolveRegions(regions,[],"missing").regions[0].role,"unknown");});
+test("duplicate region rejected",()=>assert.throws(()=>resolveRegions([regions[0],regions[0]],[])));
+test("unspecified side retained",()=>assert.equal(resolveRegions(regions,[m("chest","primary","unspecified")]).regions[1].sideUnspecified,true));
+test("invalid role reported",()=>assert.equal(resolveRegions(regions,[m("chest","bad")]).issues[0].reason,"invalid_mapping"));
+test("paint, keyboard, cleanup and geometry replacement",()=>{for(const shape of ["path","ellipse"]){const nodes=regions.map(r=>{const attrs={"data-region-id":r.id};const handlers=new Map();return {shape,attrs,handlers,getAttribute:k=>attrs[k],setAttribute:(k,v)=>attrs[k]=v,addEventListener:(k,v)=>handlers.set(k,v),removeEventListener:k=>handlers.delete(k)};});let selected;const clean=paintRegions({querySelectorAll:()=>nodes},resolveRegions(regions,[m("chest","primary")]),r=>selected=r.id);assert.equal(nodes[0].attrs.fill,"#D4AF37");nodes[0].handlers.get("keydown")({key:"Enter",preventDefault(){}});assert.equal(selected,"l");clean();assert.equal(nodes[0].handlers.size,0);}});
+test("asset mismatch rejected",()=>assert.throws(()=>paintRegions({querySelectorAll:()=>[]},resolveRegions(regions,[]))));
