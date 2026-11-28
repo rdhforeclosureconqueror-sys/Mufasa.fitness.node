@@ -37,5 +37,7 @@ jobs:
           node-version: '22'
       - name: Run rugby contract tests
         run: node --test test/rugby-godot-web.test.js test/rugby-attack-intelligence.test.js test/rugby-acceptance-contract.test.js test/rugby-assessment-validation.test.js test/rugby-checkin-validation.test.js test/rugby-inseason-plan.test.js test/rugby-profile-validation.test.js
+      - name: Run assessment-to-program integration tests
+        run: node --test test/rugby-priority-program-draft.test.js test/rugby-priority-program-preview.test.js
       - name: Smoke test live Rugby HQ assets
         run: node --test test/rugby-live-public-smoke.test.js
