@@ -44,7 +44,7 @@ jobs:
       - name: Run rugby contract tests
         run: node --test test/rugby-godot-web.test.js test/rugby-attack-intelligence.test.js test/rugby-acceptance-contract.test.js test/rugby-assessment-validation.test.js test/rugby-checkin-validation.test.js test/rugby-inseason-plan.test.js test/rugby-profile-validation.test.js
       - name: Run assessment-to-program integration tests
-        run: node --test test/rugby-priority-program-draft.test.js test/rugby-priority-program-preview.test.js test/rugby-priority-exercise-review.test.js test/rugby-catalog-exercise-selection.test.js test/rugby-exercise-relevance.test.js test/rugby-position-evidence-context.test.js test/rugby-ranked-program-preview.test.js test/rugby-exercise-variation-review.test.js test/rugby-prescription-workload-review.test.js
+        run: node --test test/rugby-priority-program-draft.test.js test/rugby-priority-program-preview.test.js test/rugby-priority-exercise-review.test.js test/rugby-catalog-exercise-selection.test.js test/rugby-exercise-relevance.test.js test/rugby-position-evidence-context.test.js test/rugby-ranked-program-preview.test.js test/rugby-exercise-variation-review.test.js test/rugby-prescription-workload-review.test.js test/rugby-schedule-frequency.test.js
       - name: Run shared program and exercise intelligence regressions
         run: node --test test/program-engine.test.js test/program-generation.test.js test/program-ai-coach-context.test.js test/exercise-intelligence.test.js
       - name: Smoke test live Rugby HQ assets
