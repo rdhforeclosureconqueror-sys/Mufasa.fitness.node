@@ -1,4 +1,5 @@
 'use strict';
+const {reviewAdaptation}=require('./adaptationDosageReview');
 const policy=require('../../data/rugby/master-intelligence-v1/policies/beast-mode-development-cycle.json');
 const {makePlan,dayDistance}=require('./inSeasonPlan');
 function normalizeMatchDates(raw){if(raw===undefined)return null;if(!Array.isArray(raw)||raw.length>100)throw Error('Invalid match dates');for(const date of raw)dayDistance(date,date);return [...new Set(raw)].sort();}
@@ -28,6 +29,6 @@ function reviewPrescription(program,workload,matchDates=null){
   }
   return {week:w.week??index+1,plannedGymSessions:sessions.length,plannedGymMinutes:sessions.reduce((n,s)=>n+(s.durationMinutes||0),0),plannedSets:sessions.reduce((n,s)=>n+(s.exercises||[]).reduce((a,e)=>a+(e.sets||0),0),0),collisions,competition};
  });
- return {schemaVersion:1,policyVersion:policy.version,policyActive:policy.activation,workloadSource:workload===null?'unknown':'coach_reported_recurring_week',weeklyWorkload:workload,matchDates,competitionSource:matchDates===null?'unknown':'coach_reported_dates',competitionInterpretation:'SAQ guide proximity context only; not resistance training dosage or clearance',externalMinutes:workload===null?null:workload.filter(e=>e.kind!=='protected_recovery').reduce((n,e)=>n+e.minutes,0),weeks,reasons:[...reasons],automaticDoseAdjustment:false,trainingAuthorized:false};
+ return {adaptationReview:reviewAdaptation(program),schemaVersion:1,policyVersion:policy.version,policyActive:policy.activation,workloadSource:workload===null?'unknown':'coach_reported_recurring_week',weeklyWorkload:workload,matchDates,competitionSource:matchDates===null?'unknown':'coach_reported_dates',competitionInterpretation:'SAQ guide proximity context only; not resistance training dosage or clearance',externalMinutes:workload===null?null:workload.filter(e=>e.kind!=='protected_recovery').reduce((n,e)=>n+e.minutes,0),weeks,reasons:[...reasons],automaticDoseAdjustment:false,trainingAuthorized:false};
 }
 module.exports={normalizeWorkload,normalizeMatchDates,reviewPrescription};
