@@ -7,7 +7,7 @@ function installRugbyPolicyPreviewRoutes({app,requireAuth,policyService}){
   try{return res.json({ok:true,data:await fn(req)});}
   catch(e){
    const message=e.message;
-   if(message==='Policy owner required')return res.status(403).json({ok:false,error:'Owner required'});
+   if(message==='Policy admin required')return res.status(403).json({ok:false,error:'Admin required'});
    if(message==='Version conflict')return res.status(409).json({ok:false,error:'Version conflict'});
    if(/^(Invalid stage sequence|Invalid minimum score|Invalid observation window|Invalid competency dimensions|Invalid contexts|Audit context required)$/.test(message))return res.status(400).json({ok:false,error:message});
    return res.status(500).json({ok:false,error:'Policy preview unavailable'});
