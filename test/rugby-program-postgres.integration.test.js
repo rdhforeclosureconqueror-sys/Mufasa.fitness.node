@@ -18,7 +18,13 @@ test('isolated PostgreSQL serializes competing assignment writes',{skip:!process
   assert.equal(outcomes.filter(x=>x.status==='fulfilled').length,1);assert.match(outcomes.find(x=>x.status==='rejected').reason.message,/Assignment changed/);
   assert.deepEqual(await b.read('athlete-a'),outcomes.find(x=>x.status==='fulfilled').value);
   assert.equal(await b.read('athlete-b'),null);
-  const history=await pool.query('SELECT assignment FROM rugby_intelligence.program_assignment_history WHERE user_id=$1 ORDER BY history_id',['athlete-a']);assert.deepEqual(history.rows.map(r=>r.assignment),[first]);
+  const history=await pool.query('SELECT history_id,assignment FROM rugby_intelligence.program_assignment_history WHERE user_id=$1 ORDER BY history_id',['athlete-a']);assert.deepEqual(history.rows.map(r=>r.assignment),[first]);
+  const historyId=String(history.rows[0].history_id);
+  await assert.rejects(a.restorePrevious('athlete-b',{assignmentId:'x',version:2},historyId,'test'),/Historical assignment not found/);
+  await assert.rejects(a.restorePrevious('athlete-a',{assignmentId:'x',version:1},historyId,'test'),/Assignment changed/);
+  const restored=await a.restorePrevious('athlete-a',{assignmentId:'x',version:2},historyId,'test restore');
+  assert.notEqual(restored.assignmentId,'x');assert.equal(restored.version,1);assert.deepEqual(await b.read('athlete-a'),restored);
+  const archived=await pool.query('SELECT assignment FROM rugby_intelligence.program_assignment_history WHERE user_id=$1 ORDER BY history_id',['athlete-a']);assert.deepEqual(archived.rows.map(r=>r.assignment),[first,outcomes.find(x=>x.status==='fulfilled').value]);
   await assert.rejects(pool.query('DELETE FROM rugby_intelligence.program_assignment_history'),e=>e.code==='42501');
   await assert.rejects(pool.query('UPDATE rugby_intelligence.program_assignment_history SET assignment=assignment'),e=>e.code==='42501');
   await assert.rejects(pool.query('DELETE FROM rugby_intelligence.program_assignments'),e=>e.code==='42501');

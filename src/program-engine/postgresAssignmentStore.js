@@ -18,6 +18,15 @@ function createPostgresAssignmentStore(pool){
    await client.query('COMMIT');return structuredClone(next);
   }catch(e){await client.query('ROLLBACK');throw e;}finally{client.release();}
  }
- return Object.freeze({read,saveIfVersion});
+ // Internal recovery only: new identity prevents stale tokens from a previous assignment lifetime.
+ async function restorePrevious(userId,expected,historyId,reason){
+  if(!expected?.assignmentId||!Number.isSafeInteger(expected.version)||expected.version<1||typeof historyId!=='string'||!/^\d{1,19}$/.test(historyId)||typeof reason!=='string'||!reason.trim()||reason.length>2000)throw Error('Explicit restoration details required');
+  const {rows}=await pool.query('SELECT assignment FROM rugby_intelligence.program_assignment_history WHERE user_id=$1 AND history_id=$2',[userId,historyId]);
+  const previous=rows[0]?.assignment;
+  if(!previous||previous.userId!==userId)throw Error('Historical assignment not found');
+  const next={...previous,assignmentId:'asn_'+require('node:crypto').randomUUID(),version:1,restoration:{historyId,previousAssignmentId:previous.assignmentId,replacedAssignmentId:expected.assignmentId,replacedVersion:expected.version,reason:reason.trim()}};
+  return saveIfVersion(userId,expected,next);
+ }
+ return Object.freeze({read,saveIfVersion,restorePrevious});
 }
 module.exports={createPostgresAssignmentStore};
