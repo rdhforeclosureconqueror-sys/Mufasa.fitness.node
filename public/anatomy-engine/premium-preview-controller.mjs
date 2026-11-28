@@ -5,7 +5,7 @@ const samples={Push:{pectoralis_major:'primary',anterior_deltoid:'secondary',tri
 let active;
 const exerciseMode=new URLSearchParams(location.search).get('mode')==='exercise';
 const params=new URLSearchParams(location.search);const experimental=exerciseMode&&params.get('experimental')==='1';const candidate=experimental?getActivation(params.get('exercise')):null;
-if(exerciseMode){$('sample').value='Missing';$('sample').disabled=true;$('sample').closest('label').style.display='none';}
+if(exerciseMode){if(MODEL_IDS.includes(params.get('model')))$('model').value=params.get('model');if(['anterior','posterior'].includes(params.get('view')))$('view').value=params.get('view');$('models').dataset.view=$('view').value;$('sample').value='Missing';$('sample').disabled=true;$('sample').closest('label').style.display='none';}
 function clear(){document.querySelectorAll('path.selected').forEach(n=>n.classList.remove('selected'));$('selection').textContent='Select a muscle';}
 function render(){
  active?.dispose();active=undefined;clear();
