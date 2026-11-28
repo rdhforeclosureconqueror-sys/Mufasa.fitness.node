@@ -1,5 +1,6 @@
 'use strict';
 const {generateProgram}=require('../program-engine/programGenerator');
+const {buildPriorityExerciseReview}=require('./priorityExerciseReview');
 const {buildPriorityProgramDraft}=require('./priorityProgramDraft');
 // Internal composition only. The priority service performs verified admin authorization.
 function createPriorityProgramPreviewService({priorityService,clock=()=>Date.now(),generator=generateProgram}){
@@ -15,7 +16,7 @@ function createPriorityProgramPreviewService({priorityService,clock=()=>Date.now
   if(typeof input.goal!=='string'||!input.goal.trim()||typeof input.experienceLevel!=='string'||!input.experienceLevel.trim()||!Number.isInteger(input.trainingDays)||input.trainingDays<1||input.trainingDays>6||!Number.isInteger(input.durationWeeks)||input.durationWeeks<4||input.durationWeeks>52||!Number.isFinite(input.sessionDuration)||input.sessionDuration<15||input.sessionDuration>120)throw Error('Invalid explicit coach constraints');
   if(input.availableDays.length<input.trainingDays||new Set(input.availableDays).size!==input.availableDays.length||input.availableDays.some(d=>!Number.isInteger(d)||d<0||d>6)||[...input.equipment,...input.limitations].some(v=>typeof v!=='string'||!v.trim()))throw Error('Invalid preview constraints');
   const program=generator({...structuredClone(input),startDate:new Date(clock()).toISOString()},[]);
-  return buildPriorityProgramDraft({athleteId,priorityView:view,priorityId,program});
+  return buildPriorityProgramDraft({athleteId,priorityView:view,priorityId,program,exerciseReview:buildPriorityExerciseReview(priority,input,program)});
  }
  return Object.freeze({preview});
 }
