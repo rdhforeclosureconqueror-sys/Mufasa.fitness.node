@@ -18,6 +18,7 @@
  function renderCandidate(){
   const candidate=(catalog.candidateAssessments||[]).find(item=>item.id===$('framework-candidate').value);if(!candidate)return;
   if(bindingCandidateId!==candidate.id){$('binding-setup').value='';bindingCandidateId=candidate.id;}
+  $('candidate-guide').href='/rugby-assessment-guides/'+encodeURIComponent(candidate.id)+'.html';
   $('candidate-procedure').textContent=candidate.name+'. '+candidate.procedure;
   $('candidate-validity').replaceChildren(...candidate.validityCriteria.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));
   $('candidate-stop').textContent=candidate.stopRule;
@@ -26,9 +27,14 @@
   $('binding-name').value=candidate.name;$('binding-form').hidden=!catalog.canConfigure;
  }
  function renderPositionMenu(){
+  const primary=$('capture-primary').value,secondary=$('capture-secondary').value;
+  $('position-guide').href=primary?'/rugby-positions/'+encodeURIComponent(primary)+'.html':'/rugby-learning.html#positions';
+  $('secondary-guide').hidden=!secondary;$('secondary-guide').href=secondary?'/rugby-positions/'+encodeURIComponent(secondary)+'.html':'/rugby-learning.html#positions';
   const previous=$('framework-candidate').value,ids=relevantIds();
   $('framework-candidate').replaceChildren(...(catalog.candidateAssessments||[]).filter(item=>ids.has(item.id)).map(item=>option(item.id,item.name+' · '+item.mode)));
   if(ids.has(previous))$('framework-candidate').value=previous;
+  const requested=new URLSearchParams(location.search).get('candidateId');
+  if(!previous&&requested&&ids.has(requested))$('framework-candidate').value=requested;
   const selected=[$('capture-primary').value,$('capture-secondary').value].filter(Boolean).map(Number);
   $('position-demands').textContent=(catalog.positionProfiles||[]).filter(profile=>selected.includes(profile.number)).map(profile=>profile.number+' · '+profile.name+': '+profile.demands.join('; ')).join(' | ')||'All positions shown. Relevant menus are options, not a requirement to perform every test.';
   renderCandidate();renderProtocols();
