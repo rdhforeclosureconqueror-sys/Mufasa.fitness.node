@@ -7393,6 +7393,26 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-28T06:14:17.459Z"
+    },
+    {
+      "operationId": "d7980d0f-99f3-4070-ab1f-45a839df3a75",
+      "board": "launch",
+      "cardId": "launch-development-rugby-learning-guides",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-learning.html",
+        "public/rugby-assessments.html",
+        "public/rugby-assessments.js",
+        "scripts/build-rugby-learning-guides.js",
+        "test/rugby-learning-guides.test.js",
+        "data/rugby/learning/benchmarks.v1.json"
+      ],
+      "automated": "PASS",
+      "evidence": "PR 1441 published through connected GitHub account. 61 focused regression/learning tests and deterministic artifact/link/source checks pass. AI-assisted criteria review confirms all 15/29 coverage, primary source labels, raw unit/metric distinction, no invented national cutoffs, no athlete data and unchanged save/authorization. Browser rendering and iPhone/speech acceptance remain pending; local/cloud preview unavailable. GitHub CI and merge pending. Static-only rollback by squash revert and frontend redeploy.",
+      "prNumber": 1441,
+      "commitSha": "0dc8ea2db498210daf5933376f8c8d5c5da8ceab",
+      "timestamp": "2026-11-28T06:15:44.882Z"
     }
   ]
 }
