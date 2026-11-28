@@ -7196,6 +7196,26 @@
       "prNumber": null,
       "commitSha": "1d8fedf",
       "timestamp": "2026-11-28T04:43:33.760Z"
+    },
+    {
+      "operationId": "e6501f2f-f417-49fd-9152-dfee01e68c35",
+      "board": "launch",
+      "cardId": "launch-development-rugby-full-xv-assessments",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "data/rugby/full-xv-assessments/position-profiles.v1.json",
+        "data/rugby/full-xv-assessments/assessment-candidates.v1.json",
+        "data/rugby/full-xv-assessments/development-links.v1.json",
+        "docs/rugby/full-xv-assessments/INTEGRATION_HANDOFF.md",
+        "scripts/validate-rugby-full-xv.js",
+        "test/rugby-full-xv-framework.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Publication authorized and completed through connected GitHub account; PR 1438 open. AI-assisted implementation/diff review and contact-supervision correction complete. Final 320 local tests, definition validator and readiness validation pass. CI and merge pending; no runtime activation, original milestone change or human approval claimed. Rollback by squash revert, no athlete-data consequences.",
+      "prNumber": 1438,
+      "commitSha": "562015cec810f7e5b721c9c132690c267708a0de",
+      "timestamp": "2026-11-28T04:45:30.228Z"
     }
   ]
 }
