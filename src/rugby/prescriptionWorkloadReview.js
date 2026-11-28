@@ -1,5 +1,6 @@
 'use strict';
 const {reviewAdaptation}=require('./adaptationDosageReview');
+const {reviewSession}=require('./sessionFeasibility');
 const policy=require('../../data/rugby/master-intelligence-v1/policies/beast-mode-development-cycle.json');
 const {makePlan,dayDistance}=require('./inSeasonPlan');
 function normalizeMatchDates(raw){if(raw===undefined)return null;if(!Array.isArray(raw)||raw.length>100)throw Error('Invalid match dates');for(const date of raw)dayDistance(date,date);return [...new Set(raw)].sort();}
@@ -16,6 +17,7 @@ function normalizeWorkload(raw){
  });
 }
 function reviewPrescription(program,workload,matchDates=null){
+ const adaptationReview=reviewAdaptation(program);
  const reasons=new Set(['coach_prescription_review_required','readiness_and_field_transfer_review_required']);
  if(workload===null)reasons.add('weekly_workload_unknown');
  if(matchDates===null)reasons.add('competition_calendar_unknown');
@@ -27,8 +29,10 @@ function reviewPrescription(program,workload,matchDates=null){
    const day=new Date(s.date+'T00:00:00Z').getUTCDay();
    for(const entry of workload||[])if(entry.day===day){collisions.push({sessionId:s.sessionId,date:s.date,kind:entry.kind});reasons.add('same_day_'+entry.kind+'_review_required');}
   }
-  return {week:w.week??index+1,plannedGymSessions:sessions.length,plannedGymMinutes:sessions.reduce((n,s)=>n+(s.durationMinutes||0),0),plannedSets:sessions.reduce((n,s)=>n+(s.exercises||[]).reduce((a,e)=>a+(e.sets||0),0),0),collisions,competition};
+  const feasibility=sessions.map(s=>reviewSession(s,adaptationReview));
+  if(feasibility.some(s=>s.status==='exceeds_budget'))reasons.add('session_minimum_exceeds_budget');
+  return {feasibility,week:w.week??index+1,plannedGymSessions:sessions.length,plannedGymMinutes:sessions.reduce((n,s)=>n+(s.durationMinutes||0),0),plannedSets:sessions.reduce((n,s)=>n+(s.exercises||[]).reduce((a,e)=>a+(e.sets||0),0),0),collisions,competition};
  });
- return {adaptationReview:reviewAdaptation(program),schemaVersion:1,policyVersion:policy.version,policyActive:policy.activation,workloadSource:workload===null?'unknown':'coach_reported_recurring_week',weeklyWorkload:workload,matchDates,competitionSource:matchDates===null?'unknown':'coach_reported_dates',competitionInterpretation:'SAQ guide proximity context only; not resistance training dosage or clearance',externalMinutes:workload===null?null:workload.filter(e=>e.kind!=='protected_recovery').reduce((n,e)=>n+e.minutes,0),weeks,reasons:[...reasons],automaticDoseAdjustment:false,trainingAuthorized:false};
+ return {adaptationReview,schemaVersion:1,policyVersion:policy.version,policyActive:policy.activation,workloadSource:workload===null?'unknown':'coach_reported_recurring_week',weeklyWorkload:workload,matchDates,competitionSource:matchDates===null?'unknown':'coach_reported_dates',competitionInterpretation:'SAQ guide proximity context only; not resistance training dosage or clearance',externalMinutes:workload===null?null:workload.filter(e=>e.kind!=='protected_recovery').reduce((n,e)=>n+e.minutes,0),weeks,reasons:[...reasons],automaticDoseAdjustment:false,trainingAuthorized:false};
 }
 module.exports={normalizeWorkload,normalizeMatchDates,reviewPrescription};
