@@ -7521,6 +7521,28 @@
       "prNumber": 1442,
       "commitSha": null,
       "timestamp": "2026-11-28T06:46:06.415Z"
+    },
+    {
+      "operationId": "0a9f1aa8-37f6-4dac-94ce-a9fadf359a64",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-player.html",
+        "public/rugby-assessments.html",
+        "public/rugby-development-review.html",
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json",
+        "test/rugby-workspace-navigation.test.js",
+        "test/rugby-assessment-capture-ui.test.js",
+        "test/rugby-learning-guides.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Merged main in commit 8a03ce8; PR #1442 signed-in workspace navigation/auth guard and main learning-guide links preserved. 41 focused navigation, learning, and assessment tests PASS; readiness contract and diff checks PASS. CodeQL: no Actions alerts; JavaScript analysis skipped because database size is too large. Browser/production visual QA not performed; VM test evidence only. Owner iPhone journey and human acceptance remain pending post-deploy. Rollback: revert the reviewed merge via PR and redeploy frontend/backend; no database, environment, or athlete-data changes.",
+      "prNumber": 1442,
+      "commitSha": "8a03ce8",
+      "timestamp": "2026-11-28T06:46:49.120Z"
     }
   ]
 }
