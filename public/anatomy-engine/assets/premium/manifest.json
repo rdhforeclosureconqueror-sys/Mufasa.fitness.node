@@ -1,0 +1,21 @@
+{
+  "status": "unverified",
+  "models": {
+    "male": {
+      "anterior": "111anatomy-anterior-master.webp",
+      "posterior": "111anatomy-posterior-master.webp"
+    },
+    "female": {
+      "anterior": "111anatomy-female-anterior.webp",
+      "posterior": "111anatomy-female-posterior.webp"
+    },
+    "neutral-male": {
+      "anterior": "111neutral-male-front.webp",
+      "posterior": "111neutral-male-back.webp"
+    },
+    "neutral-female": {
+      "anterior": "111neutral-female-front.webp",
+      "posterior": "111neutral-female-back.webp"
+    }
+  }
+}
