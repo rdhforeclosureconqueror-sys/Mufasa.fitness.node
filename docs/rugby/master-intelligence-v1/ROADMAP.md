@@ -94,7 +94,7 @@ PR #1411 merged at 71ca4b05318c3cee1879420ffc1cb3187083539e; 230/230 prototype t
 - [x] Owner-directed baseline/programme/adherence/field transfer/retest policy recorded on development branch.
 - [x] Candidate stage criteria validation and pure append-only policy ledger implemented on development branch.
 - [x] Verify 28 new regression cases in CI; PR #1414 merged at 0a355c098978bf594a7ca47054338aacc97c7074; 277 recovery tests passed.
-- [x] Trusted evidence provenance and review-only programme/retest decision evaluation integrated; PR #1435 CI pending at update time. No evidence writers or automatic progression enabled.
+- [ ] Trusted evidence provenance and complete programme records. PR #1435 added an isolated evaluator; end-to-end evidence writers and programme reconciliation remain incomplete.
 - [ ] Dedicated owner authorization, atomic persistent policy storage, drafts and alternative pathways.
 - [ ] Admin dashboard, policy pinning, privacy review, deployment and live acceptance.
 Original 53-milestone count unchanged. No runtime activation.
@@ -120,4 +120,15 @@ This activation checklist does not alter the original 53-milestone denominator. 
 
 ## Policy preview checkpoint
 Recovery clone authentication and restore verification deferred by owner; independent development may continue. Production migration remains separately gated. Owner-only nonmutating draft preview and field-level comparison implemented on development branch; CI and review pending. No API exposure, production activation or milestone completion asserted.
-\n\n## Trusted evidence integration checkpoint — PR #1435\nConfirmed assessment, coach-reviewed competency evidence, session/attendance records, and repeated assessment evidence now reconcile against the seven-stage criteria in a pure fail-closed evaluator. It returns only `PROGRESSION_REVIEW`, `MAINTAIN_REVIEW`, `REVIEW_REQUIRED`, `HOLD`, or `REFER`; it never changes an athlete stage, writes evidence, publishes policy, or prescribes training. CI run references will be recorded after merge. Original 53-milestone count: 31/53 (58.5%) upon merge.\n
+
+## Trusted evidence evaluator — PR #1435
+Merged at d4dc2e69e9072a0c1a9458fc6cd61ccb072678e4; five CI workflows passed. This evaluator is not called by a live athlete route. It does not establish trusted programme adherence or a meaningful baseline/retest comparison. Original checklist remains 30/53 (56.6%); the previously reported 31/53 was incorrect.
+
+## Active athlete evidence review
+Admin review screen and authenticated read routes connect saved athlete measurements, assessment review status, candidate stage requirements and the existing stored-readiness evaluator. Review is enabled in production startup without a new feature flag. Candidate stage selection is an inspection target, not an assigned athlete stage. Linked assessments are distinguished from legacy/unlinked records.
+
+Remaining: saved stage assignment, trusted movement observation capture, policy publication/version pinning, immutable programme completion, comparable retesting, field-transfer recording and authorized progression. These are visibly listed in the review. No original milestone is newly checked.
+
+Automated service/UI tests cover access, timestamp and cross-athlete validation, measurement linkage, legacy records, pain versus missing readiness, empty/error states, spoken review and stale-response handling. CI and deployment acceptance are recorded in the PR. Owner iPhone/UX acceptance follows deployment.
+
+Rollback: revert the reviewed squash commit and redeploy backend and static frontend. This change writes no athlete records and needs no database migration; existing assessment/check-in routes remain available.
