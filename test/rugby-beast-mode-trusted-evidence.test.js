@@ -36,7 +36,7 @@ test('joins confirmed assessment, competency, programme and retest evidence into
 test('unreviewed evidence cannot establish competency or programme adherence',()=>{
  const result=evaluateTrustedEvidence(request({evidence:evidence().filter(event=>event.eventType!=='coach_reviewed')}));
  assert.equal(result.decision,'REVIEW_REQUIRED');
- assert.deepEqual(result.reasons.sort(),['baseline_and_retest_required','competency_dimensions_incomplete','programme_adherence_records_required','stage_contexts_incomplete','trusted_quality_evidence_required']);
+ assert.deepEqual(result.reasons.sort(),['baseline_and_retest_required','competency_dimensions_incomplete','observation_days_incomplete','programme_adherence_records_required','stage_contexts_incomplete','trusted_quality_evidence_required']);
 });
 test('stage criteria enforce all dimensions, repeated days and observation span without averaging',()=>{
  const sparse=evidence().filter(event=>!['q2','review-q2'].includes(event.eventId));
