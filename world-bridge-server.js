@@ -255,6 +255,9 @@ function createWorldBridgeApp(options = {}) {
     const {createAssessmentCapture}=require('./src/rugby/assessmentCapture');
     const {installRugbyAssessmentCaptureRoutes}=require('./src/routes/rugbyAssessmentCaptureRoutes');
     installRugbyAssessmentCaptureRoutes({app,requireAuth,writeLimit:createRateLimiter({name:'rugby-assessment-capture',windowMs:60000,max:30}),service:createAssessmentCapture({userStore,authorizationResolver})});
+    const {createDevelopmentPriorityService}=require('./src/rugby/developmentPriorityService');
+    const {installRugbyDevelopmentPriorityRoutes}=require('./src/routes/rugbyDevelopmentPriorityRoutes');
+    installRugbyDevelopmentPriorityRoutes({app,requireAuth,writeLimit:createRateLimiter({name:'rugby-development-priorities',windowMs:60000,max:20}),service:createDevelopmentPriorityService({userStore,authorizationResolver})});
   }
   // Isolated candidate preview only; explicit owner allowlist, no production store.
   {

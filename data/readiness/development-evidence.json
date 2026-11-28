@@ -7275,6 +7275,46 @@
       "prNumber": 1439,
       "commitSha": "fd8cdefcf9a2671fa0361cd03f95c0220c3964b8",
       "timestamp": "2026-11-28T05:05:23.974Z"
+    },
+    {
+      "operationId": "f9563bed-8f50-444f-a0a7-1fcd29980ff4",
+      "board": "launch",
+      "cardId": "launch-development-rugby-evidence-priorities",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Activate a working-priority review linked to saved athlete assessments and canonical exercise options; add a browser-saved personal acceptance checklist. No automatic training prescription or human signoff.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T05:44:38.676Z"
+    },
+    {
+      "operationId": "4f68d2eb-4734-4e27-9179-e21c773247e6",
+      "board": "launch",
+      "cardId": "launch-development-rugby-evidence-priorities",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/rugby/developmentPriorityService.js",
+        "src/routes/rugbyDevelopmentPriorityRoutes.js",
+        "world-bridge-server.js",
+        "public/rugby-development-review.html",
+        "public/rugby-development-review.js",
+        "public/rugby-acceptance-checklist.html",
+        "public/rugby-acceptance-checklist.js",
+        "public/rugby-athlete-review.js",
+        "test/rugby-development-priorities.test.js",
+        "test/rugby-development-ui.test.js",
+        "test/rugby-athlete-review-ui.test.js",
+        ".github/workflows/rugby-policy-dashboard-tests.yml",
+        "docs/rugby/master-intelligence-v1/DEVELOPMENT_PRIORITIES.md"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation reviewed. 56 automated tests PASS; full-XV validator, JS syntax and diff checks PASS. VM UI save/readback, stale request, retry and checklist storage checks PASS. Physical-device, visual, speech and signed-in production saves pending owner checklist. No migration, env change, workout prescription or stage change. Rollback: reviewed squash revert and redeploy both services, preserve user priority records.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T05:52:08.239Z"
     }
   ]
 }

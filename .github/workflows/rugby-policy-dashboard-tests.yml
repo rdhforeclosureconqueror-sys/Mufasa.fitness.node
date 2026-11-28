@@ -22,6 +22,11 @@ on:
       - 'test/rugby-assessment-capture*.test.js'
       - 'src/rugby/fullXvCapture.js'
       - 'data/rugby/full-xv-assessments/**'
+      - 'src/rugby/developmentPriorityService.js'
+      - 'src/routes/rugbyDevelopmentPriorityRoutes.js'
+      - 'public/rugby-development-review*'
+      - 'public/rugby-acceptance-checklist*'
+      - 'test/rugby-development*.test.js'
 permissions:
   contents: read
 jobs:
@@ -39,3 +44,4 @@ jobs:
       - run: node --test test/rugby-athlete-review.test.js test/rugby-athlete-review-ui.test.js
       - run: node --test test/rugby-assessment-capture*.test.js
       - run: node scripts/validate-rugby-full-xv.js
+      - run: node --test test/rugby-development*.test.js

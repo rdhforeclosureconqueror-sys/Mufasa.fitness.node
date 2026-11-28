@@ -8,7 +8,7 @@ const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function page(request){
  const elements={};
  function element(){return {hidden:true,value:'',textContent:'',children:[],handlers:{},append(child){this.children.push(child);},replaceChildren(...children){this.children=children;},addEventListener(event,handler){this.handlers[event]=handler;}};}
- const document={getElementById(id){return elements[id]??=element();},createElement:element};
+ const document={getElementById(id){return elements[id]??=element();},createElement:element,createTextNode:element,querySelector(){return {prepend(){}};}};
  for(const match of fs.readFileSync(require.resolve('../public/rugby-athlete-review.html'),'utf8').matchAll(/id="([^"]+)"/g))document.getElementById(match[1]);
  const spoken=[];const window={MaatApiClient:{request},speechSynthesis:{cancel(){},speak(value){spoken.push(value.text);}}};
  vm.runInNewContext(source,{document,window,SpeechSynthesisUtterance:function(text){this.text=text;}});
