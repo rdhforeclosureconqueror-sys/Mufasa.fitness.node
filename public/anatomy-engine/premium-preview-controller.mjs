@@ -2,10 +2,12 @@ import {mountPremiumModel,MODEL_IDS} from './premium-adapter.mjs';
 const $=id=>document.getElementById(id);
 const samples={Push:{pectoralis_major:'primary',anterior_deltoid:'secondary',triceps_brachii:'secondary',rectus_abdominis:'stabilizer'},Pull:{latissimus_dorsi:'primary',biceps_brachii:'secondary'},Legs:{rectus_femoris:'primary',gluteus_maximus:'primary',gastrocnemius:'secondary'},Missing:{}};
 let active;
+const exerciseMode=new URLSearchParams(location.search).get('mode')==='exercise';
+if(exerciseMode){$('sample').value='Missing';$('sample').disabled=true;$('sample').closest('label').hidden=true;}
 function clear(){document.querySelectorAll('path.selected').forEach(n=>n.classList.remove('selected'));$('selection').textContent='Select a muscle';}
 function render(){
  active?.dispose();active=undefined;clear();
- const model=$('model').value,key=$('sample').value;
+ const model=$('model').value,key=exerciseMode?'Missing':$('sample').value;
  if(!MODEL_IDS.includes(model)||!Object.hasOwn(samples,key))throw Error('Invalid preview option');
  $('models').dataset.model=model;
  const figures=['anterior','posterior'].map(view=>document.querySelector('figure[data-model="'+model+'"][data-view="'+view+'"] svg'));
