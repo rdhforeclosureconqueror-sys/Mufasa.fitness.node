@@ -15,8 +15,8 @@ function reviewAuthorizationReadiness(user,athleteId,draft,today){
   if(e.protocol?.candidateSnapshot?.contact&&(e.context?.supervision!=='qualified_reported'||e.context?.prerequisites!=='demonstrated'))reasons.push('contact_prerequisites_unresolved');
  }
  const prescription=draft?.snapshot?.prescriptionReview;
- if(!prescription||prescription.workloadSource==='unknown'||prescription.competitionSource==='unknown')reasons.push('workload_or_calendar_unresolved');
- if(!Array.isArray(prescription?.weeks)||!prescription.weeks.length||prescription.weeks.some(w=>!Array.isArray(w.feasibility)||w.feasibility.some(s=>s.status!=='minimum_fits_unverified')))reasons.push('session_feasibility_unresolved');
+ if(!prescription||prescription.workloadSource!=='coach_reported_recurring_week'||prescription.competitionSource!=='coach_reported_dates'||!Array.isArray(prescription.weeklyWorkload)||!Array.isArray(prescription.matchDates))reasons.push('workload_or_calendar_unresolved');
+ if(!Array.isArray(prescription?.weeks)||!prescription.weeks.length||prescription.weeks.some(w=>!Number.isInteger(w.plannedGymSessions)||w.plannedGymSessions<1||!Array.isArray(w.feasibility)||w.feasibility.length!==w.plannedGymSessions||w.feasibility.some(s=>s.status!=='minimum_fits_unverified')))reasons.push('session_feasibility_unresolved');
  return {schemaVersion:1,readiness,reasons:[...new Set(reasons)],state:reasons.length?'blocked':'explicit_safety_review_required',trainingAuthorized:false,assignmentAuthorized:false,medicalClearance:false};
 }
 module.exports={reviewAuthorizationReadiness};
