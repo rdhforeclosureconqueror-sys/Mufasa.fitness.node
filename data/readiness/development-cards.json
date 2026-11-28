@@ -1062,6 +1062,20 @@
       "createdAt": "2026-11-28T04:53:12.560Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-evidence-priorities",
+      "board": "launch",
+      "canonical": false,
+      "title": "Evidence-backed development priorities and acceptance checklist",
+      "category": "RUGBY HQ",
+      "description": "Activate a working-priority review linked to saved athlete assessments and canonical exercise options; add a browser-saved personal acceptance checklist. No automatic training prescription or human signoff.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T05:44:38.676Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

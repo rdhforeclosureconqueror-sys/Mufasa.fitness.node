@@ -1,6 +1,8 @@
 'use strict';
 (()=>{
  const $=id=>document.getElementById(id);let revision=0,spoken='';
+ const nav=document.createElement('p'),priorityLink=document.createElement('a'),checklistLink=document.createElement('a');
+ priorityLink.href='/rugby-development-review.html';priorityLink.textContent='Review development priorities';checklistLink.href='/rugby-acceptance-checklist.html';checklistLink.textContent='Your testing checklist';nav.append(priorityLink,document.createTextNode(' · '),checklistLink);document.querySelector('main').prepend(nav);
  async function request(path){
   const response=await window.MaatApiClient.request(path);
   if(!response.ok||response.payload?.ok!==true)throw Error(response.status===403?'Verified admin access is required.':response.status===401?'Please sign in to review athletes.':'Could not load saved athlete records. Please retry.');
@@ -8,7 +10,7 @@
  }
  const words=value=>String(value||'unknown').replaceAll('_',' ');
  function list(id,items){$(id).replaceChildren(...items.map(text=>{const li=document.createElement('li');li.textContent=text;return li;}));}
- function clear(){revision++;$('result').hidden=true;spoken='';window.speechSynthesis?.cancel();}
+ function clear(){revision++;$('result').hidden=true;spoken='';priorityLink.href='/rugby-development-review.html'+($('athlete').value?'?athleteId='+encodeURIComponent($('athlete').value):'');window.speechSynthesis?.cancel();}
  $('selection').addEventListener('change',clear);
  $('selection').addEventListener('submit',async event=>{
   event.preventDefault();clear();const selected=revision;$('review').disabled=true;$('status').textContent='Loading saved evidence…';
@@ -25,6 +27,7 @@
     assessments.push(item.date+' · '+item.protocol.name+' · '+result+' · '+words(item.source)+' · pain: '+(item.pain===null?'unknown':item.pain?'yes':'no')+'. '+(item.combine?item.combine.name+' / '+item.combine.sessionName+'. ':'')+item.setupNotes+(context?' Context: '+context+'. Review required.':''));
    }
    $('capture-link').href='/rugby-assessments.html?athleteId='+encodeURIComponent(data.athlete.athleteId);
+   priorityLink.href='/rugby-development-review.html?athleteId='+encodeURIComponent(data.athlete.athleteId);
    if(!assessments.length)assessments.push('No linked assessment evidence recorded yet.');list('assessments',assessments);
    $('legacy').textContent=data.legacyAssessmentCount?data.legacyAssessmentCount+' older or unlinked assessment records remain outside this review.':'';
    const c=data.criteria;const criteria='Inspecting '+data.reviewTargetStage+'. Minimum score '+c.minimumScore+'. Observe on '+c.candidateMinimumDistinctDays+' different days across at least '+c.candidateMinimumSpanDays+' days. Dimensions: '+c.proposedDimensions.map(words).join(', ')+'. Contexts: '+c.candidateContexts.map(words).join(', ')+'.';

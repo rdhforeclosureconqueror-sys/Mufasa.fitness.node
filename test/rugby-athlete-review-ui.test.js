@@ -7,12 +7,13 @@ const source=fs.readFileSync(require.resolve('../public/rugby-athlete-review.js'
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function page(request){
  const elements={};
- function element(){return {hidden:true,value:'',textContent:'',children:[],handlers:{},append(child){this.children.push(child);},replaceChildren(...children){this.children=children;},addEventListener(event,handler){this.handlers[event]=handler;}};}
- const document={getElementById(id){return elements[id]??=element();},createElement:element};
+ function element(){return {hidden:true,value:'',textContent:'',children:[],handlers:{},append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;},addEventListener(event,handler){this.handlers[event]=handler;}};}
+ const main=element();main.prepend=child=>main.children.unshift(child);
+ const document={getElementById(id){return elements[id]??=element();},createElement:element,createTextNode:element,querySelector(){return main;}};
  for(const match of fs.readFileSync(require.resolve('../public/rugby-athlete-review.html'),'utf8').matchAll(/id="([^"]+)"/g))document.getElementById(match[1]);
  const spoken=[];const window={MaatApiClient:{request},speechSynthesis:{cancel(){},speak(value){spoken.push(value.text);}}};
  vm.runInNewContext(source,{document,window,SpeechSynthesisUtterance:function(text){this.text=text;}});
- return {elements,spoken};
+ return {elements,spoken,main};
 }
 const success=data=>({ok:true,payload:{ok:true,data}});
 test('review loads actual response, renders text safely and speaks the same evidence',async()=>{
@@ -33,3 +34,4 @@ test('switching selection while a request is pending prevents stale evidence dis
  p.elements.selection.handlers.change();resolve(success({}));await pending;
  assert.equal(p.elements.result.hidden,true);assert.equal(p.elements.review.disabled,false);
 });
+test('visible development link follows selected athlete before a new review loads',async()=>{const p=page(async()=>success([{athleteId:'a',name:'A'},{athleteId:'b',name:'B'}]));await tick();p.elements.athlete.value='a';p.elements.selection.handlers.change();assert.match(p.main.children[0].children[0].href,/athleteId=a/);p.elements.athlete.value='b';p.elements.selection.handlers.change();assert.match(p.main.children[0].children[0].href,/athleteId=b/);});
