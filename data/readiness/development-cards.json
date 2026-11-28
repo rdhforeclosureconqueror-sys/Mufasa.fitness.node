@@ -1020,6 +1020,20 @@
       "createdAt": "2026-11-28T03:08:54.283Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-assessment-capture",
+      "board": "launch",
+      "canonical": false,
+      "title": "Movement and physical assessment capture",
+      "category": "RUGBY HQ",
+      "description": "Activate movement and physical assessment capture, admin-defined combine batteries and saved athlete review readback. Preserve legacy records and distinguish self-report from coach capture.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T03:47:03.235Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }

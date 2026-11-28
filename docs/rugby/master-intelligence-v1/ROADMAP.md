@@ -132,3 +132,9 @@ Remaining: saved stage assignment, trusted movement observation capture, policy 
 Automated service/UI tests cover access, timestamp and cross-athlete validation, measurement linkage, legacy records, pain versus missing readiness, empty/error states, spoken review and stale-response handling. CI and deployment acceptance are recorded in the PR. Owner iPhone/UX acceptance follows deployment.
 
 Rollback: revert the reviewed squash commit and redeploy backend and static frontend. This change writes no athlete records and needs no database migration; existing assessment/check-in routes remain available.
+
+## Active movement and physical assessment capture
+
+Extends the athlete workflow with overhead-squat observations, physical measurements, admin-defined physical tests and combine batteries. Results retain athlete, assessor, source, pain response, trial, local test date, procedure and combine/session context. Append-only records survive service recreation and load in the admin athlete review. Self-report and admin capture remain distinct from independent verification. Legacy records are preserved.
+
+Production startup enables capture/configuration routes and the linked screen without a new feature flag. Save/readback and retry deduplication are covered in service/UI tests. Stage scoring, approved protocol interpretation and assessment-driven exercise/programme selection remain pending. Original checklist remains 30/53; capture alone does not satisfy the broader source-verification and trusted-safety milestone. See ASSESSMENT_FLOW.md for operation and rollback. Human iPhone acceptance follows deployment.

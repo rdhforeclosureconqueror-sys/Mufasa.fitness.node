@@ -7072,6 +7072,42 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-11-28T03:12:50.278Z"
+    },
+    {
+      "operationId": "74534e66-4663-49b9-beb8-61f2ec4184c0",
+      "board": "launch",
+      "cardId": "launch-development-rugby-assessment-capture",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Activate movement and physical assessment capture, admin-defined combine batteries and saved athlete review readback. Preserve legacy records and distinguish self-report from coach capture.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T03:47:03.235Z"
+    },
+    {
+      "operationId": "02785340-8303-4868-bf8a-17a710665dee",
+      "board": "launch",
+      "cardId": "launch-development-rugby-assessment-capture",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "src/rugby/assessmentCapture.js",
+        "src/routes/rugbyAssessmentCaptureRoutes.js",
+        "public/rugby-assessments.html",
+        "public/rugby-assessments.js",
+        "src/rugby/athleteReviewService.js",
+        "public/rugby-athlete-review.js",
+        "world-bridge-server.js",
+        "test/rugby-assessment-capture.test.js",
+        "test/rugby-assessment-capture-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Movement/physical capture and combine configuration enabled in startup and connected to saved athlete review. 27 service/route/UI tests pass locally, plus syntax and diff checks. Persistence, access, snapshots, readback and retry deduplication verified. No automatic programme or progression; iPhone human acceptance pending.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T03:55:03.558Z"
     }
   ]
 }

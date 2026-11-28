@@ -4,13 +4,14 @@ const {validateAssessment}=require('./assessmentValidation');
 const {defaultPolicy}=require('./beastModePolicy');
 const {evaluateAthleteEligibility}=require('./athleteEligibility');
 const {reviewCandidate}=require('./beastModeCandidateReview');
+const {readCapturedAssessments}=require('./assessmentCapture');
 
 // Read-only adapter. Identities, measurements and safety come from server stores.
 function createAthleteReviewService({userStore,authorizationResolver,now=()=>new Date().toISOString()}){
  function authorize(auth){
   if(!auth?.userId||auth.providerVerified!==true||auth.provider==='pilot_bypass'||auth.identityClass==='pilot_bypass'||!['admin','super_admin'].includes(authorizationResolver.resolveRole(auth).role))throw Error('Admin required');
  }
- const hasRugby=user=>Boolean(user.rugbyProfile)||['rugbyAssessments','rugbyCheckins','rugbyEvidence'].some(key=>Array.isArray(user[key])&&user[key].length);
+ const hasRugby=user=>Boolean(user.rugbyProfile)||['rugbyAssessments','rugbyCheckins','rugbyEvidence','rugbyAssessmentRecords'].some(key=>Array.isArray(user[key])&&user[key].length);
  const label=user=>({athleteId:user.userId,name:String(user.displayName||user.name||user.userId).slice(0,120)});
  function list(auth){authorize(auth);return userStore.listUsers().filter(hasRugby).map(label);}
  function read(auth,athleteId,stageId){
@@ -36,19 +37,23 @@ function createAthleteReviewService({userStore,authorizationResolver,now=()=>new
    return {eventId:event.eventId,measurement,review:reviews.length===1?reviews[0].finding:'unverified'};
   });
   const safety=evaluateAthleteEligibility(user,athleteId,today,undefined);
+  const developmentAssessments=readCapturedAssessments(user,athleteId);
   // Candidate criteria are descriptive. Existing writer only verifies assessments;
   // other event types cannot become trusted competencies by asserting a flag.
   const candidate=reviewCandidate(stageId,[],{athleteId,today,policy});
   const gaps=[
    'Current Beast Mode stage has not been assigned through a saved development workflow.',
    'Stage criteria shown here are candidate requirements; policy publication is not connected.',
-   'Coach-recorded movement quality and stage-specific observation capture are not connected.',
+   'Movement and physical assessment capture is active. Stage-specific scoring and approval are still required.',
    'A versioned programme with planned versus completed sessions is not connected.',
    'Rugby field-transfer observations and a comparable baseline/retest review are not connected.'
   ];
-  if(!assessments.some(item=>item.measurement&&item.review==='confirmed'))gaps.unshift('Record assessments and have their measurements verified by an assigned coach.');
+  if(!developmentAssessments.some(item=>item.protocol.category==='movement'))gaps.unshift('Record movement observations, such as the overhead squat screen.');
+  if(!developmentAssessments.some(item=>item.protocol.category==='physical')&&!assessments.some(item=>item.measurement))gaps.unshift('Record physical test results from an assessment or combine.');
+  if(!assessments.some(item=>item.measurement&&item.review==='confirmed'))gaps.unshift('Assessment capture does not establish independent verification. Arrange a coach review.');
+  if(developmentAssessments.some(item=>item.pain===true))gaps.unshift('An assessment records pain. Review that finding before training progression.');
   const summary=safety.readiness.status==='REFER'?'Reported pain or injury needs appropriate review before progression.':'Assessment review is active. Progression needs the evidence and approvals listed below.';
-  return {athlete:label(user),reviewActive:true,reviewedAt:at,reviewTargetStage:stageId,assignedStage:null,criteria:{...stage,approved:false},assessments,legacyAssessmentCount:Math.max(0,(user.rugbyAssessments||[]).length-assessments.filter(item=>item.measurement).length),readiness:safety.readiness,eligibility:safety.eligibility,candidate,gaps,summary,stageChangeAuthorized:false};
+  return {athlete:label(user),reviewActive:true,reviewedAt:at,reviewTargetStage:stageId,assignedStage:null,criteria:{...stage,approved:false},assessments,developmentAssessments,legacyAssessmentCount:Math.max(0,(user.rugbyAssessments||[]).length-assessments.filter(item=>item.measurement).length),readiness:safety.readiness,eligibility:safety.eligibility,candidate,gaps,summary,stageChangeAuthorized:false};
  }
  return {list,read};
 }

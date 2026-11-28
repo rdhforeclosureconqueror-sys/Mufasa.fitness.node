@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rugby HQ | Assessments and Combines</title>
+<style>:root{color-scheme:dark;font:18px system-ui;background:#102019;color:#f4f6ee}*{box-sizing:border-box}main{max-width:900px;margin:auto;padding:20px 20px 140px}h1{font-size:clamp(1.8rem,6vw,2.5rem)}p,li{line-height:1.6}section,details{background:#1d3025;border:1px solid #60745e;border-radius:14px;padding:18px;margin:20px 0}label{display:block;margin:16px 0}main select,main input,main textarea,main button{font:inherit;padding:12px;width:100%;max-width:100%;border-radius:8px}input[type=checkbox]{width:auto;margin-right:12px}textarea{min-height:90px}main button{background:#e4c887;color:#14251b;border:0;font-weight:700;cursor:pointer}main button:disabled{opacity:.5}a,summary{color:#e4c887}li{overflow-wrap:anywhere;margin:12px 0}[hidden]{display:none!important}</style>
+<script src="/runtime-config.js" defer></script><script src="/api-client.js" defer></script><script src="/auth-state-runtime.js" defer></script><script src="/rugby-assessments.js" defer></script></head><body><main>
+<nav><a href="/rugby-player.html">Rugby HQ</a> · <a href="/rugby-athlete-review.html">Admin athlete review</a></nav>
+<h1>Assessments and combines</h1><p>Record how the athlete moves and what they can physically produce. Use consistent procedures so later tests can be compared.</p><p id="status" role="status">Loading assessment access…</p>
+<div id="workspace" hidden><section><h2>Record an assessment</h2>
+<label>Athlete<select id="capture-athlete"><option value="">My account · self-report</option></select></label>
+<form id="capture-form"><label>Combine battery<select id="capture-combine"><option value="">Standalone assessment</option></select></label>
+<label id="session-label" hidden>Combine session name<input id="capture-session" maxlength="100" placeholder="Quins pre-season · session one"></label>
+<label>Test<select id="capture-protocol" required></select></label><p id="protocol-setup"></p>
+<label>Test date<input id="capture-date" type="date" required></label><label>Trial number<input id="capture-trial" type="number" min="1" max="20" value="1" required></label>
+<div id="physical-fields"><label>Measurement (<span id="capture-unit"></span>)<input id="capture-value" type="number" min="0" max="1000000" step="any"></label></div>
+<div id="movement-fields" hidden></div>
+<label>Pain during the test?<select id="capture-pain"><option value="unknown">Not assessed / unknown</option><option value="no">No</option><option value="yes">Yes</option></select></label>
+<label>Actual procedure and notes<textarea id="capture-notes" minlength="5" maxlength="1000" required placeholder="Record timing method, equipment, surface, technique and relevant observations."></textarea></label>
+<p>Movement observations are descriptive. Self-reports and admin-recorded results are identified separately; neither automatically verifies a score or changes an athlete stage.</p><button id="save-capture" type="submit">Save assessment and verify readback</button></form></section>
+<section><h2>Saved movement and physical results</h2><ul id="capture-history"></ul></section>
+<details id="configuration" hidden><summary>Admin · configure tests and combines</summary><p>Definitions are saved as new versions with stable IDs. Results keep a snapshot of the definition used. Changing the procedure means creating a new definition.</p>
+<form id="protocol-form"><h2>Add a physical test</h2><label>Test name<input id="new-protocol-name" minlength="2" maxlength="100" required></label><label>Unit<select id="new-protocol-unit"><option>seconds</option><option>cm</option><option>m</option><option>kg</option><option>reps</option></select></label><label>Test procedure<textarea id="new-protocol-setup" minlength="5" maxlength="1000" required></textarea></label><button type="submit">Save physical test</button></form>
+<form id="combine-form"><h2>Create a combine battery</h2><label>Combine name<input id="new-combine-name" minlength="2" maxlength="100" required></label><fieldset><legend>Included tests</legend><div id="combine-tests"></div></fieldset><label>Combine instructions<textarea id="new-combine-setup" minlength="5" maxlength="1000" required></textarea></label><button type="submit">Save combine battery</button></form>
+<p id="config-status" role="status"></p></details></div></main></body></html>

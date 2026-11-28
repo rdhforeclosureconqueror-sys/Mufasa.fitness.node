@@ -16,6 +16,10 @@ on:
       - 'test/rugby-athlete-review-ui.test.js'
       - 'public/rugby-athlete-review*'
       - 'world-bridge-server.js'
+      - 'src/rugby/assessmentCapture.js'
+      - 'src/routes/rugbyAssessmentCaptureRoutes.js'
+      - 'public/rugby-assessments*'
+      - 'test/rugby-assessment-capture*.test.js'
 permissions:
   contents: read
 jobs:
@@ -31,3 +35,4 @@ jobs:
       - run: node --test test/rugby-policy-preview-routes.test.js test/rugby-beast-mode-owner-policy.test.js test/rugby-policy-dashboard-diagnostics.test.js test/rugby-beast-mode-trusted-evidence.test.js
       - run: npm run readiness:validate
       - run: node --test test/rugby-athlete-review.test.js test/rugby-athlete-review-ui.test.js
+      - run: node --test test/rugby-assessment-capture*.test.js
