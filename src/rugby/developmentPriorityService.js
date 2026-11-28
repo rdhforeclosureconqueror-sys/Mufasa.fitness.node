@@ -3,6 +3,7 @@ const {randomUUID,createHash}=require('node:crypto');
 const {currentCapturedAssessments}=require('./assessmentCapture');
 const {evaluateStoredReadiness}=require('./storedReadiness');
 const {getExercise}=require('../exercise-intelligence/exerciseCatalog');
+const {buildPositionEvidenceContext}=require('./positionEvidenceContext');
 const development=require('../../data/rugby/full-xv-assessments/development-links.v1.json');
 function fail(message,status=400){const error=Error(message);error.status=status;throw error;}
 const text=(value,min,max)=>typeof value==='string'&&value.trim().length>=min&&value.trim().length<=max;
@@ -30,7 +31,7 @@ function createDevelopmentPriorityService({userStore,authorizationResolver,now=(
   const priorities=(user.rugbyDevelopmentPriorities||[]).map(priority=>{
    if(priority.athleteId!==athleteId)throw Error('Invalid priority history');
    const evidenceCurrent=priority.evidenceIds.every(id=>currentIds.has(id));
-   return {...structuredClone(priority),evidenceCurrent,currentReviewState:evidenceCurrent?'working_priority':'needs_re_review'};
+   return {...structuredClone(priority),positionContext:buildPositionEvidenceContext(user.rugbyAssessmentPositions,priority,evidence),evidenceCurrent,currentReviewState:evidenceCurrent?'working_priority':'needs_re_review'};
   });
   return {athlete:{athleteId,name:String(user.displayName||user.name||athleteId).slice(0,120)},evidence,domains:menus(),priorities,...gates(user,athleteId,evidence),trainingAuthorized:false,automaticPrescription:false};
  }
