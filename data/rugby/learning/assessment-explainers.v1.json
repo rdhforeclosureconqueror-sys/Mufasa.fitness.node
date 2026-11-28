@@ -1,0 +1,478 @@
+{
+  "version": 1,
+  "authorship": "Educational coaching proposals; training examples require individual coaching selection and supply no dose.",
+  "assessments": {
+    "acceleration_10m": {
+      "what": "Time needed to cover the first 10 metres after a fixed start.",
+      "why": "A short burst helps close a gap, support a runner or leave the defensive line.",
+      "limits": "This is acceleration under one start condition. It does not measure decision speed or maximum running velocity.",
+      "training": [
+        {
+          "name": "Coached short accelerations",
+          "purpose": "Practise the start, direction of push and gradual rise with full recovery."
+        },
+        {
+          "name": "Squat and hinge strength",
+          "purpose": "Build force capacity where assessment and coaching show it is limiting."
+        }
+      ],
+      "diagram": "sprint10"
+    },
+    "acceleration_20m": {
+      "what": "Time over 20 metres, with acceleration continuing beyond the first few steps.",
+      "why": "Helps describe how the player builds speed to reach space, chase or cover.",
+      "limits": "A split from a 20 m effort and a standalone 10 m run may have different intent or setup.",
+      "training": [
+        {
+          "name": "Progressive accelerations",
+          "purpose": "Learn to keep applying force as speed increases."
+        },
+        {
+          "name": "Sprint posture and rhythm",
+          "purpose": "Work with a coach on technique before adding resistance or volume."
+        }
+      ],
+      "diagram": "sprint20"
+    },
+    "sprint_40m": {
+      "what": "Total time over 40 metres from the defined start.",
+      "why": "Longer running opportunities occur in breakaways, kick chase and recovery defence.",
+      "limits": "Total 40 m time blends acceleration and later speed. It is not an instantaneous top-speed measurement; 40 yards is a different distance.",
+      "training": [
+        {
+          "name": "Progressive longer sprints",
+          "purpose": "Build exposure and technical quality under an appropriate workload."
+        },
+        {
+          "name": "Posterior-chain strength",
+          "purpose": "Support force production with a familiar hinge movement where suitable."
+        }
+      ],
+      "diagram": "sprint40"
+    },
+    "cod_505_left": {
+      "what": "Time through a planned 180° turn: 5 m from the timing gate to the turn line and 5 m back, after an untimed 10 m run-in.",
+      "why": "Braking, turning and accelerating again help players adjust a chase, recover position and redirect movement.",
+      "limits": "This version records the left plant leg. The direction is known, so it does not test reading an opponent. Modified 505 tests and hand timing are not equivalent to this timed layout.",
+      "training": [
+        {
+          "name": "Coached deceleration and 180° turns",
+          "purpose": "Practise controlling incoming speed and placing the turning foot before increasing approach speed."
+        },
+        {
+          "name": "Split-stance strength and controlled lowering",
+          "purpose": "Develop the ability to accept and redirect force where the coach identifies a capacity need."
+        },
+        {
+          "name": "Reactive tracking after technique",
+          "purpose": "Add a real decision separately, once controlled turning is established."
+        }
+      ],
+      "diagram": "505"
+    },
+    "cod_505_right": {
+      "what": "Time through a planned 180° turn: 5 m from the timing gate to the turn line and 5 m back, after an untimed 10 m run-in.",
+      "why": "Braking, turning and accelerating again help players adjust a chase, recover position and redirect movement.",
+      "limits": "This version records the right plant leg. The direction is known, so it does not test reading an opponent. Modified 505 tests and hand timing are not equivalent to this timed layout.",
+      "training": [
+        {
+          "name": "Coached deceleration and 180° turns",
+          "purpose": "Practise controlling incoming speed and placing the turning foot before increasing approach speed."
+        },
+        {
+          "name": "Split-stance strength and controlled lowering",
+          "purpose": "Develop the ability to accept and redirect force where the coach identifies a capacity need."
+        },
+        {
+          "name": "Reactive tracking after technique",
+          "purpose": "Add a real decision separately, once controlled turning is established."
+        }
+      ],
+      "diagram": "505"
+    },
+    "braking_control": {
+      "what": "How the player controls an approach and stops inside a defined zone.",
+      "why": "A player must arrive balanced to change direction or organise for a tackle.",
+      "limits": "Approach speed changes braking demands. A short stop from jogging cannot be compared with a full-speed stop.",
+      "training": [
+        {
+          "name": "Progressive sprint-to-stop",
+          "purpose": "Begin at a manageable speed and observe steps and trunk control."
+        },
+        {
+          "name": "Single-leg strength and control",
+          "purpose": "Support positions used while absorbing and redirecting force."
+        }
+      ],
+      "diagram": "braking"
+    },
+    "reactive_tracking": {
+      "what": "How the player reads an attacker and adjusts position as the picture changes.",
+      "why": "Defenders and support runners must respond to another player, rather than a memorised cone route.",
+      "limits": "Attacker speed, starting distance and available space affect difficulty. Separate choice accuracy from movement time.",
+      "training": [
+        {
+          "name": "Mirror and tracking practice",
+          "purpose": "Use varied, controlled attacker cues with balanced left and right trials."
+        },
+        {
+          "name": "Constrained evasion games",
+          "purpose": "Practise staying connected to the real cue instead of guessing early."
+        }
+      ],
+      "diagram": "tracking"
+    },
+    "cmj": {
+      "what": "Height reached in a countermovement jump using the chosen measurement method.",
+      "why": "Provides an indication of explosive lower-body output to inform development and track change.",
+      "limits": "Height is not the same as peak power in watts. Device method, arm use and landing technique change the result.",
+      "training": [
+        {
+          "name": "Controlled jump-and-land",
+          "purpose": "Build a repeatable take-off and stable landing before adding intensity."
+        },
+        {
+          "name": "Strength-to-power work",
+          "purpose": "A coach selects strength or faster force work based on the whole profile."
+        }
+      ],
+      "diagram": "vertical"
+    },
+    "broad_jump": {
+      "what": "Horizontal distance from a standing two-foot take-off to the nearest heel on landing.",
+      "why": "Adds a horizontal explosive task that complements vertical jump and sprint observations.",
+      "limits": "It is not a direct measure of acceleration, and a long jump does not prove contact skill.",
+      "training": [
+        {
+          "name": "Broad jump and stick",
+          "purpose": "Practise coordinated projection and a controlled two-foot landing."
+        },
+        {
+          "name": "Hinge and squat patterns",
+          "purpose": "Develop appropriate lower-body capacity alongside skill practice."
+        }
+      ],
+      "diagram": "broad"
+    },
+    "lower_strength": {
+      "what": "Load completed in a specific familiar lower-body lift and repetition scheme.",
+      "why": "Force capacity can support running, lifting and contact when technique allows the player to use it.",
+      "limits": "Front squat, back squat, box squat, deadlift, 1RM and submaximal tests are separate protocols. Absolute load and load relative to body mass answer different questions.",
+      "training": [
+        {
+          "name": "Coach-selected squat",
+          "purpose": "Develop the chosen range with stable technique and an appropriate load."
+        },
+        {
+          "name": "Coach-selected hinge",
+          "purpose": "Build hip-dominant force capacity; exercise selection follows the athlete, not the jersey alone."
+        }
+      ],
+      "diagram": "strength"
+    },
+    "upper_push": {
+      "what": "Pushing capacity in the chosen press and repetition scheme.",
+      "why": "Upper-body force contributes to contact preparation and other pushing actions.",
+      "limits": "Bench strength cannot certify tackling. Head placement, timing, wrap and leg drive must be observed separately.",
+      "training": [
+        {
+          "name": "Appropriate press progression",
+          "purpose": "Use a press variation the athlete can control with the required supervision."
+        },
+        {
+          "name": "Push-pull balance",
+          "purpose": "Include suitable pulling and trunk work within the broader programme."
+        }
+      ],
+      "diagram": "push"
+    },
+    "upper_pull": {
+      "what": "Pulling capacity under fixed equipment, body position and repetition rules.",
+      "why": "Pulling contributes to upper-body control and the ability to maintain connections.",
+      "limits": "Rows and chin-ups are different tests. Added load alone and body mass plus added load cannot be compared directly.",
+      "training": [
+        {
+          "name": "Supported or band row",
+          "purpose": "Practise controlled shoulder and trunk position during a pull."
+        },
+        {
+          "name": "Suitable bodyweight pulling",
+          "purpose": "Develop the chosen pattern progressively when appropriate."
+        }
+      ],
+      "diagram": "pull"
+    },
+    "repeated_sprint": {
+      "what": "Individual sprint times across a fixed series, with a fixed recovery interval.",
+      "why": "Rugby demands multiple efforts; the coach needs to see initial speed and how the full series changes.",
+      "limits": "A slower first sprint can make percentage drop-off look better. Review all reps, completion and conditions; do not judge by one fatigue percentage.",
+      "training": [
+        {
+          "name": "Coach-planned repeated efforts",
+          "purpose": "Develop repeatability while retaining acceptable sprint quality."
+        },
+        {
+          "name": "Aerobic support and recovery",
+          "purpose": "Consider recovery capacity and club workload before adding density."
+        }
+      ],
+      "diagram": "repeat"
+    },
+    "intermittent_recovery": {
+      "what": "Distance completed in the selected intermittent running test, such as Yo-Yo IR1.",
+      "why": "Helps describe the ability to sustain and recover between repeated running bouts.",
+      "limits": "Yo-Yo IR1, IR2, Bronco and a generic beep test are different. Running capacity does not establish contact competence.",
+      "training": [
+        {
+          "name": "Intermittent aerobic work",
+          "purpose": "A coach chooses work and recovery intervals for the current need."
+        },
+        {
+          "name": "Recovery habits",
+          "purpose": "Support training adaptation with sleep, nutrition and an appropriate team workload."
+        }
+      ],
+      "diagram": "shuttle"
+    },
+    "overhead_squat": {
+      "what": "Observed movement during a squat with the arms overhead, including the stated depth and visible compensations.",
+      "why": "Provides a structured starting point for discussing movement and deciding what needs closer assessment.",
+      "limits": "An observed heel lift or knee movement does not diagnose a muscle problem or predict injury. There is no professional pass mark for this descriptive screen.",
+      "training": [
+        {
+          "name": "Controlled squat progression",
+          "purpose": "Use an appropriate range and support while observing the same task again."
+        },
+        {
+          "name": "Targeted follow-up",
+          "purpose": "Only select mobility or strength work after checking the suspected limitation."
+        }
+      ],
+      "diagram": "squat"
+    },
+    "ankle_mobility": {
+      "what": "Toe-to-wall distance while the knee reaches the wall and the heel stays down.",
+      "why": "Ankle movement contributes to squat, landing and braking positions, depending on the task.",
+      "limits": "Stance, heel position and measuring method matter. A left/right difference is context for review, not a diagnosis.",
+      "training": [
+        {
+          "name": "Controlled knee-to-wall practice",
+          "purpose": "Explore comfortable ankle range without lifting the heel."
+        },
+        {
+          "name": "Calf and lower-leg strength",
+          "purpose": "Develop capacity in an appropriate range when the coach identifies a need."
+        }
+      ],
+      "diagram": "ankle"
+    },
+    "single_leg_control": {
+      "what": "Control of a defined single-leg squat or landing, observed on each side.",
+      "why": "Running and direction changes repeatedly require one leg to support and manage the body.",
+      "limits": "Task height, support, fatigue and depth change the challenge. A balance task does not establish tackling ability.",
+      "training": [
+        {
+          "name": "Supported single-leg control",
+          "purpose": "Use support and a manageable range before adding complexity."
+        },
+        {
+          "name": "Low-demand landing progression",
+          "purpose": "Practise controlling the chosen task before increasing speed or height."
+        }
+      ],
+      "diagram": "single"
+    },
+    "tackle_sequence": {
+      "what": "Tracking, preparation, connection, acceleration and finish, followed by legal release and reload.",
+      "why": "A completed tackle depends on reading, positioning and coordinated execution as well as physical capacity.",
+      "limits": "A gym test or collision outcome cannot certify technique. Qualified coaching controls contact progression and participation.",
+      "training": [
+        {
+          "name": "No-contact tracking and approach",
+          "purpose": "Practise angle, closing speed and balanced preparation."
+        },
+        {
+          "name": "Supervised connection-to-finish progression",
+          "purpose": "Build safe technique on both shoulders before speed or opposition increases."
+        }
+      ],
+      "diagram": "tackle"
+    },
+    "carry_continuity": {
+      "what": "The carry/pass choice, ball protection and continuity after contact or evasion.",
+      "why": "The player should help the next phase, not simply seek the largest collision.",
+      "limits": "Decision, execution and outcome can disagree. Record opposition and pressure instead of judging the outcome alone.",
+      "training": [
+        {
+          "name": "Controlled carry/pass decisions",
+          "purpose": "Present realistic space and ask the player to choose."
+        },
+        {
+          "name": "Supervised ball presentation",
+          "purpose": "Practise continuity at the contact level authorised by the coach."
+        }
+      ],
+      "diagram": "carry"
+    },
+    "breakdown_decision": {
+      "what": "Arrival, legal positioning and the choice to compete, support or reload.",
+      "why": "Effective contribution requires reaching the right place and making a useful legal decision.",
+      "limits": "Being first to the breakdown is not automatically a successful contribution. Current laws and contact supervision apply.",
+      "training": [
+        {
+          "name": "Walkthrough arrival and role choice",
+          "purpose": "Understand the picture before adding speed or contact."
+        },
+        {
+          "name": "Coached reload scenarios",
+          "purpose": "Practise when to stay, support or leave for the next job."
+        }
+      ],
+      "diagram": "breakdown"
+    },
+    "scrum_role": {
+      "what": "Demonstrated competence in the assigned role and stage of the existing scrum progression.",
+      "why": "Scrum performance is coordinated unit work requiring appropriate individual preparation.",
+      "limits": "Strength results cannot grant front-row eligibility. Current competition requirements and qualified assessment remain separate.",
+      "training": [
+        {
+          "name": "Qualified scrum progression",
+          "purpose": "Practise the next demonstrated stage rather than skipping ahead."
+        },
+        {
+          "name": "Individual strength and control",
+          "purpose": "Support the positions identified by the scrum coach."
+        }
+      ],
+      "diagram": "scrum"
+    },
+    "lineout_role": {
+      "what": "The assigned jump, lift, receive or delivery role within a coordinated group.",
+      "why": "Timing and control help secure possession and return the jumper safely.",
+      "limits": "Jump height alone cannot verify a lineout role. Lifting people requires prerequisites and qualified supervision.",
+      "training": [
+        {
+          "name": "Call and movement rehearsal",
+          "purpose": "Coordinate the approach and timing without lifting first."
+        },
+        {
+          "name": "Supervised role progression",
+          "purpose": "Develop the assigned jump or support task and controlled return."
+        }
+      ],
+      "diagram": "lineout"
+    },
+    "lineout_throw": {
+      "what": "Accuracy and timing to predefined lineout targets.",
+      "why": "A useful throw needs to arrive at the right height and time for the intended receiver.",
+      "limits": "Define a successful target before testing. Different distances, pressure and targets produce different results.",
+      "training": [
+        {
+          "name": "Fixed-target throwing",
+          "purpose": "Develop repeatability at clearly marked distances."
+        },
+        {
+          "name": "Throw-and-jumper timing",
+          "purpose": "Link the skill to a coordinated unit after the baseline is clear."
+        }
+      ],
+      "diagram": "throw"
+    },
+    "scrum_base_control": {
+      "what": "Control of the ball at the base and the connection between 8 and 9.",
+      "why": "Maintains usable possession and supports a timely pick, pass or release.",
+      "limits": "Unopposed handling does not establish live scrum competence or permission to progress.",
+      "training": [
+        {
+          "name": "Unopposed base handling",
+          "purpose": "Practise the touch and control needed to make the ball available."
+        },
+        {
+          "name": "8/9 decision connection",
+          "purpose": "Use controlled cues to practise the next action with 9."
+        }
+      ],
+      "diagram": "base"
+    },
+    "scrum_half_service": {
+      "what": "Delivery accuracy, footwork and tempo from a ground ball, both ways.",
+      "why": "Usable service gives the next player time and space to execute.",
+      "limits": "Pass accuracy and choosing the correct option are different. Fix ball presentation, distance and timing before comparing.",
+      "training": [
+        {
+          "name": "Ground passing both ways",
+          "purpose": "Develop a consistent delivery to a fixed target."
+        },
+        {
+          "name": "Reposition-and-service practice",
+          "purpose": "Connect movement, scanning and delivery under controlled cues."
+        }
+      ],
+      "diagram": "service"
+    },
+    "attack_decision": {
+      "what": "Scanning, support depth, timing and choice in a defined attacking picture.",
+      "why": "A player contributes by creating and using space, including when they do not receive the ball.",
+      "limits": "A try does not prove the choice was correct. Simulator decisions and live field execution are different evidence.",
+      "training": [
+        {
+          "name": "2v1 and 3v2 with clear constraints",
+          "purpose": "Practise fixing a defender and recognising the available option."
+        },
+        {
+          "name": "Support-line rehearsal",
+          "purpose": "Develop depth and timing that give the ball carrier a usable option."
+        }
+      ],
+      "diagram": "attack"
+    },
+    "defence_connection": {
+      "what": "Alignment, numbering, communication and connected responses to an attacking picture.",
+      "why": "Connected defenders can protect space and avoid creating gaps for each other.",
+      "limits": "Tactical instructions depend on the team. Judge the decision against the stated objective, not a generic press-every-time rule.",
+      "training": [
+        {
+          "name": "Numbering and spacing walkthrough",
+          "purpose": "Identify threats and communicate assignments."
+        },
+        {
+          "name": "Connected response scenarios",
+          "purpose": "Practise hold, drift or pressure according to the coach’s objective."
+        }
+      ],
+      "diagram": "defence"
+    },
+    "aerial_backfield": {
+      "what": "Positioning, communication, catch security, landing and the next decision around a kick.",
+      "why": "Securing and using kicked possession links backfield coverage to counterattack or territory.",
+      "limits": "Uncontested catching and a pressured aerial contest are different tasks. Opposed work must follow appropriate coaching progressions.",
+      "training": [
+        {
+          "name": "Uncontested catch and landing",
+          "purpose": "Build early positioning and repeatable control."
+        },
+        {
+          "name": "Backfield communication scenarios",
+          "purpose": "Connect coverage, calling and the next decision."
+        }
+      ],
+      "diagram": "aerial"
+    },
+    "kick_role": {
+      "what": "Decision and execution for a defined kick type, starting position and target.",
+      "why": "Kicks can create territory, pressure or an attacking opportunity when matched to the picture.",
+      "limits": "Longest distance is not always the best kick. Record kick type, wind, target, foot and pressure.",
+      "training": [
+        {
+          "name": "Fixed-target kicking",
+          "purpose": "Develop execution with a clear purpose and repeatable setup."
+        },
+        {
+          "name": "Run/pass/kick choice scenarios",
+          "purpose": "Practise recognising when the kick is the useful option."
+        }
+      ],
+      "diagram": "kick"
+    }
+  }
+}

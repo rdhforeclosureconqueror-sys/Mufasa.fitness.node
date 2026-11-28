@@ -1603,5 +1603,16 @@
     "participation_clearance": false,
     "automatic_scoring": false,
     "human_acceptance_pending": true
+  },
+  "athlete_learning_guides": {
+    "entry": "public/rugby-learning.html",
+    "sources": "data/rugby/learning/benchmarks.v1.json",
+    "generator": "scripts/build-rugby-learning-guides.js",
+    "position_pages": 15,
+    "assessment_pages": 29,
+    "purpose": "education_and_contextual_cohort_references",
+    "automatic_scoring": false,
+    "runtime_progression": false,
+    "human_acceptance_pending": true
   }
 }

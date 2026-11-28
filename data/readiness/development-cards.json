@@ -1090,6 +1090,20 @@
       "createdAt": "2026-11-28T06:13:01.213Z",
       "source": "readiness:update",
       "taskId": null
+    },
+    {
+      "id": "launch-development-rugby-learning-guides",
+      "board": "launch",
+      "canonical": false,
+      "title": "Position and assessment learning guides",
+      "category": "RUGBY HQ",
+      "description": "Athlete-facing pages for all 15 roles and 29 assessments, exact illustrations, training explanations and sourced contextual benchmarks; link from active assessment workflow.",
+      "priority": "NORMAL",
+      "dependsOn": [],
+      "humanRequired": true,
+      "createdAt": "2026-11-28T06:02:55.786Z",
+      "source": "readiness:update",
+      "taskId": null
     }
   ]
 }
