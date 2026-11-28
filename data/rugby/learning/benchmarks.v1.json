@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-11-28",
+  "meaning": "Historical cohort references, not official standards, percentiles or selection cutoffs.",
+  "sources": [
+    {
+      "id": "nz2020",
+      "title": "Posthumus et al. · Sports (2020), Table 2",
+      "url": "https://www.mdpi.com/2075-4663/8/6/85",
+      "population": "39 adult male NZ Super Rugby players; 23 forwards, 16 backs; end of preseason",
+      "year": 2020
+    },
+    {
+      "id": "lazio2022",
+      "title": "Pasqualetti et al. · Genes (2022), Table 2",
+      "url": "https://www.mdpi.com/2073-4425/13/6/969",
+      "population": "Lazio Rugby TOP12 roster; 27 elite players, 13 forwards and 14 backs; in-season",
+      "year": 2022
+    },
+    {
+      "id": "club2019",
+      "title": "Gilchrist · AUT master’s thesis (2019), Tables 4.1 and 4.14",
+      "url": "https://openrepository.aut.ac.nz/bitstreams/33e21a34-3814-4029-82cd-e3570d4a5046/download",
+      "population": "Seven adult male club players; small preseason convenience sample; no position split",
+      "year": 2019
+    },
+    {
+      "id": "brazil2019",
+      "title": "Freitas et al. · Sports (2019), Results",
+      "url": "https://www.mdpi.com/2075-4663/7/1/2",
+      "population": "24 Brazilian senior men’s national-team players; 13 backs and 11 forwards",
+      "year": 2019
+    },
+    {
+      "id": "usa2019",
+      "title": "USA Rugby · Team USA Pro Days announcement (2019)",
+      "url": "https://usa.rugby/news/usa-rugby-partners-with-five-ngbs-to-launch-team-usa-pro-days-series",
+      "population": "Talent-identification event announcement; not a published Eagles/Falcons score table",
+      "year": 2019
+    },
+    {
+      "id": "women2018",
+      "title": "Lockie · Facta Universitatis (2018), Table 1",
+      "url": "https://casopisi.junis.ni.ac.rs/index.php/FUPhysEdSport/article/download/3491/2300",
+      "population": "17 adult collegiate women at one US school; no position split",
+      "year": 2018
+    }
+  ],
+  "benchmarks": [
+    {
+      "id": "nz-acceleration_10m-forwards",
+      "assessmentIds": [
+        "acceleration_10m"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Forwards",
+      "n": 23,
+      "mean": 1.78,
+      "sd": 0.08,
+      "unit": "s",
+      "metric": "10 m split",
+      "method": "20 m run; dual-beam gates; 0.30 m start offset; artificial turf; best of two; 5 min recovery.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-acceleration_20m-forwards",
+      "assessmentIds": [
+        "acceleration_20m"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Forwards",
+      "n": 23,
+      "mean": 3.11,
+      "sd": 0.15,
+      "unit": "s",
+      "metric": "20 m sprint",
+      "method": "20 m run; dual-beam gates; 0.30 m start offset; artificial turf; best of two; 5 min recovery.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-broad_jump-forwards",
+      "assessmentIds": [
+        "broad_jump"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Forwards",
+      "n": 23,
+      "mean": 252.3,
+      "sd": 25.3,
+      "unit": "cm",
+      "metric": "standing broad jump",
+      "method": "Full arm swing; two-foot landing; nearest heel; furthest valid attempt.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-intermittent_recovery-forwards",
+      "assessmentIds": [
+        "intermittent_recovery"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Forwards",
+      "n": 23,
+      "mean": 1516.5,
+      "sd": 291.9,
+      "unit": "m",
+      "metric": "Yo-Yo IR1 distance",
+      "method": "Yo-Yo IR1 audio protocol; artificial turf; total completed distance.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-acceleration_10m-backs",
+      "assessmentIds": [
+        "acceleration_10m"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Backs",
+      "n": 16,
+      "mean": 1.66,
+      "sd": 0.04,
+      "unit": "s",
+      "metric": "10 m split",
+      "method": "20 m run; dual-beam gates; 0.30 m start offset; artificial turf; best of two; 5 min recovery.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-acceleration_20m-backs",
+      "assessmentIds": [
+        "acceleration_20m"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Backs",
+      "n": 16,
+      "mean": 2.88,
+      "sd": 0.07,
+      "unit": "s",
+      "metric": "20 m sprint",
+      "method": "20 m run; dual-beam gates; 0.30 m start offset; artificial turf; best of two; 5 min recovery.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-broad_jump-backs",
+      "assessmentIds": [
+        "broad_jump"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Backs",
+      "n": 16,
+      "mean": 269,
+      "sd": 13,
+      "unit": "cm",
+      "metric": "standing broad jump",
+      "method": "Full arm swing; two-foot landing; nearest heel; furthest valid attempt.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "nz-intermittent_recovery-backs",
+      "assessmentIds": [
+        "intermittent_recovery"
+      ],
+      "sourceId": "nz2020",
+      "tier": "Professional",
+      "sex": "Men",
+      "group": "Backs",
+      "n": 16,
+      "mean": 2237.5,
+      "sd": 266.3,
+      "unit": "m",
+      "metric": "Yo-Yo IR1 distance",
+      "method": "Yo-Yo IR1 audio protocol; artificial turf; total completed distance.",
+      "limits": "Group reference, not a position-specific or selection standard. Match protocol before comparing.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "lazio-505-forwards",
+      "assessmentIds": [
+        "cod_505_left",
+        "cod_505_right"
+      ],
+      "sourceId": "lazio2022",
+      "tier": "Elite domestic",
+      "sex": "Men",
+      "group": "Forwards",
+      "n": 13,
+      "mean": 2.35,
+      "sd": 0.16,
+      "unit": "s",
+      "metric": "traditional 505",
+      "method": "10 m run-in; gate 5 m before 180° turn; gate height 1 m; best of three; synthetic surface.",
+      "limits": "Published score is not split by plant leg. It cannot serve as a separate left/right standard or a national-team cutoff.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "lazio-505-backs",
+      "assessmentIds": [
+        "cod_505_left",
+        "cod_505_right"
+      ],
+      "sourceId": "lazio2022",
+      "tier": "Elite domestic",
+      "sex": "Men",
+      "group": "Backs",
+      "n": 14,
+      "mean": 2.18,
+      "sd": 0.1,
+      "unit": "s",
+      "metric": "traditional 505",
+      "method": "10 m run-in; gate 5 m before 180° turn; gate height 1 m; best of three; synthetic surface.",
+      "limits": "Published score is not split by plant leg. It cannot serve as a separate left/right standard or a national-team cutoff.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "club-505",
+      "assessmentIds": [
+        "cod_505_left",
+        "cod_505_right"
+      ],
+      "sourceId": "club2019",
+      "tier": "Club",
+      "sex": "Men",
+      "group": "Mixed positions",
+      "n": 7,
+      "mean": 2.38,
+      "sd": 0.17,
+      "unit": "s",
+      "metric": "traditional 505 baseline",
+      "method": "10 m run-in plus timed 5 m out/5 m back; electronic gates; best of two; paired side-by-side testing.",
+      "limits": "Thesis sample is very small; no plant-leg or position split. Do not treat the mean as the club standard.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "club-10m",
+      "assessmentIds": [
+        "acceleration_10m"
+      ],
+      "sourceId": "club2019",
+      "tier": "Club",
+      "sex": "Men",
+      "group": "Mixed positions",
+      "n": 7,
+      "mean": 1.8,
+      "sd": 0.1,
+      "unit": "s",
+      "metric": "10 m sprint baseline",
+      "method": "Standing start 0.50 m behind electronic gate; best of two.",
+      "limits": "Different start offset from NZ professional study; not a direct club-to-pro ladder.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "brazil-strength-backs",
+      "assessmentIds": [
+        "lower_strength"
+      ],
+      "sourceId": "brazil2019",
+      "tier": "International",
+      "sex": "Men",
+      "group": "Backs",
+      "n": 13,
+      "mean": 1.84,
+      "sd": 0.26,
+      "unit": "× body mass",
+      "metric": "squat 1RM / body mass",
+      "method": "Olympic-barbell squat 1RM; best successful maximum divided by measured body mass. See source for technique and administration.",
+      "limits": "This is a relative 1RM metric, not kg or a submaximal test. Do not compare until squat technique and protocol are matched.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "brazil-strength-forwards",
+      "assessmentIds": [
+        "lower_strength"
+      ],
+      "sourceId": "brazil2019",
+      "tier": "International",
+      "sex": "Men",
+      "group": "Forwards",
+      "n": 11,
+      "mean": 1.45,
+      "sd": 0.2,
+      "unit": "× body mass",
+      "metric": "squat 1RM / body mass",
+      "method": "Olympic-barbell squat 1RM; best successful maximum divided by measured body mass. See source for technique and administration.",
+      "limits": "This is a relative 1RM metric, not kg or a submaximal test. Do not compare until squat technique and protocol are matched.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "women-505-left",
+      "assessmentIds": [
+        "cod_505_left"
+      ],
+      "sourceId": "women2018",
+      "tier": "Collegiate",
+      "sex": "Women",
+      "group": "Mixed positions",
+      "n": 17,
+      "mean": 2.682,
+      "sd": 0.26,
+      "unit": "s",
+      "metric": "left-plant 505",
+      "method": "Traditional 505; dry natural grass; electronic gates; mean of two valid trials per leg.",
+      "limits": "A mean-of-two score is not equivalent to a best-trial score. This women’s cohort must not be used as a men’s standard.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    },
+    {
+      "id": "women-505-right",
+      "assessmentIds": [
+        "cod_505_right"
+      ],
+      "sourceId": "women2018",
+      "tier": "Collegiate",
+      "sex": "Women",
+      "group": "Mixed positions",
+      "n": 17,
+      "mean": 2.646,
+      "sd": 0.276,
+      "unit": "s",
+      "metric": "right-plant 505",
+      "method": "Traditional 505; dry natural grass; electronic gates; mean of two valid trials per leg.",
+      "limits": "A mean-of-two score is not equivalent to a best-trial score. This women’s cohort must not be used as a men’s standard.",
+      "statistic": "mean ± SD",
+      "selectionCutoff": false
+    }
+  ],
+  "availability": [
+    {
+      "target": "USA Eagles / USA Falcons",
+      "status": "No verified comparable result table found in sources reviewed",
+      "sourceId": "usa2019",
+      "note": "The official announcement lists tests, not individual results or team pass marks. Do not relabel other cohorts as USA results."
+    },
+    {
+      "target": "New Zealand international 505",
+      "status": "No verified absolute 505 score added",
+      "sourceId": null,
+      "note": "Available NZ professional sprint data are not All Blacks 505 standards."
+    }
+  ]
+}

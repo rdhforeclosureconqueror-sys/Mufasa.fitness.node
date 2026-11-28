@@ -1,0 +1,28 @@
+name: Rugby learning guides
+on:
+  pull_request:
+    paths:
+      - 'data/rugby/learning/**'
+      - 'data/rugby/full-xv-assessments/**'
+      - 'scripts/build-rugby-learning-guides.js'
+      - 'public/rugby-learning*'
+      - 'public/rugby-positions/**'
+      - 'public/rugby-assessment-guides/**'
+      - 'public/rugby-assessments*'
+      - 'test/rugby-learning-guides.test.js'
+      - '.github/workflows/rugby-learning-guides.yml'
+permissions:
+  contents: read
+jobs:
+  learning-guides:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/build-rugby-learning-guides.js --check
+      - run: node --test test/rugby-learning-guides.test.js test/rugby-assessment-capture*.test.js test/rugby-development*.test.js
+      - run: npm run readiness:validate

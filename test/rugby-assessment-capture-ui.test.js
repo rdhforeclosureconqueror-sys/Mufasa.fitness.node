@@ -95,3 +95,8 @@ test('framework registration and structured skill capture round-trip without num
  const correctedControls=e['context-fields'].children.flatMap(child=>child.children||[]).filter(child=>child.dataset?.context);correctedControls.find(child=>child.dataset.context==='execution').value='Pass needed receiver adjustment';
  await p.submit('capture-form');assert.equal(p.users.owner.rugbyAssessmentRecords.length,2);assert.equal(p.users.owner.rugbyAssessmentRecords[1].supersedes,saved.id);assert.equal(p.users.owner.rugbyAssessmentRecords[0].context.execution,'Accurate pass');assert.match(e['capture-history'].children[1].textContent,/Superseded historical/);
 });
+test('selected position and candidate link to their own educational guides',async()=>{
+ const p=page();await tick();const e=p.elements;e['capture-primary'].value='11';e['capture-primary'].handlers.change();assert.equal(e['position-guide'].href,'/rugby-positions/11.html');
+ e['capture-secondary'].value='15';e['capture-secondary'].handlers.change();assert.equal(e['secondary-guide'].hidden,false);assert.equal(e['secondary-guide'].href,'/rugby-positions/15.html');
+ e['framework-candidate'].value='cod_505_left';e['framework-candidate'].handlers.change();assert.equal(e['candidate-guide'].href,'/rugby-assessment-guides/cod_505_left.html');
+});

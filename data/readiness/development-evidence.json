@@ -7355,6 +7355,44 @@
       "prNumber": 1440,
       "commitSha": "9f56b98ea3439abadf8dc5efb47cbe984a01b019",
       "timestamp": "2026-11-28T05:55:30.933Z"
+    },
+    {
+      "operationId": "00094eda-7025-4540-806c-5bcfd7f0c744",
+      "board": "launch",
+      "cardId": "launch-development-rugby-learning-guides",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Athlete-facing pages for all 15 roles and 29 assessments, exact illustrations, training explanations and sourced contextual benchmarks; link from active assessment workflow.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:02:55.786Z"
+    },
+    {
+      "operationId": "d1a9be50-858e-4416-8c17-d6b86501d37f",
+      "board": "launch",
+      "cardId": "launch-development-rugby-learning-guides",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "data/rugby/learning/assessment-explainers.v1.json",
+        "data/rugby/learning/position-explainers.v1.json",
+        "data/rugby/learning/benchmarks.v1.json",
+        "scripts/build-rugby-learning-guides.js",
+        "public/rugby-learning.html",
+        "public/rugby-learning.css",
+        "public/rugby-learning.js",
+        "public/rugby-assessments.html",
+        "public/rugby-assessments.js",
+        "test/rugby-learning-guides.test.js",
+        "test/rugby-assessment-capture-ui.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Implemented 15 dedicated position and 29 assessment guides with 28 SVG task illustrations, searchable library, source-labelled cohort references, contextual development and active-menu links. 61 learning/capture/development/athlete-review tests pass; deterministic output, links/assets, syntax and diff checks pass. AI-assisted review corrected single-leg schematic and diagram contrast. Browser rendering remains unverified: local Chromium absent, official download unavailable (403), cloud browser cannot reach local preview. No device/speech/human approval claimed. Rollback: revert reviewed squash and redeploy static frontend; no athlete-data migration. Protocol approval and automatic progression unchanged.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:14:17.459Z"
     }
   ]
 }

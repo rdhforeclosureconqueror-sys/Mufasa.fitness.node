@@ -1,0 +1,98 @@
+{
+  "version": 1,
+  "scope": "Adult rugby union XV",
+  "sourceUrl": "https://passport.world.rugby/officiating/match-observation-programme/teams-and-players/",
+  "authorship": "Milele Fit educational interpretation; role assignments remain coach-led.",
+  "positions": [
+    {
+      "number": 1,
+      "title": "Loosehead prop",
+      "job": "Anchor the left of the front row, contribute to secure scrum ball, support lineout lifting and keep carrying, tackling and passing after set pieces.",
+      "development": "Develop stable force transfer and short-area movement alongside rugby technique. Scrum competence is judged in the assigned role by qualified coaches; a squat score cannot establish it."
+    },
+    {
+      "number": 2,
+      "title": "Hooker",
+      "job": "Connect the front row, strike for scrum possession, deliver lineout throws when assigned, and contribute to carries, tackles and breakdown work.",
+      "development": "Combine front-row control with repeatable throwing and movement between phases. Track throwing accuracy by target instead of hiding it inside a strength score."
+    },
+    {
+      "number": 3,
+      "title": "Tighthead prop",
+      "job": "Anchor the right of the front row, maintain effective scrum connection and contribute lifting, ball skills and repeated contact work around the field.",
+      "development": "Develop role-specific stability, force transfer and repeat effort. Tighthead and loosehead experience are assessed separately; switching sides is not automatic."
+    },
+    {
+      "number": 4,
+      "title": "Lock 4",
+      "job": "Connect the scrum unit, contribute to lineout possession as an assigned jumper or lifter, and arrive effectively at tackles, carries and breakdowns.",
+      "development": "Develop strength, movement, jump/lift coordination and repeated involvement. Record the actual lineout role; jersey 4 does not automatically mean jumper or caller."
+    },
+    {
+      "number": 5,
+      "title": "Lock 5",
+      "job": "Provide scrum connection, secure lineout work in the assigned role and contribute repeated carries, tackles and breakdown support.",
+      "development": "Develop force capacity and coordinated timing with the unit. Treat lock 4 and 5 as role assignments, rather than inventing different physical standards for each number."
+    },
+    {
+      "number": 6,
+      "title": "Flanker 6",
+      "job": "Connect set pieces to open play, tackle and reload, make sound breakdown decisions and offer carrying, handling and support around the field.",
+      "development": "Develop acceleration, braking, repeat effort and decision-making together. The coach defines blindside, openside and lineout responsibilities for this player."
+    },
+    {
+      "number": 7,
+      "title": "Flanker 7",
+      "job": "Contribute defensive pressure, legal possession contests, support play and repeated movement between the scrum, tackle and next phase.",
+      "development": "Develop quick arrival and controlled execution. Reaching the breakdown first is useful only when the player makes the right legal decision and can reload."
+    },
+    {
+      "number": 8,
+      "title": "Number 8",
+      "job": "Control possession at the scrum base, connect with 9, carry or distribute in open play and defend with repeatable work around the field.",
+      "development": "Develop base handling, short acceleration and force expression alongside scanning and choice. Judge the carry/pass decision separately from whether the contact was won."
+    },
+    {
+      "number": 9,
+      "title": "Scrum-half",
+      "job": "Connect forwards and backs, deliver usable ball, control tempo and decide when to distribute, carry or kick while organising the next phase.",
+      "development": "Develop service both ways, repeated repositioning and early scanning. Accurate passing from a stationary ball is the baseline; decisions and execution under changing pressure are separate skills."
+    },
+    {
+      "number": 10,
+      "title": "Fly-half",
+      "job": "Organise attacking shape and territory, read the defence and choose when to pass, carry or kick while communicating with the players around you.",
+      "development": "Develop distribution and decision-making at pace, supported by acceleration, movement control and reliable defence. Kicking distance alone does not measure game management."
+    },
+    {
+      "number": 11,
+      "title": "Winger · 11",
+      "job": "Finish chances near the touchline, support breaks, chase kicks and fulfil the assigned edge and backfield duties, including tackles and aerial contests.",
+      "development": "Develop acceleration and longer sprint speed, then practise using them with scanning, footwork and ball skills. Braking and turning matter when a kick, attacker or defensive picture changes."
+    },
+    {
+      "number": 12,
+      "title": "Inside centre",
+      "job": "Offer a direct carrying or second-playmaker threat, connect 10 to the wider attack and help maintain a connected defensive line.",
+      "development": "Develop the ability to fix a defender and make a usable pass as well as carry strongly. Physical capacity supports the role, while decisions determine when to use it."
+    },
+    {
+      "number": 13,
+      "title": "Outside centre",
+      "job": "Connect the midfield to the wing, read space at the defensive edge and create or exploit outside opportunities through running and passing.",
+      "development": "Develop acceleration and controlled changes of direction alongside defensive scanning and timing. A late read and slow movement can look similar but need different practice."
+    },
+    {
+      "number": 14,
+      "title": "Winger · 14",
+      "job": "Finish wide opportunities, stay available in support, chase kicks and carry out the assigned edge or backfield role on this side of the pitch.",
+      "development": "Develop speed with repeatable finishing, tracking and aerial skill. Test the assigned side and kicking duties; the two wings need not have identical responsibilities."
+    },
+    {
+      "number": 15,
+      "title": "Fullback",
+      "job": "Organise backfield coverage, secure kicks, choose counterattack or territory options and act as the final line of defence when a break occurs.",
+      "development": "Develop early positioning and communication with speed, braking and aerial control. Last-line defence is a reading-and-tracking task as well as a running task."
+    }
+  ]
+}
