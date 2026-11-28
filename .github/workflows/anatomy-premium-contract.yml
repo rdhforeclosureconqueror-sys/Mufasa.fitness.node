@@ -4,6 +4,10 @@ on:
     paths:
       - 'public/anatomy-engine/**'
       - 'tests/anatomy-engine/**'
+      - 'scripts/build-anatomy-exercise-index.mjs'
+      - 'scripts/build-frontend.js'
+      - 'src/exercise-intelligence/**'
+      - 'data/exercise.json'
       - '.github/workflows/anatomy-premium-contract.yml'
 permissions:
   contents: read
@@ -15,4 +19,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - run: node scripts/build-anatomy-exercise-index.mjs
+      - run: node scripts/audit-anatomy-exercise-coverage.mjs
       - run: node --test tests/anatomy-engine/*.test.mjs
