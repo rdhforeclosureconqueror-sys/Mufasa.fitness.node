@@ -1,0 +1,1 @@
+Upload the eight original WebP textures here for asset provenance and future externalization. Upload premium-preview.html to public/anatomy-engine/ (parent of assets), where its relative controller import resolves. Preview embeds its textures already. Candidate geometry is unvalidated. Do not upload to main directly.
