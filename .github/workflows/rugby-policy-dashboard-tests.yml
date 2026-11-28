@@ -27,6 +27,9 @@ on:
       - 'public/rugby-development-review*'
       - 'public/rugby-acceptance-checklist*'
       - 'test/rugby-development*.test.js'
+      - 'public/rugby-player.html'
+      - 'public/rugby-workspace-session.js'
+      - 'test/rugby-workspace-navigation.test.js'
 permissions:
   contents: read
 jobs:
@@ -45,3 +48,4 @@ jobs:
       - run: node --test test/rugby-assessment-capture*.test.js
       - run: node scripts/validate-rugby-full-xv.js
       - run: node --test test/rugby-development*.test.js
+      - run: node --test test/rugby-workspace-navigation.test.js

@@ -3,6 +3,7 @@
  const $=id=>document.getElementById(id);let catalog,revision=0,pendingSubmission=null,positionRevision=0,contextInputs={},savedRecords=[],bindingCandidateId=null;
  const words=value=>String(value).replaceAll('_',' ');
  async function api(path,body){
+  await window.RugbyWorkspaceSession.require();
   const response=await window.MaatApiClient.request(path,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});
   if(!response.ok||response.payload?.ok!==true)throw Error(response.payload?.error?.message||(response.status===401?'Please sign in first.':'Could not access assessment records.'));
   return response.payload.data;

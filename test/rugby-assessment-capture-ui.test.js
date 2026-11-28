@@ -24,7 +24,7 @@ function page({denied=false,failReadback=false}={}){
  elements['capture-athlete'].append(element('option'));
  elements['capture-trial'].value='1';elements['capture-pain'].value='unknown';elements['new-protocol-unit'].value='seconds';
  let posted=false;
- const window={MaatApiClient:{request:async(path,options)=>{
+ const window={RugbyWorkspaceSession:{require:async()=>({ok:true})},MaatApiClient:{request:async(path,options)=>{
   requests.push({path,options});if(denied)return {ok:false,status:403,payload:{error:{message:'Verified sign-in required'}}};
   try{
    let data;

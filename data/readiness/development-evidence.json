@@ -1949,6 +1949,26 @@
       "timestamp": "2026-09-13T22:47:18.393Z"
     },
     {
+      "operationId": "0dabc22b-989e-4987-868a-9a960ee0145b",
+      "board": "avatar",
+      "cardId": "avatar-development-pushup-arena-v1",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/arena-phone-flow.js",
+        "public/arena-phone-ui.js",
+        "public/arena-push-up.html",
+        "public/game/push-up-arena/index.html",
+        "public/game/push-up-arena/index.pck",
+        "public/game/push-up-arena/pocketpt-world-build.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification.",
+      "prNumber": 807,
+      "commitSha": "7d30d19ab8a8063d4fd93aa075ec86b5c698a3e8",
+      "timestamp": "2026-09-13T23:03:44.557Z"
+    },
+    {
       "operationId": "e7e8037d-3022-4478-87fa-934b44cd5dd7",
       "board": "avatar",
       "cardId": "avatar-development-pushup-arena-v1",
@@ -1973,26 +1993,6 @@
       "prNumber": null,
       "commitSha": null,
       "timestamp": "2026-09-13T23:24:52.477Z"
-    },
-    {
-      "operationId": "0dabc22b-989e-4987-868a-9a960ee0145b",
-      "board": "avatar",
-      "cardId": "avatar-development-pushup-arena-v1",
-      "sourceType": "implementation",
-      "taskId": null,
-      "files": [
-        "public/arena-phone-flow.js",
-        "public/arena-phone-ui.js",
-        "public/arena-push-up.html",
-        "public/game/push-up-arena/index.html",
-        "public/game/push-up-arena/index.pck",
-        "public/game/push-up-arena/pocketpt-world-build.json"
-      ],
-      "automated": "PASS",
-      "evidence": "Final reviewed Walk/facing/Thriller source plus exact current Godot PR #2 runtime passed automated validation. Production phone visual quality, locomotion naturalness, GO_TO_MAT visual behavior, and Thriller playback remain pending authorized human verification.",
-      "prNumber": 807,
-      "commitSha": "7d30d19ab8a8063d4fd93aa075ec86b5c698a3e8",
-      "timestamp": "2026-09-13T23:03:44.557Z"
     },
     {
       "operationId": "21496d04-767f-459d-b75b-6be4ef9bd5c8",
@@ -5260,83 +5260,6 @@
       "timestamp": "2026-10-01T04:08:04.550Z"
     },
     {
-      "operationId": "1d287c9a-32ec-4219-a41d-f6ff61ce3cd8",
-      "board": "launch",
-      "cardId": "launch-development-economics-eco5d",
-      "sourceType": "implementation",
-      "taskId": "economics-eco5d",
-      "files": [],
-      "automated": null,
-      "evidence": "PR #921 regression correction started: restore ECO-5D historical-calibration fixture consistency while retaining exact governed-decision digest binding.",
-      "prNumber": null,
-      "commitSha": null,
-      "timestamp": "2026-10-04T03:57:59.048Z"
-    },
-    {
-      "operationId": "adf4e26e-dc5d-41c5-ad5e-20ad9126cc16",
-      "board": "launch",
-      "cardId": "launch-development-economics-eco5d",
-      "sourceType": "implementation",
-      "taskId": "economics-eco5d",
-      "files": [],
-      "automated": null,
-      "evidence": "Selected ECO-5D as CURRENT for PR #921 historical-calibration regression correction.",
-      "prNumber": null,
-      "commitSha": null,
-      "timestamp": "2026-10-04T03:57:59.101Z"
-    },
-    {
-      "operationId": "efcc76c8-d3d2-4afc-91c5-f6f0095fb196",
-      "board": "launch",
-      "cardId": "launch-development-economics-eco5d",
-      "sourceType": "implementation",
-      "taskId": "economics-eco5d",
-      "files": [
-        "test/ai-business-os-economics-historical-calibration.test.js",
-        "test/ai-business-os-economics-gold-certification.test.js",
-        "data/readiness/development-evidence.json"
-      ],
-      "automated": "PASS",
-      "evidence": "PR #921 regression corrections preserve exact governed-decision digest binding while rebuilding internally consistent ECO-5D historical-calibration fixtures; Gold replay now supplies the authoritative Experiment Manager validator outside the serialized reconciliation input. ECO-5D focused PASS 12/12; ECO-GOLD PASS 43/43; complete available Economics plus Experiment Manager chain PASS 207/207; lint PASS; git diff --check PASS. Browser/production/physical-device QA not applicable to test-fixture-only corrections. No human acceptance claimed. Environment could not fetch PR #921 (GitHub CONNECT tunnel 403), so the corrected ECO-5E suite was unavailable in this checkout and remains an external blocker/independent-review requirement.",
-      "prNumber": 921,
-      "commitSha": null,
-      "timestamp": "2026-10-04T03:59:34.583Z"
-    },
-    {
-      "operationId": "c03c2232-71d8-4d83-9513-911fc98e1ca4",
-      "board": "launch",
-      "cardId": "launch-development-economics-eco5d",
-      "sourceType": "implementation",
-      "taskId": "economics-eco5d",
-      "files": [
-        "test/ai-business-os-economics-historical-calibration.test.js",
-        "test/ai-business-os-economics-gold-certification.test.js",
-        "data/readiness/development-evidence.json"
-      ],
-      "automated": "PASS",
-      "evidence": "Implementation reference 750c898 records ECO-5D fixture binding and ECO-GOLD replay validator corrections for draft PR #921. Automated results remain ECO-5D 12/12, ECO-GOLD 43/43, complete available Economics plus Experiment Manager 207/207, lint PASS, readiness validation PASS, and git diff --check PASS. Corrected ECO-5E remains unavailable because PR #921 fetch is blocked by the environment's GitHub CONNECT tunnel 403. No browser, production, physical-device, visual, UX, or other human acceptance claimed.",
-      "prNumber": 921,
-      "commitSha": "750c898",
-      "timestamp": "2026-10-04T03:59:57.514Z"
-    },
-    {
-      "operationId": "077d2ec3-2bbd-41f1-a8c1-9da6309b8af7",
-      "board": "launch",
-      "cardId": "launch-development-economics-eco5d",
-      "sourceType": "implementation",
-      "taskId": "economics-eco5d",
-      "files": [
-        "test/ai-business-os-economics-historical-calibration.test.js",
-        "test/ai-business-os-economics-gold-certification.test.js",
-        "data/readiness/development-evidence.json"
-      ],
-      "automated": "PASS",
-      "evidence": "Final implementation commit df8a451 contains the ECO-5D fixture binding and ECO-GOLD replay validator corrections for draft PR #921; readiness audit follow-up records that immutable implementation reference. Test counts and environment limitation are unchanged; no human acceptance claimed.",
-      "prNumber": 921,
-      "commitSha": "df8a451",
-      "timestamp": "2026-10-04T04:00:08.237Z"
-    },
-    {
       "operationId": "f96f04aa-cd83-4eb9-a6a9-278fa620e77a",
       "board": "launch",
       "cardId": "launch-development-economics-eco5e",
@@ -5412,6 +5335,83 @@
       "prNumber": null,
       "commitSha": "7e8b36c92f8fada405924a5ee6a1a9601116142a",
       "timestamp": "2026-10-03T22:25:01.754Z"
+    },
+    {
+      "operationId": "1d287c9a-32ec-4219-a41d-f6ff61ce3cd8",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5d",
+      "sourceType": "implementation",
+      "taskId": "economics-eco5d",
+      "files": [],
+      "automated": null,
+      "evidence": "PR #921 regression correction started: restore ECO-5D historical-calibration fixture consistency while retaining exact governed-decision digest binding.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-04T03:57:59.048Z"
+    },
+    {
+      "operationId": "adf4e26e-dc5d-41c5-ad5e-20ad9126cc16",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5d",
+      "sourceType": "implementation",
+      "taskId": "economics-eco5d",
+      "files": [],
+      "automated": null,
+      "evidence": "Selected ECO-5D as CURRENT for PR #921 historical-calibration regression correction.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-10-04T03:57:59.101Z"
+    },
+    {
+      "operationId": "efcc76c8-d3d2-4afc-91c5-f6f0095fb196",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5d",
+      "sourceType": "implementation",
+      "taskId": "economics-eco5d",
+      "files": [
+        "test/ai-business-os-economics-historical-calibration.test.js",
+        "test/ai-business-os-economics-gold-certification.test.js",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "PR #921 regression corrections preserve exact governed-decision digest binding while rebuilding internally consistent ECO-5D historical-calibration fixtures; Gold replay now supplies the authoritative Experiment Manager validator outside the serialized reconciliation input. ECO-5D focused PASS 12/12; ECO-GOLD PASS 43/43; complete available Economics plus Experiment Manager chain PASS 207/207; lint PASS; git diff --check PASS. Browser/production/physical-device QA not applicable to test-fixture-only corrections. No human acceptance claimed. Environment could not fetch PR #921 (GitHub CONNECT tunnel 403), so the corrected ECO-5E suite was unavailable in this checkout and remains an external blocker/independent-review requirement.",
+      "prNumber": 921,
+      "commitSha": null,
+      "timestamp": "2026-10-04T03:59:34.583Z"
+    },
+    {
+      "operationId": "c03c2232-71d8-4d83-9513-911fc98e1ca4",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5d",
+      "sourceType": "implementation",
+      "taskId": "economics-eco5d",
+      "files": [
+        "test/ai-business-os-economics-historical-calibration.test.js",
+        "test/ai-business-os-economics-gold-certification.test.js",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Implementation reference 750c898 records ECO-5D fixture binding and ECO-GOLD replay validator corrections for draft PR #921. Automated results remain ECO-5D 12/12, ECO-GOLD 43/43, complete available Economics plus Experiment Manager 207/207, lint PASS, readiness validation PASS, and git diff --check PASS. Corrected ECO-5E remains unavailable because PR #921 fetch is blocked by the environment's GitHub CONNECT tunnel 403. No browser, production, physical-device, visual, UX, or other human acceptance claimed.",
+      "prNumber": 921,
+      "commitSha": "750c898",
+      "timestamp": "2026-10-04T03:59:57.514Z"
+    },
+    {
+      "operationId": "077d2ec3-2bbd-41f1-a8c1-9da6309b8af7",
+      "board": "launch",
+      "cardId": "launch-development-economics-eco5d",
+      "sourceType": "implementation",
+      "taskId": "economics-eco5d",
+      "files": [
+        "test/ai-business-os-economics-historical-calibration.test.js",
+        "test/ai-business-os-economics-gold-certification.test.js",
+        "data/readiness/development-evidence.json"
+      ],
+      "automated": "PASS",
+      "evidence": "Final implementation commit df8a451 contains the ECO-5D fixture binding and ECO-GOLD replay validator corrections for draft PR #921; readiness audit follow-up records that immutable implementation reference. Test counts and environment limitation are unchanged; no human acceptance claimed.",
+      "prNumber": 921,
+      "commitSha": "df8a451",
+      "timestamp": "2026-10-04T04:00:08.237Z"
     },
     {
       "operationId": "31419fe1-366d-4057-88a0-dbb6d4e796ff",
@@ -7370,6 +7370,19 @@
       "timestamp": "2026-11-28T06:02:55.786Z"
     },
     {
+      "operationId": "fea7c333-5d9c-46a2-b673-99856513b5d6",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "card_creation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Expose development priorities and checklist in Rugby HQ and assessment navigation; preserve workspace destination through sign-in.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:13:01.213Z"
+    },
+    {
       "operationId": "d1a9be50-858e-4416-8c17-d6b86501d37f",
       "board": "launch",
       "cardId": "launch-development-rugby-learning-guides",
@@ -7395,6 +7408,33 @@
       "timestamp": "2026-11-28T06:14:17.459Z"
     },
     {
+      "operationId": "5cb5e427-252c-4d99-9f61-0fb24c7404e1",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-player.html",
+        "public/rugby-assessments.html",
+        "public/rugby-athlete-review.html",
+        "public/rugby-development-review.html",
+        "public/rugby-workspace-session.js",
+        "public/rugby-assessments.js",
+        "public/rugby-athlete-review.js",
+        "public/rugby-development-review.js",
+        "test/rugby-workspace-navigation.test.js",
+        "test/rugby-assessment-capture-ui.test.js",
+        "test/rugby-athlete-review-ui.test.js",
+        "test/rugby-development-ui.test.js",
+        ".github/workflows/rugby-policy-dashboard-tests.yml"
+      ],
+      "automated": "PASS",
+      "evidence": "59 automated tests PASS. Signed-in navigation now exposes priorities and checklist; protected workspaces await canonical AuthNavigation requireUser and preserve pathname/search/hash through login. Existing auth and authorization unchanged. VM technical tests verify reuse, redirect target, readiness waiting and transient failure behavior. Owner signed-in/iPhone journey pending after deploy. Rollback: revert squash and redeploy frontend/backend; no data or env changes.",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:14:45.380Z"
+    },
+    {
       "operationId": "d7980d0f-99f3-4070-ab1f-45a839df3a75",
       "board": "launch",
       "cardId": "launch-development-rugby-learning-guides",
@@ -7413,6 +7453,96 @@
       "prNumber": 1441,
       "commitSha": "0dc8ea2db498210daf5933376f8c8d5c5da8ceab",
       "timestamp": "2026-11-28T06:15:44.882Z"
+    },
+    {
+      "operationId": "4a986ece-2aec-4290-a4f6-1390a5f5d235",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-workspace-session.js",
+        "public/rugby-player.html",
+        "public/rugby-assessments.html",
+        "public/rugby-athlete-review.html",
+        "public/rugby-development-review.html",
+        "test/rugby-workspace-navigation.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "PR 1442 implementation reviewed and separate AI-assisted actual-diff review recorded. 59 local automated tests PASS. GitHub checks running; owner sign-in return flow and iPhone navigation pending after deployment. No human acceptance claimed.",
+      "prNumber": 1442,
+      "commitSha": "21aec3d4e64c85d40a480094cffc2f9efc21a7ce",
+      "timestamp": "2026-11-28T06:16:04.754Z"
+    },
+    {
+      "operationId": "9bc46dc1-8add-48df-8d33-108310318748",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Resolving requested merge conflicts for PR #1442",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:42:37.778Z"
+    },
+    {
+      "operationId": "643789cd-0a0a-4db9-9e4f-9a47ccc2daa2",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [],
+      "automated": null,
+      "evidence": "Active task: merge default branch and resolve conflicts",
+      "prNumber": null,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:42:37.904Z"
+    },
+    {
+      "operationId": "cd9fac51-02dd-4185-9922-420ce2c5e8c8",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-player.html",
+        "public/rugby-assessments.html",
+        "public/rugby-development-review.html",
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json",
+        "test/rugby-workspace-navigation.test.js",
+        "test/rugby-assessment-capture-ui.test.js",
+        "test/rugby-learning-guides.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Merged main while preserving PR 1442 AuthNavigation/session guard and signed-in development/checklist links alongside main's learning-guide links. 41 focused navigation, learning, and assessment tests PASS; readiness contract and diff checks PASS. Browser/production visual QA not performed; technical browser evidence is limited to VM navigation tests. Owner iPhone journey and human acceptance remain pending post-deploy. Rollback: revert the reviewed merge/squash via PR and redeploy frontend/backend; no database, environment, or athlete-data changes.",
+      "prNumber": 1442,
+      "commitSha": null,
+      "timestamp": "2026-11-28T06:46:06.415Z"
+    },
+    {
+      "operationId": "0a9f1aa8-37f6-4dac-94ce-a9fadf359a64",
+      "board": "launch",
+      "cardId": "launch-development-rugby-workspace-navigation",
+      "sourceType": "implementation",
+      "taskId": null,
+      "files": [
+        "public/rugby-player.html",
+        "public/rugby-assessments.html",
+        "public/rugby-development-review.html",
+        "data/readiness/development-cards.json",
+        "data/readiness/development-evidence.json",
+        "test/rugby-workspace-navigation.test.js",
+        "test/rugby-assessment-capture-ui.test.js",
+        "test/rugby-learning-guides.test.js"
+      ],
+      "automated": "PASS",
+      "evidence": "Merged main in commit 8a03ce8; PR #1442 signed-in workspace navigation/auth guard and main learning-guide links preserved. 41 focused navigation, learning, and assessment tests PASS; readiness contract and diff checks PASS. CodeQL: no Actions alerts; JavaScript analysis skipped because database size is too large. Browser/production visual QA not performed; VM test evidence only. Owner iPhone journey and human acceptance remain pending post-deploy. Rollback: revert the reviewed merge via PR and redeploy frontend/backend; no database, environment, or athlete-data changes.",
+      "prNumber": 1442,
+      "commitSha": "8a03ce8",
+      "timestamp": "2026-11-28T06:46:49.120Z"
     }
   ]
 }
